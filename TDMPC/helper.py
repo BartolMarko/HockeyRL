@@ -20,12 +20,6 @@ def mse(pred, target, reduce=False):
 	return F.mse_loss(pred, target, reduction=__REDUCE__(reduce))
 
 
-def _get_out_shape(in_shape, layers):
-	"""Utility function. Returns the output shape of a network for a given input shape."""
-	x = torch.randn(*in_shape).unsqueeze(0)
-	return (nn.Sequential(*layers) if isinstance(layers, list) else layers)(x).squeeze(0).shape
-
-
 def orthogonal_init(m):
 	"""Orthogonal layer initialization."""
 	if isinstance(m, nn.Linear):
@@ -97,18 +91,8 @@ class Flatten(nn.Module):
 
 def enc(cfg):
 	"""Returns a TOLD encoder."""
-	if cfg.modality == 'pixels':
-		C = int(3*cfg.frame_stack)
-		layers = [NormalizeImg(),
-				  nn.Conv2d(C, cfg.num_channels, 7, stride=2), nn.ReLU(),
-				  nn.Conv2d(cfg.num_channels, cfg.num_channels, 5, stride=2), nn.ReLU(),
-				  nn.Conv2d(cfg.num_channels, cfg.num_channels, 3, stride=2), nn.ReLU(),
-				  nn.Conv2d(cfg.num_channels, cfg.num_channels, 3, stride=2), nn.ReLU()]
-		out_shape = _get_out_shape((C, cfg.img_size, cfg.img_size), layers)
-		layers.extend([Flatten(), nn.Linear(np.prod(out_shape), cfg.latent_dim)])
-	else:
-		layers = [nn.Linear(cfg.obs_shape[0], cfg.enc_dim), nn.ELU(),
-				  nn.Linear(cfg.enc_dim, cfg.latent_dim)]
+	layers = [nn.Linear(cfg.obs_shape[0], cfg.enc_dim), nn.ELU(),
+		   		nn.Linear(cfg.enc_dim, cfg.latent_dim)]
 	return nn.Sequential(*layers)
 
 
@@ -119,7 +103,8 @@ def mlp(in_dim, mlp_dim, out_dim, act_fn=nn.ELU()):
 	return nn.Sequential(
 		nn.Linear(in_dim, mlp_dim[0]), act_fn,
 		nn.Linear(mlp_dim[0], mlp_dim[1]), act_fn,
-		nn.Linear(mlp_dim[1], out_dim))
+		nn.Linear(mlp_dim[1], out_dim)
+	)
 
 def q(cfg, act_fn=nn.ELU()):
 	"""Returns a Q-function that uses Layer Normalization."""
@@ -128,39 +113,12 @@ def q(cfg, act_fn=nn.ELU()):
 						 nn.Linear(cfg.mlp_dim, 1))
 
 
-class RandomShiftsAug(nn.Module):
-	"""
-	Random shift image augmentation.
-	Adapted from https://github.com/facebookresearch/drqv2
-	"""
-	def __init__(self, cfg):
-		super().__init__()
-		self.pad = int(cfg.img_size/21) if cfg.modality == 'pixels' else None
-
-	def forward(self, x):
-		if not self.pad:
-			return x
-		n, c, h, w = x.size()
-		assert h == w
-		padding = tuple([self.pad] * 4)
-		x = F.pad(x, padding, 'replicate')
-		eps = 1.0 / (h + 2 * self.pad)
-		arange = torch.linspace(-1.0 + eps, 1.0 - eps, h + 2 * self.pad, device=x.device, dtype=x.dtype)[:h]
-		arange = arange.unsqueeze(0).repeat(h, 1).unsqueeze(2)
-		base_grid = torch.cat([arange, arange.transpose(1, 0)], dim=2)
-		base_grid = base_grid.unsqueeze(0).repeat(n, 1, 1, 1)
-		shift = torch.randint(0, 2 * self.pad + 1, size=(n, 1, 1, 2), device=x.device, dtype=x.dtype)
-		shift *= 2.0 / (h + 2 * self.pad)
-		grid = base_grid + shift
-		return F.grid_sample(x, grid, padding_mode='zeros', align_corners=False)
-
-
 class Episode(object):
 	"""Storage object for a single episode."""
 	def __init__(self, cfg, init_obs):
 		self.cfg = cfg
 		self.device = torch.device(cfg.device)
-		dtype = torch.float32 if cfg.modality == 'state' else torch.uint8
+		dtype = torch.float32
 		self.obs = torch.empty((cfg.episode_length+1, *init_obs.shape), dtype=dtype, device=self.device)
 		self.obs[0] = torch.tensor(init_obs, dtype=dtype, device=self.device)
 		self.action = torch.empty((cfg.episode_length, cfg.action_dim), dtype=torch.float32, device=self.device)
@@ -198,8 +156,8 @@ class ReplayBuffer():
 		self.cfg = cfg
 		self.device = torch.device(cfg.device)
 		self.capacity = min(cfg.train_steps, cfg.max_buffer_size)
-		dtype = torch.float32 if cfg.modality == 'state' else torch.uint8
-		obs_shape = cfg.obs_shape if cfg.modality == 'state' else (3, *cfg.obs_shape[-2:])
+		dtype = torch.float32
+		obs_shape = cfg.obs_shape
 		self._obs = torch.empty((self.capacity+1, *obs_shape), dtype=dtype, device=self.device)
 		self._last_obs = torch.empty((self.capacity//cfg.episode_length, *cfg.obs_shape), dtype=dtype, device=self.device)
 		self._action = torch.empty((self.capacity, cfg.action_dim), dtype=torch.float32, device=self.device)
@@ -214,7 +172,7 @@ class ReplayBuffer():
 		return self
 
 	def add(self, episode: Episode):
-		self._obs[self.idx:self.idx+self.cfg.episode_length] = episode.obs[:-1] if self.cfg.modality == 'state' else episode.obs[:-1, -3:]
+		self._obs[self.idx:self.idx+self.cfg.episode_length] = episode.obs[:-1]
 		self._last_obs[self.idx//self.cfg.episode_length] = episode.obs[-1]
 		self._action[self.idx:self.idx+self.cfg.episode_length] = episode.action
 		self._reward[self.idx:self.idx+self.cfg.episode_length] = episode.reward
@@ -232,19 +190,6 @@ class ReplayBuffer():
 	def update_priorities(self, idxs, priorities):
 		self._priorities[idxs] = priorities.squeeze(1).to(self.device) + self._eps
 
-	def _get_obs(self, arr, idxs):
-		if self.cfg.modality == 'state':
-			return arr[idxs]
-		obs = torch.empty((self.cfg.batch_size, 3*self.cfg.frame_stack, *arr.shape[-2:]), dtype=arr.dtype, device=torch.device('cuda'))
-		obs[:, -3:] = arr[idxs].cuda()
-		_idxs = idxs.clone()
-		mask = torch.ones_like(_idxs, dtype=torch.bool)
-		for i in range(1, self.cfg.frame_stack):
-			mask[_idxs % self.cfg.episode_length == 0] = False
-			_idxs[mask] -= 1
-			obs[:, -(i+1)*3:-i*3] = arr[_idxs].cuda()
-		return obs.float()
-
 	def sample(self):
 		probs = (self._priorities if self._full else self._priorities[:self.idx]) ** self.cfg.per_alpha
 		probs /= probs.sum()
@@ -253,14 +198,14 @@ class ReplayBuffer():
 		weights = (total * probs[idxs]) ** (-self.cfg.per_beta)
 		weights /= weights.max()
 
-		obs = self._get_obs(self._obs, idxs)
-		next_obs_shape = self._last_obs.shape[1:] if self.cfg.modality == 'state' else (3*self.cfg.frame_stack, *self._last_obs.shape[-2:])
+		obs = self._obs[idxs]
+		next_obs_shape = self._last_obs.shape[1:]
 		next_obs = torch.empty((self.cfg.horizon+1, self.cfg.batch_size, *next_obs_shape), dtype=obs.dtype, device=obs.device)
 		action = torch.empty((self.cfg.horizon+1, self.cfg.batch_size, *self._action.shape[1:]), dtype=torch.float32, device=self.device)
 		reward = torch.empty((self.cfg.horizon+1, self.cfg.batch_size), dtype=torch.float32, device=self.device)
 		for t in range(self.cfg.horizon+1):
 			_idxs = idxs + t
-			next_obs[t] = self._get_obs(self._obs, _idxs+1)
+			next_obs[t] = self._obs[_idxs+1]
 			action[t] = self._action[_idxs]
 			reward[t] = self._reward[_idxs]
 

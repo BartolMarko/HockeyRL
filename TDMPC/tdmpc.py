@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from copy import deepcopy
-import algorithm.helper as h
+import TDMPC.helper as h
 
 
 class TOLD(nn.Module):
@@ -58,7 +58,6 @@ class TDMPC():
 		self.model_target = deepcopy(self.model)
 		self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
 		self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
-		self.aug = h.RandomShiftsAug(cfg)
 		self.model.eval()
 		self.model_target.eval()
 
@@ -184,7 +183,7 @@ class TDMPC():
 		self.model.train()
 
 		# Representation
-		z = self.model.h(self.aug(obs))
+		z = self.model.h(obs)
 		zs = [z.detach()]
 
 		consistency_loss, reward_loss, value_loss, priority_loss = 0, 0, 0, 0
@@ -194,7 +193,7 @@ class TDMPC():
 			Q1, Q2 = self.model.Q(z, action[t])
 			z, reward_pred = self.model.next(z, action[t])
 			with torch.no_grad():
-				next_obs = self.aug(next_obses[t])
+				next_obs = next_obses[t]
 				next_z = self.model_target.h(next_obs)
 				td_target = self._td_target(next_obs, reward[t])
 			zs.append(z.detach())

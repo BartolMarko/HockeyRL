@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from copy import deepcopy
-import TDMPC.helper as h
+import helper as h
 
 
 class TOLD(nn.Module):
@@ -116,7 +116,11 @@ class TDMPC():
 		mean = torch.zeros(horizon, self.cfg.action_dim, device=self.device)
 		std = 2*torch.ones(horizon, self.cfg.action_dim, device=self.device)
 		if not t0 and hasattr(self, '_prev_mean'):
-			mean[:-1] = self._prev_mean[1:]
+			# TODO: questionable fix for horizon change
+			prev_mean_shifted = self._prev_mean[1:]
+			valid_len = min(prev_mean_shifted.shape[0], mean.shape[0] - 1)
+			if valid_len > 0:
+				mean[:valid_len] = prev_mean_shifted[:valid_len]
 
 		# Iterate CEM
 		for i in range(self.cfg.iterations):
@@ -168,16 +172,16 @@ class TDMPC():
 		return pi_loss.item()
 
 	@torch.no_grad()
-	def _td_target(self, next_obs, reward):
+	def _td_target(self, next_obs, reward, done):
 		"""Compute the TD-target from a reward and the observation at the following time step."""
 		next_z = self.model.h(next_obs)
-		td_target = reward + self.cfg.discount * \
+		td_target = reward + self.cfg.discount * (1 - done) * \
 			torch.min(*self.model_target.Q(next_z, self.model.pi(next_z, self.cfg.min_std)))
 		return td_target
 
 	def update(self, replay_buffer, step):
 		"""Main update function. Corresponds to one iteration of the TOLD model learning."""
-		obs, next_obses, action, reward, idxs, weights = replay_buffer.sample()
+		obs, next_obses, action, reward, done, idxs, weights = replay_buffer.sample()
 		self.optim.zero_grad(set_to_none=True)
 		self.std = h.linear_schedule(self.cfg.std_schedule, step)
 		self.model.train()
@@ -186,6 +190,7 @@ class TDMPC():
 		z = self.model.h(obs)
 		zs = [z.detach()]
 
+		mask = torch.ones_like(done[0])
 		consistency_loss, reward_loss, value_loss, priority_loss = 0, 0, 0, 0
 		for t in range(self.cfg.horizon):
 
@@ -195,15 +200,16 @@ class TDMPC():
 			with torch.no_grad():
 				next_obs = next_obses[t]
 				next_z = self.model_target.h(next_obs)
-				td_target = self._td_target(next_obs, reward[t])
+				td_target = self._td_target(next_obs, reward[t], done[t])
 			zs.append(z.detach())
 
 			# Losses
 			rho = (self.cfg.rho ** t)
-			consistency_loss += rho * torch.mean(h.mse(z, next_z), dim=1, keepdim=True)
-			reward_loss += rho * h.mse(reward_pred, reward[t])
-			value_loss += rho * (h.mse(Q1, td_target) + h.mse(Q2, td_target))
-			priority_loss += rho * (h.l1(Q1, td_target) + h.l1(Q2, td_target))
+			consistency_loss += rho * torch.mean(h.mse(z, next_z, mask), dim=1, keepdim=True)
+			reward_loss += rho * h.mse(reward_pred, reward[t], mask)
+			value_loss += rho * (h.mse(Q1, td_target, mask) + h.mse(Q2, td_target, mask))
+			priority_loss += rho * (h.l1(Q1, td_target, mask) + h.l1(Q2, td_target, mask))
+			mask = mask * (1 - done[t])
 
 		# Optimize model
 		total_loss = self.cfg.consistency_coef * consistency_loss.clamp(max=1e4) + \
@@ -218,7 +224,7 @@ class TDMPC():
 
 		# Update policy + target network
 		pi_loss = self.update_pi(zs)
-		if step % self.cfg.update_freq == 0:
+		if step % self.cfg.update_freq == 0:  # TODO: investigate this, but works okay for now
 			h.ema(self.model, self.model_target, self.cfg.tau)
 
 		self.model.eval()

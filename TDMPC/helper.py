@@ -10,13 +10,19 @@ from torch.distributions.utils import _standard_normal
 __REDUCE__ = lambda b: 'mean' if b else 'none'
 
 
-def l1(pred, target, reduce=False):
+def l1(pred, target, mask=None, reduce=False):
 	"""Computes the L1-loss between predictions and targets."""
+	if mask is not None:
+		pred = pred * mask
+		target = target * mask
 	return F.l1_loss(pred, target, reduction=__REDUCE__(reduce))
 
 
-def mse(pred, target, reduce=False):
+def mse(pred, target, mask=None, reduce=False):
 	"""Computes the MSE loss between predictions and targets."""
+	if mask is not None:
+		pred = pred * mask
+		target = target * mask
 	return F.mse_loss(pred, target, reduction=__REDUCE__(reduce))
 
 
@@ -119,16 +125,17 @@ class Episode(object):
 		self.cfg = cfg
 		self.device = torch.device(cfg.device)
 		dtype = torch.float32
-		self.obs = torch.empty((cfg.episode_length+1, *init_obs.shape), dtype=dtype, device=self.device)
+		max_episode_length = cfg.max_episode_length
+		self.obs = torch.empty((max_episode_length + 1, *init_obs.shape), dtype=dtype, device=self.device)
 		self.obs[0] = torch.tensor(init_obs, dtype=dtype, device=self.device)
-		self.action = torch.empty((cfg.episode_length, cfg.action_dim), dtype=torch.float32, device=self.device)
-		self.reward = torch.empty((cfg.episode_length,), dtype=torch.float32, device=self.device)
-		self.cumulative_reward = 0
+		self.action = torch.empty((max_episode_length, cfg.action_dim), dtype=torch.float32, device=self.device)
+		self.opponent_action = torch.empty((max_episode_length, cfg.action_dim), dtype=torch.float32, device=self.device)
+		self.reward = torch.zeros((max_episode_length,), dtype=torch.float32, device=self.device)
 		self.done = False
-		self._idx = 0
+		self.length = 0
 	
 	def __len__(self):
-		return self._idx
+		return self.length
 
 	@property
 	def first(self):
@@ -138,13 +145,37 @@ class Episode(object):
 		self.add(*transition)
 		return self
 
-	def add(self, obs, action, reward, done):
-		self.obs[self._idx+1] = torch.tensor(obs, dtype=self.obs.dtype, device=self.obs.device)
-		self.action[self._idx] = action
-		self.reward[self._idx] = reward
-		self.cumulative_reward += reward
+	def add(self, obs, action, opponent_action, reward, done):
+		assert not self.done, "Episode has terminated. Can not add more transitions."
+		assert self.length < self.cfg.max_episode_length, "Episode buffer is full."
+
+		self.obs[self.length + 1] = torch.tensor(obs, dtype=self.obs.dtype, device=self.obs.device)
+		self.action[self.length] = torch.tensor(action, dtype=self.action.dtype, device=self.action.device)
+		self.opponent_action[self.length] = torch.tensor(opponent_action, dtype=self.opponent_action.dtype, device=self.opponent_action.device)
+		self.reward[self.length] = reward
 		self.done = done
-		self._idx += 1
+		self.length += 1
+
+
+class CircularIndices():
+	def __init__(self, indices, size):
+		self.indices = indices
+		self.size = size
+
+	def __add__(self, n: int):
+		self.add(n)
+		return self
+
+	def add(self, n: int):
+		self.indices = (self.indices + n) % self.size
+
+	def get(self):
+		return self.indices
+	
+	def pop_last(self):
+		last_idx = self.indices[-1]
+		self.indices = self.indices[:-1]
+		return last_idx
 
 
 class ReplayBuffer():
@@ -159,8 +190,9 @@ class ReplayBuffer():
 		dtype = torch.float32
 		obs_shape = cfg.obs_shape
 		self._obs = torch.empty((self.capacity+1, *obs_shape), dtype=dtype, device=self.device)
-		self._last_obs = torch.empty((self.capacity//cfg.episode_length, *cfg.obs_shape), dtype=dtype, device=self.device)
 		self._action = torch.empty((self.capacity, cfg.action_dim), dtype=torch.float32, device=self.device)
+		self._opponent_action = torch.empty((self.capacity, cfg.action_dim), dtype=torch.float32, device=self.device)
+		self._done = torch.empty((self.capacity,), dtype=torch.float32, device=self.device)
 		self._reward = torch.empty((self.capacity,), dtype=torch.float32, device=self.device)
 		self._priorities = torch.ones((self.capacity,), dtype=torch.float32, device=self.device)
 		self._eps = 1e-6
@@ -172,20 +204,33 @@ class ReplayBuffer():
 		return self
 
 	def add(self, episode: Episode):
-		self._obs[self.idx:self.idx+self.cfg.episode_length] = episode.obs[:-1]
-		self._last_obs[self.idx//self.cfg.episode_length] = episode.obs[-1]
-		self._action[self.idx:self.idx+self.cfg.episode_length] = episode.action
-		self._reward[self.idx:self.idx+self.cfg.episode_length] = episode.reward
+		assert episode.done, "Can only add completed episodes to the replay buffer."
+		episode_length = len(episode)
+		indices = CircularIndices(
+			torch.arange(self.idx, self.idx + episode_length + 1, device=self.device),
+			self.capacity,
+		)
+
+		self._obs[indices.get()] = episode.obs[:episode_length + 1]
+		last_index = indices.pop_last()
+
+		self._action[indices.get()] = episode.action[:episode_length]
+		self._opponent_action[indices.get()] = episode.opponent_action[:episode_length]
+		self._reward[indices.get()] = episode.reward[:episode_length]
+		
+		self._done[indices.get()] = 0.0
+		self._done[indices.get()[-1]] = 1.0
+		
 		if self._full:
 			max_priority = self._priorities.max().to(self.device).item()
 		else:
 			max_priority = 1. if self.idx == 0 else self._priorities[:self.idx].max().to(self.device).item()
-		mask = torch.arange(self.cfg.episode_length) >= self.cfg.episode_length-self.cfg.horizon
-		new_priorities = torch.full((self.cfg.episode_length,), max_priority, device=self.device)
-		new_priorities[mask] = 0
-		self._priorities[self.idx:self.idx+self.cfg.episode_length] = new_priorities
-		self.idx = (self.idx + self.cfg.episode_length) % self.capacity
-		self._full = self._full or self.idx == 0
+		
+		self._priorities[indices.get()] = max_priority
+		self._priorities[last_index] = 0.0
+
+		self.idx = (last_index + 1) % self.capacity
+		self._full = self._full or (self.idx < episode_length)
 
 	def update_priorities(self, idxs, priorities):
 		self._priorities[idxs] = priorities.squeeze(1).to(self.device) + self._eps
@@ -199,23 +244,24 @@ class ReplayBuffer():
 		weights /= weights.max()
 
 		obs = self._obs[idxs]
-		next_obs_shape = self._last_obs.shape[1:]
+		next_obs_shape = self._obs.shape[1:]
 		next_obs = torch.empty((self.cfg.horizon+1, self.cfg.batch_size, *next_obs_shape), dtype=obs.dtype, device=obs.device)
 		action = torch.empty((self.cfg.horizon+1, self.cfg.batch_size, *self._action.shape[1:]), dtype=torch.float32, device=self.device)
 		reward = torch.empty((self.cfg.horizon+1, self.cfg.batch_size), dtype=torch.float32, device=self.device)
+		done = torch.empty((self.cfg.horizon+1, self.cfg.batch_size), dtype=torch.float32, device=self.device)
+
 		for t in range(self.cfg.horizon+1):
-			_idxs = idxs + t
-			next_obs[t] = self._obs[_idxs+1]
+			_idxs = (idxs + t) % self.capacity
+			next_obs[t] = self._obs[(_idxs + 1) % self.capacity]
 			action[t] = self._action[_idxs]
 			reward[t] = self._reward[_idxs]
+			done[t] = self._done[_idxs]
 
-		mask = (_idxs+1) % self.cfg.episode_length == 0
-		next_obs[-1, mask] = self._last_obs[_idxs[mask]//self.cfg.episode_length].cuda().float()
 		if not action.is_cuda:
-			action, reward, idxs, weights = \
-				action.cuda(), reward.cuda(), idxs.cuda(), weights.cuda()
+			action, reward, done, idxs, weights = \
+				action.cuda(), reward.cuda(), done.cuda(), idxs.cuda(), weights.cuda()
 
-		return obs, next_obs, action, reward.unsqueeze(2), idxs, weights
+		return obs, next_obs, action, reward.unsqueeze(2), done.unsqueeze(2), idxs, weights
 
 
 def linear_schedule(schdl, step):

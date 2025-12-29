@@ -1,23 +1,19 @@
-import warnings
-warnings.filterwarnings('ignore')
-import os
-os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
-os.environ['MUJOCO_GL'] = 'egl'
 import torch
 import numpy as np
-import gym
-gym.logger.set_level(40)
 import time
 import random
 from pathlib import Path
-from cfg import parse_cfg
-from env import make_env
-from algorithm.tdmpc import TDMPC
-from algorithm.helper import Episode, ReplayBuffer
-import logger
+from hockey import hockey_env as h_env
+from omegaconf import OmegaConf
 torch.backends.cudnn.benchmark = True
-__CONFIG__, __LOGS__ = 'cfgs', 'logs'
+from tdmpc import TDMPC
+from helper import Episode, ReplayBuffer
+from torch.utils.tensorboard import SummaryWriter
 
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "default.yaml"
+RESULTS_DIR = Path(__file__).resolve().parent / "results"
+
+SUMMARY_WRITER = SummaryWriter(RESULTS_DIR / "logs")
 
 def set_seed(seed):
 	random.seed(seed)
@@ -25,73 +21,98 @@ def set_seed(seed):
 	torch.manual_seed(seed)
 	torch.cuda.manual_seed_all(seed)
 
+def add_env_variables_to_config(env, cfg):
+	"""Add environment-specific variables to the config."""
+	cfg.obs_dim = env.observation_space.shape[0]
+	cfg.obs_shape = env.observation_space.shape
 
-def evaluate(env, agent, num_episodes, step, env_step, video):
+	cfg.action_dim = env.action_space.shape[0] // 2
+	return cfg
+
+
+def evaluate(env, agent, opponent, num_episodes, step, env_step):
 	"""Evaluate a trained agent and optionally save a video."""
-	episode_rewards = []
+	win_count, lose_count, draw_count = 0, 0, 0
 	for i in range(num_episodes):
-		obs, done, ep_reward, t = env.reset(), False, 0, 0
-		if video: video.init(env, enabled=(i==0))
+		obs, _ = env.reset()
+		obs_opponent = env.obs_agent_two()
+		done = False
+		episode_reward = 0
 		while not done:
-			action = agent.plan(obs, eval_mode=True, step=step, t0=t==0)
-			obs, reward, done, _ = env.step(action.cpu().numpy())
-			ep_reward += reward
-			if video: video.record(env)
-			t += 1
-		episode_rewards.append(ep_reward)
-		if video: video.save(env_step)
-	return np.nanmean(episode_rewards)
+			action = agent.plan(obs, eval_mode=True).cpu().numpy()
+			opponent_action = opponent.act(obs_opponent)
+			obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
+			obs_opponent = env.obs_agent_two()
+			reward -= info.get("reward_closeness_to_puck", 0)
+		
+		if reward < 0:
+			lose_count += 1
+		elif reward > 0:
+			win_count += 1
+		else:
+			draw_count += 1
+
+	return win_count, lose_count, draw_count
 
 
 def train(cfg):
 	"""Training script for TD-MPC. Requires a CUDA-enabled device."""
 	assert torch.cuda.is_available()
 	set_seed(cfg.seed)
-	work_dir = Path().cwd() / __LOGS__ / cfg.task / cfg.modality / cfg.exp_name / str(cfg.seed)
-	env, agent, buffer = make_env(cfg), TDMPC(cfg), ReplayBuffer(cfg)
+	env = h_env.HockeyEnv()
+	cfg = add_env_variables_to_config(env, cfg)
+	agent, buffer = TDMPC(cfg), ReplayBuffer(cfg)
+	opponent = h_env.BasicOpponent(weak=False)
 	
 	# Run training
-	L = logger.Logger(work_dir, cfg)
 	episode_idx, start_time = 0, time.time()
-	for step in range(0, cfg.train_steps+cfg.episode_length, cfg.episode_length):
-
+	last_update_step, last_eval_step = 0, 0
+	step = 0
+	while step < cfg.train_steps:
 		# Collect trajectory
-		obs = env.reset()
+		obs, _ = env.reset()
+		obs_opponent = env.obs_agent_two()
 		episode = Episode(cfg, obs)
 		while not episode.done:
-			action = agent.plan(obs, step=step, t0=episode.first)
-			obs, reward, done, _ = env.step(action.cpu().numpy())
-			episode += (obs, action, reward, done)
-		assert len(episode) == cfg.episode_length
+			step += 1
+			action = agent.plan(obs, step=step, t0=episode.first).cpu().numpy()
+			opponent_action = opponent.act(obs_opponent)
+			obs, reward, done, _, _ = env.step(np.hstack([action, opponent_action]))
+			obs_opponent = env.obs_agent_two()
+			episode += (obs, action, opponent_action, reward, done)
 		buffer += episode
 
 		# Update model
 		train_metrics = {}
 		if step >= cfg.seed_steps:
-			num_updates = cfg.seed_steps if step == cfg.seed_steps else cfg.episode_length
+			num_updates = step - last_update_step
+			last_update_step = step
 			for i in range(num_updates):
 				train_metrics.update(agent.update(buffer, step+i))
 
-		# Log training episode
+		# Log training metrics
 		episode_idx += 1
 		env_step = int(step*cfg.action_repeat)
-		common_metrics = {
-			'episode': episode_idx,
-			'step': step,
-			'env_step': env_step,
-			'total_time': time.time() - start_time,
-			'episode_reward': episode.cumulative_reward}
-		train_metrics.update(common_metrics)
-		L.log(train_metrics, category='train')
+		for k, v in train_metrics.items():
+			SUMMARY_WRITER.add_scalar(f'Losses/{k}', v, env_step)
+		
+		print(f"Step {step}. Episode {episode_idx} finished in {time.time() - start_time:.2f}s.")
 
 		# Evaluate agent periodically
-		if env_step % cfg.eval_freq == 0:
-			common_metrics['episode_reward'] = evaluate(env, agent, cfg.eval_episodes, step, env_step, L.video)
-			L.log(common_metrics, category='eval')
+		if env_step - last_eval_step >= cfg.eval_freq:
+			win_count, lose_count, draw_count = evaluate(env, agent, opponent, cfg.eval_episodes, step, env_step)
+			SUMMARY_WRITER.add_scalar('Eval/Win Rate', win_count / cfg.eval_episodes, env_step)
+			SUMMARY_WRITER.add_scalar('Eval/Lose Rate', lose_count / cfg.eval_episodes, env_step)
+			SUMMARY_WRITER.add_scalar('Eval/Draw Rate', draw_count / cfg.eval_episodes, env_step)
+			print(f"Evaluation at step {step} ({env_step} env steps): "
+				  f"Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.\n")
 
-	L.finish(agent)
+			last_eval_step = env_step
+
 	print('Training completed successfully')
 
 
 if __name__ == '__main__':
-	train(parse_cfg(Path().cwd() / __CONFIG__))
+	with open(CONFIG_PATH, 'r') as f:
+		cfg = OmegaConf.load(f)
+		train(cfg)

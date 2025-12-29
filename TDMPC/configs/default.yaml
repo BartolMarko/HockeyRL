@@ -1,9 +1,8 @@
 # environment
-task: quadruped-run
-action_repeat: ???
+action_repeat: 1
 discount: 0.99
-episode_length: 1000/${action_repeat}
-train_steps: 500000/${action_repeat}
+max_episode_length: 251
+train_steps: 500000
 
 # planning
 iterations: 6
@@ -24,8 +23,8 @@ consistency_coef: 2
 rho: 0.5
 kappa: 0.1
 lr: 1e-3
-std_schedule: linear(0.5, ${min_std}, 25000)
-horizon_schedule: linear(1, ${horizon}, 25000)
+std_schedule: linear(0.5, 0.05, 25000)
+horizon_schedule: linear(1, 5, 25000)
 per_alpha: 0.6
 per_beta: 0.4
 grad_clip_norm: 10
@@ -46,7 +45,8 @@ wandb_entity: none
 # misc
 seed: 1
 exp_name: default
-eval_freq: 20000
-eval_episodes: 10
+eval_freq: 10000
+eval_episodes: 100
 save_video: false
 save_model: false
+device: cuda

@@ -37,9 +37,8 @@ def evaluate(env, agent, opponent, num_episodes, step, env_step):
 		obs, _ = env.reset()
 		obs_opponent = env.obs_agent_two()
 		done = False
-		episode_reward = 0
 		while not done:
-			action = agent.plan(obs, eval_mode=True).cpu().numpy()
+			action = agent.plan(obs, eval_mode=True, step=step).cpu().numpy()
 			opponent_action = opponent.act(obs_opponent)
 			obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
 			obs_opponent = env.obs_agent_two()
@@ -66,7 +65,7 @@ def train(cfg):
 	
 	# Run training
 	episode_idx, start_time = 0, time.time()
-	last_update_step, last_eval_step = 0, 0
+	last_update_step, last_eval_step, last_save_step = 0, 0, 0
 	step = 0
 	while step < cfg.train_steps:
 		# Collect trajectory
@@ -108,6 +107,12 @@ def train(cfg):
 				  f"Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.\n")
 
 			last_eval_step = env_step
+		
+		if cfg.save_model and (env_step - last_save_step >= cfg.save_model_freq):
+			model_fp = RESULTS_DIR / f'model_step_{env_step}.pt'
+			agent.save(model_fp)
+			print(f"Saved model at step {step} ({env_step} env steps) to {model_fp}.")
+			last_save_step = env_step
 
 	print('Training completed successfully')
 

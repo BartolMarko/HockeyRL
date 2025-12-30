@@ -6,9 +6,11 @@ from pathlib import Path
 from hockey import hockey_env as h_env
 from omegaconf import OmegaConf
 torch.backends.cudnn.benchmark = True
+from torch.utils.tensorboard import SummaryWriter
+
 from tdmpc import TDMPC
 from helper import Episode, ReplayBuffer
-from torch.utils.tensorboard import SummaryWriter
+from evaluate import evaluate
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "default.yaml"
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -28,30 +30,6 @@ def add_env_variables_to_config(env, cfg):
 
 	cfg.action_dim = env.action_space.shape[0] // 2
 	return cfg
-
-
-def evaluate(env, agent, opponent, num_episodes, step, env_step):
-	"""Evaluate a trained agent and optionally save a video."""
-	win_count, lose_count, draw_count = 0, 0, 0
-	for i in range(num_episodes):
-		obs, _ = env.reset()
-		obs_opponent = env.obs_agent_two()
-		done = False
-		while not done:
-			action = agent.plan(obs, eval_mode=True, step=step).cpu().numpy()
-			opponent_action = opponent.act(obs_opponent)
-			obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
-			obs_opponent = env.obs_agent_two()
-			reward -= info.get("reward_closeness_to_puck", 0)
-		
-		if reward < 0:
-			lose_count += 1
-		elif reward > 0:
-			win_count += 1
-		else:
-			draw_count += 1
-
-	return win_count, lose_count, draw_count
 
 
 def train(cfg):
@@ -76,7 +54,8 @@ def train(cfg):
 			step += 1
 			action = agent.plan(obs, step=step, t0=episode.first).cpu().numpy()
 			opponent_action = opponent.act(obs_opponent)
-			obs, reward, done, _, _ = env.step(np.hstack([action, opponent_action]))
+			obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
+			reward -= info["reward_closeness_to_puck"]
 			obs_opponent = env.obs_agent_two()
 			episode += (obs, action, opponent_action, reward, done)
 		buffer += episode
@@ -99,7 +78,7 @@ def train(cfg):
 
 		# Evaluate agent periodically
 		if env_step - last_eval_step >= cfg.eval_freq:
-			win_count, lose_count, draw_count = evaluate(env, agent, opponent, cfg.eval_episodes, step, env_step)
+			win_count, lose_count, draw_count = evaluate(env, agent, opponent, cfg.eval_episodes, step)
 			SUMMARY_WRITER.add_scalar('Eval/Win Rate', win_count / cfg.eval_episodes, env_step)
 			SUMMARY_WRITER.add_scalar('Eval/Lose Rate', lose_count / cfg.eval_episodes, env_step)
 			SUMMARY_WRITER.add_scalar('Eval/Draw Rate', draw_count / cfg.eval_episodes, env_step)
@@ -108,7 +87,7 @@ def train(cfg):
 
 			last_eval_step = env_step
 		
-		if cfg.save_model and (env_step - last_save_step >= cfg.save_model_freq):
+		if cfg.save_model and ((env_step - last_save_step >= cfg.save_model_freq) or step >= cfg.train_steps):
 			model_fp = RESULTS_DIR / f'model_step_{env_step}.pt'
 			agent.save(model_fp)
 			print(f"Saved model at step {step} ({env_step} env steps) to {model_fp}.")

@@ -159,7 +159,7 @@ class Episode(object):
 
 class CircularIndices():
 	def __init__(self, indices, size):
-		self.indices = indices
+		self.indices = indices % size
 		self.size = size
 
 	def __add__(self, n: int):

@@ -8,8 +8,8 @@ from tdmpc import TDMPC
 import imageio
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "default.yaml"
-MODEL_PATH = Path(__file__).resolve().parent / "results" / "model_step_450457.pt"
-GIF_SAVE_PATH = Path(__file__).resolve().parent / "results" / "evaluation.gif"
+MODEL_PATH = Path(__file__).resolve().parent / "results" / "baseline_sparse_reward" / "model_step_500013.pt"
+GIF_SAVE_PATH = Path(__file__).resolve().parent / "results" / "baseline_sparse_reward" / "evaluation.gif"
 
 def evaluate(env, agent, opponent, num_episodes, step, render=False):
 	"""Evaluate a trained agent and optionally save a video."""
@@ -58,7 +58,7 @@ def main():
     opponent = h_env.BasicOpponent(weak=False)
 
     # Evaluate agent
-    win_count, lose_count, draw_count = evaluate(env, agent, opponent, cfg.eval_episodes, step=0, render=True)
+    win_count, lose_count, draw_count = evaluate(env, agent, opponent, 100, step=0, render=True)
     print(f"Evaluation over {cfg.eval_episodes} episodes: "
           f"Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.\n")
 

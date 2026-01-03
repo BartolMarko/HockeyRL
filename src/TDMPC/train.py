@@ -13,7 +13,7 @@ from helper import Episode, ReplayBuffer
 from evaluate import evaluate
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "default.yaml"
-RESULTS_DIR = Path(__file__).resolve().parent / "results"
+RESULTS_DIR = Path(__file__).resolve().parent / "results" / "baseline_sparse_reward"
 
 SUMMARY_WRITER = SummaryWriter(RESULTS_DIR / "logs")
 

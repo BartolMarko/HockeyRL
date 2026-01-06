@@ -2,8 +2,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 from copy import deepcopy
-import helper as h
+from omegaconf import OmegaConf
+from pathlib import Path
 
+import src.TDMPC.helper as h
+
+CONFIG_FILE = "config.yaml"
+MODEL_FILE = "model.pt"
 
 class TOLD(nn.Module):
 	"""Task-Oriented Latent Dynamics (TOLD) model used in TD-MPC."""
@@ -50,29 +55,45 @@ class TOLD(nn.Module):
 
 class TDMPC():
 	"""Implementation of TD-MPC learning + inference."""
-	def __init__(self, cfg):
+	def __init__(self, cfg, load_dir: str | Path = None):
 		self.cfg = cfg
+		if load_dir is not None:
+			self.load_config(load_dir)
 		self.device = torch.device('cuda')
-		self.std = h.linear_schedule(cfg.std_schedule, 0)
-		self.model = TOLD(cfg).cuda()
+		# TODO: move to config
+		self.std = h.linear_schedule(self.cfg.std_schedule, 0)
+		self.model = TOLD(self.cfg).cuda()
 		self.model_target = deepcopy(self.model)
 		self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
 		self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
 		self.model.eval()
 		self.model_target.eval()
+		if load_dir is not None:
+			self.load(load_dir)
 
 	def state_dict(self):
 		"""Retrieve state dict of TOLD model, including slow-moving target network."""
 		return {'model': self.model.state_dict(),
 				'model_target': self.model_target.state_dict()}
 
-	def save(self, fp):
+	def save(self, path: str | Path):
 		"""Save state dict of TOLD model to filepath."""
-		torch.save(self.state_dict(), fp)
+		path = Path(path)
+		torch.save(self.state_dict(), path / MODEL_FILE)
+		with open(path / CONFIG_FILE, 'w') as f:
+			OmegaConf.save(self.cfg, f)
 	
-	def load(self, fp):
-		"""Load a saved state dict from filepath into current agent."""
-		d = torch.load(fp)
+	def load_config(self, path: str | Path):
+		"""Load config from filepath."""
+		path = Path(path)
+		with open(path / CONFIG_FILE, 'r') as f:
+			self.cfg = OmegaConf.load(f)
+	
+	def load(self, path: str | Path):
+		"""Load a saved state dict and  current agent."""
+		path = Path(path)
+		self.load_config(path)
+		d = torch.load(path / MODEL_FILE)
 		self.model.load_state_dict(d['model'])
 		self.model_target.load_state_dict(d['model_target'])
 

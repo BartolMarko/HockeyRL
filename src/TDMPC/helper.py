@@ -6,8 +6,10 @@ import torch.nn.functional as F
 from torch import distributions as pyd
 from torch.distributions.utils import _standard_normal
 
+from src.episode import Episode
 
-__REDUCE__ = lambda b: 'mean' if b else 'none'
+
+__REDUCE__ = lambda b: 'mean' if b else 'none'  # noqa
 
 
 def l1(pred, target, mask=None, reduce=False):
@@ -117,44 +119,6 @@ def q(cfg, act_fn=nn.ELU()):
 	return nn.Sequential(nn.Linear(cfg.latent_dim+cfg.action_dim, cfg.mlp_dim), nn.LayerNorm(cfg.mlp_dim), nn.Tanh(),
 						 nn.Linear(cfg.mlp_dim, cfg.mlp_dim), nn.ELU(),
 						 nn.Linear(cfg.mlp_dim, 1))
-
-
-class Episode(object):
-	"""Storage object for a single episode."""
-	def __init__(self, cfg, init_obs):
-		self.cfg = cfg
-		self.device = torch.device(cfg.device)
-		dtype = torch.float32
-		max_episode_length = cfg.max_episode_length
-		self.obs = torch.empty((max_episode_length + 1, *init_obs.shape), dtype=dtype, device=self.device)
-		self.obs[0] = torch.tensor(init_obs, dtype=dtype, device=self.device)
-		self.action = torch.empty((max_episode_length, cfg.action_dim), dtype=torch.float32, device=self.device)
-		self.opponent_action = torch.empty((max_episode_length, cfg.action_dim), dtype=torch.float32, device=self.device)
-		self.reward = torch.zeros((max_episode_length,), dtype=torch.float32, device=self.device)
-		self.done = False
-		self.length = 0
-	
-	def __len__(self):
-		return self.length
-
-	@property
-	def first(self):
-		return len(self) == 0
-	
-	def __add__(self, transition):
-		self.add(*transition)
-		return self
-
-	def add(self, obs, action, opponent_action, reward, done):
-		assert not self.done, "Episode has terminated. Can not add more transitions."
-		assert self.length < self.cfg.max_episode_length, "Episode buffer is full."
-
-		self.obs[self.length + 1] = torch.tensor(obs, dtype=self.obs.dtype, device=self.obs.device)
-		self.action[self.length] = torch.tensor(action, dtype=self.action.dtype, device=self.action.device)
-		self.opponent_action[self.length] = torch.tensor(opponent_action, dtype=self.opponent_action.dtype, device=self.opponent_action.device)
-		self.reward[self.length] = reward
-		self.done = done
-		self.length += 1
 
 
 class CircularIndices():

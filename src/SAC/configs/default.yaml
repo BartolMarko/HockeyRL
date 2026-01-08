@@ -1,0 +1,44 @@
+dry_run: False
+
+# environment
+action_repeat: 1
+discount: 0.95
+max_episode_length: 256
+train_steps: 5000000
+
+# planning
+iterations: 6
+num_samples: 512
+
+# learning
+batch_size: 1024
+max_buffer_size: 500000
+actor_lr: 1e-3
+critic_lr: 1e-3
+grad_clip_norm: 100
+seed_steps: 5000
+target_update_freq: 2
+tau: 0.001
+gamma: 0.99
+alpha: 0.2
+
+# prioritized experience replay buffer
+per_alpha: 0.6
+per_beta: 0.4
+
+# architecture
+hidden_dim: 2048
+
+# wandb (insert your own)
+use_wandb: True
+wandb_project: hockey-rl
+
+# misc
+seed: 123450
+exp_name: baseline-sac
+eval_freq: 10000
+eval_episodes: 20
+save_video: True
+save_model: True
+save_model_freq: 20000
+device: cuda

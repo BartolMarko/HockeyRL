@@ -7,24 +7,48 @@ from network import ActorNet, CriticNet
 import pickle
 
 class Agent:
-    def __init__(self, lr_actor=0.0003, lr_critic=0.0003, input_dims=[18], env=None, gamma=0.99, n_actions=4, buffer_max_size=1000000,
-                 hidden_size=256, batch_size=256, reward_scale=2, alpha=0.1):
-        self.env = env
-        self.gamma = gamma
-        self.memory = ReplayBuffer(buffer_max_size, input_dims, n_actions)
-        self.batch_size = batch_size
-        self.n_actions = n_actions
-        self.scale = reward_scale
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.gamma = cfg.gamma
+        self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
+        self.batch_size = cfg.batch_size
+        self.n_actions = cfg.n_actions
+        self.scale = cfg.reward_scale
 
         # initialize actor and critic networks
-        self.actor = ActorNet(lr_actor, input_dims, n_actions=n_actions,
-                              hidden_size=hidden_size, max_action=[1] * n_actions)
-        self.critic_1 = CriticNet(lr_critic, input_dims, n_actions=n_actions,
-                              hidden_size=hidden_size)
-        self.critic_2 = CriticNet(lr_critic, input_dims, n_actions=n_actions,
-                              hidden_size=hidden_size)
+        self.actor = ActorNet(cfg.lr_actor, cfg.input_dims, n_actions=cfg.n_actions,
+                              hidden_size=cfg.hidden_size, max_action=[1] * cfg.n_actions)
+        self.critic_1 = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
+                              hidden_size=cfg.hidden_size)
+        self.critic_2 = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
+                              hidden_size=cfg.hidden_size)
 
-        self.alpha = alpha  # entropy coefficient
+        # target networks
+        self.critic_1_target = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
+                              hidden_size=cfg.hidden_size)
+        self.critic_2_target = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
+                                hidden_size=cfg.hidden_size)
+        self.update_target_networks(method='hard')
+        self.tau = cfg.tau
+        self.target_update_freq = cfg.target_update_freq
+
+        self.alpha = cfg.alpha  # entropy coefficient
+
+
+    def update_target_networks(self, method='soft'):
+        """Updates the target networks with the current critic networks' parameters."""
+        if method == 'hard':
+            self.critic_1_target.load_state_dict(self.critic_1.state_dict())
+            self.critic_2_target.load_state_dict(self.critic_2.state_dict())
+        elif method == 'soft':
+            for target_param, param in zip(self.critic_1_target.parameters(), self.critic_1.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for target_param, param in zip(self.critic_2_target.parameters(), self.critic_2.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        else:
+            raise ValueError("Invalid update type. Use 'soft' or 'hard'.")
+
 
     def get_models(self):
         return self.actor, self.critic_1, self.critic_2
@@ -61,6 +85,7 @@ class Agent:
         self.actor.load(file_path_actor)
         self.critic_1.load(file_path_critic1)
         self.critic_2.load(file_path_critic2)
+        self.update_target_networks(method='hard')
 
     def learn(self, step=None):
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""
@@ -78,8 +103,8 @@ class Agent:
         # Compute target Q-values
         with T.no_grad():
             next_actions, next_log_probs = self.actor.sample_normal(state_, reparameterize=False)
-            q1_next = self.critic_1.forward(state_, next_actions)
-            q2_next = self.critic_2.forward(state_, next_actions)
+            q1_next = self.critic_1_target.forward(state_, next_actions)
+            q2_next = self.critic_2_target.forward(state_, next_actions)
             q_next = T.min(q1_next, q2_next) - self.alpha * next_log_probs
             q_target = self.scale * reward + self.gamma * (1 - done.float()) * q_next.view(-1)
 
@@ -105,10 +130,12 @@ class Agent:
         actor_loss.backward()
         self.actor.optimizer.step()
 
+        if step is not None and step % self.target_update_freq == 0:
+            self.update_target_networks(method='soft')
 
         return {
-            'actor_loss': actor_loss.item(),
-            'critic_1_loss': critic_1_loss.item(),
-            'critic_2_loss': critic_2_loss.item(),
-            'alpha': self.alpha
+            'Losses/actor_loss': actor_loss.item(),
+            'Losses/critic_1_loss': critic_1_loss.item(),
+            'Losses/critic_2_loss': critic_2_loss.item(),
+            'HyperParam/alpha': self.alpha
         }

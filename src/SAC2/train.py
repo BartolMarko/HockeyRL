@@ -132,25 +132,17 @@ def set_dry_run_params(cfg):
         cfg.use_wandb = False
     return cfg
 
+def set_env_params(cfg, env):
+    cfg.input_dims = env.observation_space.shape
+    return cfg
+
 if __name__ == '__main__':
+    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=True)
     with open('config.yaml', 'r') as f:
         cfg = OmegaConf.load(f)
     cfg = set_dry_run_params(cfg)
-
-    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=True)
-    agent = Agent(
-        lr_actor=cfg['lr_actor'],
-        lr_critic=cfg['lr_critic'],
-        input_dims=env.observation_space.shape,
-        env=env,
-        gamma=cfg['gamma'],
-        n_actions=cfg['n_actions'],
-        buffer_max_size=cfg['buffer_max_size'],
-        hidden_size=cfg['hidden_size'],
-        batch_size=cfg['batch_size'],
-        reward_scale=cfg['reward_scale'],
-        alpha=cfg['alpha'],
-    )
+    cfg = set_env_params(cfg, env)
+    agent = Agent(cfg)
     results_dir = Path(__file__).resolve().parent / "results" / cfg.exp_name
     logger = Logger(cfg, results_dir)
     logger.log_git_info()

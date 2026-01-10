@@ -14,6 +14,9 @@ lr_actor: 0.0003
 lr_critic: 0.0003
 alpha: 0.1
 gamma: 0.99
+tau: 0.005
+
+target_update_freq: 5
 
 # Network
 hidden_size: 256

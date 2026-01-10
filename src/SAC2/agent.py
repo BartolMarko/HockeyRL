@@ -108,7 +108,7 @@ class Agent:
         if self.memory.mem_cntr < self.batch_size:
             return log_data
 
-        if step < self.cfg.warmup_games:
+        if step is not None and step < self.cfg.warmup_games:
             return log_data
 
         state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
@@ -167,3 +167,4 @@ class Agent:
             'Metrics/entropy': -log_probs.mean().item(),
             'HyperParam/alpha': self.get_alpha().item()
         })
+        return log_data

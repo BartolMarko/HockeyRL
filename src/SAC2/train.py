@@ -8,10 +8,11 @@ from pathlib import Path
 import csv
 from omegaconf import OmegaConf
 from helper import Logger
-
+from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
 
-def run_episode(agent, env, episode_index=None):
+def run_episode(cfg, agent, env, episode_index=None):
+    reward_shaper = RewardShaper(cfg)
     obs = env.reset()[0]
     done = False
     truncated = False
@@ -24,6 +25,7 @@ def run_episode(agent, env, episode_index=None):
         agent_action = agent.choose_action(obs, episode_index)
 
         obs_, reward, done, truncated, info = env.step(agent_action)
+        reward = reward_shaper.transform(reward, info, done or truncated)
         # IDEE: Reward Manipulation could be done here
 
         done = done or truncated
@@ -48,12 +50,14 @@ def train_agent(cfg, agent, env, logger):
     last_save_step = 0
     last_eval_step = 0
     env_step = 0
+    train_step = 0
 
     score_history = []
     len_history = []
 
     for i in range(n_games):
         metrics = run_episode(
+            cfg=cfg,
             agent=agent,
             env=env,
             episode_index=i,
@@ -67,10 +71,13 @@ def train_agent(cfg, agent, env, logger):
         logger.add_scalar("Rollout/Episode Score", metrics['episode_score'], i)
         logger.add_scalar("Rollout/Episode Length", metrics['episode_length'], i)
 
-        losses = agent.learn(step=i)
-        if losses is not None:
-            for key, value in losses.items():
-                logger.add_scalar(key, value, i)
+        if i >= cfg.warmup_games:
+            for _ in range(cfg.learn_steps_per_episode):
+                losses = agent.learn(step=train_step)
+                if losses is not None:
+                    for key, value in losses.items():
+                        logger.add_scalar(key, value, train_step)
+                train_step += 1
 
         # save models if we have a new "best" average score
         if cfg.save_model and \

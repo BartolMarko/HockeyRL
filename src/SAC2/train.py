@@ -9,45 +9,33 @@ import csv
 from omegaconf import OmegaConf
 from helper import Logger
 
-def run_episode(agent, env, episode_index=0):
-    """
-    Runs one episode in the given environment with the specified agent.
-    If 'opponent' is provided, uses self-play with that opponent.
-    Otherwise, plays against the environment's built-in AI.
+AVG_WINDOW_SIZE = 25
 
-    Returns:
-        (float) final score of the episode
-    """
+def run_episode(agent, env, episode_index=None):
     obs = env.reset()[0]
     done = False
     truncated = False
     score = 0.0
 
     episode_metrics = {}
-    losses = {}
     steps = 0
 
     while not done:
-        agent_action = agent.choose_action(obs)
+        agent_action = agent.choose_action(obs, episode_index)
 
         obs_, reward, done, truncated, info = env.step(agent_action)
+        # IDEE: Reward Manipulation could be done here
 
         done = done or truncated
         score += reward
         steps += 1
 
-
         agent.store(obs, agent_action, reward, obs_, done)
-        loss = agent.learn(step=episode_index)
-        if loss is not None:
-            losses.update(loss)
-
-        #env.render()
         obs = obs_
 
     episode_metrics['episode_score'] = score
     episode_metrics['episode_length'] = steps
-    return episode_metrics, losses
+    return episode_metrics
 
 def train_agent(cfg, agent, env, logger):
     n_games = cfg.n_games
@@ -65,23 +53,24 @@ def train_agent(cfg, agent, env, logger):
     len_history = []
 
     for i in range(n_games):
-        env_step = i + 1
-        metrics, losses = run_episode(
+        metrics = run_episode(
             agent=agent,
             env=env,
             episode_index=i,
         )
         score_history.append(metrics['episode_score'])
-        average_score = np.mean(score_history[-100:])
+        average_score = np.mean(score_history[-AVG_WINDOW_SIZE:])
 
         len_history.append(metrics['episode_length'])
-        average_length = np.mean(len_history[-100:])
+        average_length = np.mean(len_history[-AVG_WINDOW_SIZE:])
 
-        logger.add_scalar("Rollout/Avg Episode Score", average_score, i)
-        logger.add_scalar("Rollout/Avg Episode Length", average_length, i)
+        logger.add_scalar("Rollout/Episode Score", metrics['episode_score'], i)
+        logger.add_scalar("Rollout/Episode Length", metrics['episode_length'], i)
 
-        for key, value in losses.items():
-            logger.add_scalar("Losses/" + key, value, i)
+        losses = agent.learn(step=i)
+        if losses is not None:
+            for key, value in losses.items():
+                logger.add_scalar(key, value, i)
 
         # save models if we have a new "best" average score
         if cfg.save_model and \
@@ -113,6 +102,7 @@ def train_agent(cfg, agent, env, logger):
             logger.add_scalar("Eval/Draw Rate", eval_draw / cfg.eval_episodes, i)
             logger.add_gif("Eval/Episode", gif_save_path, i)
             print(f"Evaluation at Episode {i}: Win: {eval_win}, Lose: {eval_lose}, Draw: {eval_draw}")
+        env_step = i + 1
         print(f"Episode {i} completed. Recent Avg Score: {average_score:.2f}, Recent Avg Episode Length: {average_length:.2f}")
 
     logger.close()
@@ -121,14 +111,14 @@ def train_agent(cfg, agent, env, logger):
 
 def set_dry_run_params(cfg):
     if cfg.get('dry_run', False):
-        cfg.train_steps = 1000
-        cfg.eval_freq = 50
-        cfg.eval_episodes = 2
+        cfg.n_games = 500
+        cfg.warmup_games = 10
+        cfg.eval_freq = 5
+        cfg.eval_episodes = 5
         cfg.save_model_freq = 900
-        cfg.max_buffer_size = 100
+        cfg.max_buffer_size = 128
         cfg.batch_size = 16
         cfg.hidden_dim = 16
-        cfg.seed_steps = 10
         cfg.use_wandb = False
     return cfg
 
@@ -137,10 +127,10 @@ def set_env_params(cfg, env):
     return cfg
 
 if __name__ == '__main__':
-    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=True)
     with open('config.yaml', 'r') as f:
         cfg = OmegaConf.load(f)
     cfg = set_dry_run_params(cfg)
+    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=cfg.weak_opponent)
     cfg = set_env_params(cfg, env)
     agent = Agent(cfg)
     results_dir = Path(__file__).resolve().parent / "results" / cfg.exp_name

@@ -32,7 +32,20 @@ class Agent:
         self.tau = cfg.tau
         self.target_update_freq = cfg.target_update_freq
 
-        self.alpha = cfg.alpha  # entropy coefficient
+        # entropy coefficient
+        if cfg.automatic_entropy_tuning:
+            self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor.device)
+            self.alpha_optim = T.optim.Adam([self.log_alpha], lr=cfg.lr_alpha)
+            self.target_entropy = -np.prod(cfg.n_actions).item()
+        else:
+            self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
+
+    def get_alpha(self):
+        """Returns the current value of the entropy coefficient alpha."""
+        if hasattr(self, 'log_alpha'):
+            return self.log_alpha.exp()
+        else:
+            return self.alpha
 
 
     def update_target_networks(self, method='soft'):
@@ -53,8 +66,10 @@ class Agent:
     def get_models(self):
         return self.actor, self.critic_1, self.critic_2
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, step=None):
         """Chooses an action based on the current policy (actor network)."""
+        if step is not None and step < self.cfg.warmup_games:
+            return np.random.uniform(low=-1, high=1, size=self.n_actions)
         state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()[0]
@@ -89,8 +104,12 @@ class Agent:
 
     def learn(self, step=None):
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""
+        log_data = {}
         if self.memory.mem_cntr < self.batch_size:
-            return
+            return log_data
+
+        if step < self.cfg.warmup_games:
+            return log_data
 
         state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
 
@@ -105,7 +124,7 @@ class Agent:
             next_actions, next_log_probs = self.actor.sample_normal(state_, reparameterize=False)
             q1_next = self.critic_1_target.forward(state_, next_actions)
             q2_next = self.critic_2_target.forward(state_, next_actions)
-            q_next = T.min(q1_next, q2_next) - self.alpha * next_log_probs
+            q_next = T.min(q1_next, q2_next) - self.get_alpha() * next_log_probs
             q_target = self.scale * reward + self.gamma * (1 - done.float()) * q_next.view(-1)
 
         # Update critics
@@ -125,17 +144,26 @@ class Agent:
         q1_new = self.critic_1.forward(state, actions)
         q2_new = self.critic_2.forward(state, actions)
         critic_value = T.min(q1_new, q2_new).view(-1)
-        actor_loss = (self.alpha * log_probs.view(-1) - critic_value).mean()
+        actor_loss = (self.get_alpha().detach() * log_probs.view(-1) - critic_value).mean()
         self.actor.optimizer.zero_grad()
         actor_loss.backward()
         self.actor.optimizer.step()
 
+        # Update alpha
+        if hasattr(self, 'log_alpha'):
+            alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy).detach()).mean()
+            self.alpha_optim.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optim.step()
+            log_data.update({'Losses/alpha_loss': alpha_loss.item()})
+
         if step is not None and step % self.target_update_freq == 0:
             self.update_target_networks(method='soft')
 
-        return {
+        log_data.update({
             'Losses/actor_loss': actor_loss.item(),
             'Losses/critic_1_loss': critic_1_loss.item(),
             'Losses/critic_2_loss': critic_2_loss.item(),
-            'HyperParam/alpha': self.alpha
-        }
+            'Metrics/entropy': -log_probs.mean().item(),
+            'HyperParam/alpha': self.get_alpha().item()
+        })

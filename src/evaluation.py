@@ -299,7 +299,7 @@ class Evaluator:
         save_path: Optional[str | Path] = None,
         wandb_run: Optional[wandb.Run] = None,
         save_heatmaps: bool = False,
-        save_episodes_per_outcome: dict[Outcome, int] = {
+        save_episodes_per_outcome: dict[Outcome, int] | int = {
             Outcome.WIN: 0,
             Outcome.LOSS: 0,
             Outcome.DRAW: 0,
@@ -323,13 +323,17 @@ class Evaluator:
             save_path: Directory to save results and videos. Defaults to None.
             wandb_run: wandb Run object as target for logging. If None, no logging to wandb. Defaults to None.
             save_heatmaps: Whether to save heatmaps. Defaults to False.
-            save_episodes_per_outcome: Number of episodes to save per outcome.
+            save_episodes_per_outcome: Number of episodes to save per outcome. If int, same number for all outcomes.
                 Defaults to { Outcome.WIN: 0, Outcome.LOSS: 0, Outcome.DRAW: 0}.
             train_step: Current training step for logging purposes. Defaults to None.
 
         Returns:
             A dictionary mapping opponent names to their evaluation results (win/loss/draw counts and rates).
         """
+        if isinstance(save_episodes_per_outcome, int):
+            temp = save_episodes_per_outcome
+            save_episodes_per_outcome = {outcome: temp for outcome in Outcome}
+
         results = {}
         for opponent in opponents:
             print(f"Evaluating {agent.name} against opponent: {opponent.name}")

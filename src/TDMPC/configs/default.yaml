@@ -37,17 +37,20 @@ enc_dim: 256
 mlp_dim: 512
 latent_dim: 50
 
-# wandb (insert your own)
-use_wandb: false
-wandb_project: none
-wandb_entity: none
-
 # misc
 seed: 1
 exp_name: default
 eval_freq: 10000
-eval_episodes: 20
 save_video: false
 save_model: True
 save_model_freq: 50000
 device: cuda
+
+# Opponent Pool
+opponent_pool_window_size: 200
+opponent_pool_draw_weight: 0.5
+
+# Evaluation
+eval_episodes_per_opponent: 50
+final_eval_episodes_per_opponent: 100
+video_episodes_per_outcome: 30

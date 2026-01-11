@@ -10,6 +10,7 @@ PROJECT_NAME = "hockey-rl"
 
 
 class TrainingMonitor:
+    # TODO: Add model checkpointing functionality
     def __init__(
         self,
         run_name: str,

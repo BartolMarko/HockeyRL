@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 import json
 import torch
+import wandb
 import matplotlib.pyplot as plt
+from omegaconf import OmegaConf
 from typing import Optional
 from hockey import hockey_env as h_env
 from pathlib import Path
@@ -70,6 +72,20 @@ class VideoBuilder:
         padded_frames[:, : self.header_height, :, :] = header_block
         self.frame_chunks.append(padded_frames)
 
+    def save_to_wandb(
+        self, wandb_run: wandb.Run, video_label: str, step: Optional[int] = None
+    ) -> None:
+        """Saves video to wandb with given label. If no frames were added, does nothing."""
+        if not len(self.frame_chunks):
+            return
+
+        merged_video_numpy = np.concatenate(self.frame_chunks, axis=0)
+        merged_video_numpy = np.transpose(
+            merged_video_numpy, axes=(0, 3, 1, 2)
+        )  # (F, C, H, W)
+        wandb_video = wandb.Video(merged_video_numpy, fps=self.fps, format="mp4")
+        wandb_run.log({video_label: wandb_video}, step=step)
+
     def save(self, filename: str):
         """Saves video to mp4 file. If no frames were added, does nothing."""
         if not len(self.frame_chunks):
@@ -121,6 +137,13 @@ class Heatmap:
         )
         self.num_samples = 0
 
+    def __add__(self, heatmap: "Heatmap") -> "Heatmap":
+        """Add another heatmap to this one."""
+        self.players_heatmap += heatmap.players_heatmap
+        self.puck_heatmap += heatmap.puck_heatmap
+        self.num_samples += heatmap.num_samples
+        return self
+
     def add_episode(self, episode: Episode) -> None:
         """Add positions from the episode to the heatmaps."""
         player_positions = episode.obs[:, :2].to(self.device)
@@ -135,6 +158,19 @@ class Heatmap:
         self.num_samples += (
             len(episode) + 1
         )  # Length of episode is number of transitions
+
+    def save_to_wandb(
+        self,
+        wandb_run: wandb.Run,
+        title: str,
+        step: Optional[int] = None,
+        suffix: str = "",
+    ) -> None:
+        """Save heatmaps to wandb."""
+        fake_suffix = "temp"
+        self.save(".", title=title, suffix=fake_suffix)
+        heatmap_image_path = f"heatmaps{fake_suffix}.png"
+        wandb_run.log({f"heatmaps{suffix}": wandb.Image(heatmap_image_path)}, step=step)
 
     def save(self, path: str | Path, title: str, suffix: str = "") -> None:
         """
@@ -260,12 +296,15 @@ class Evaluator:
         opponents: list[NamedAgent],
         num_episodes: int,
         render_mode: Optional[str] = None,
-        save_path=None,
+        save_path: Optional[str | Path] = None,
+        wandb_run: Optional[wandb.Run] = None,
+        save_heatmaps: bool = False,
         save_episodes_per_outcome: dict[Outcome, int] = {
             Outcome.WIN: 0,
             Outcome.LOSS: 0,
             Outcome.DRAW: 0,
         },
+        train_step: Optional[int] = None,
     ) -> dict[str, dict[str, int]]:
         """
         Evaluate the given agent against a list of opponents in the specified environment.
@@ -282,8 +321,11 @@ class Evaluator:
             num_episodes: Number of episodes to run per opponent.
             render_mode: 'human', 'rgb_array', or None. Defaults to None.
             save_path: Directory to save results and videos. Defaults to None.
+            wandb_run: wandb Run object as target for logging. If None, no logging to wandb. Defaults to None.
+            save_heatmaps: Whether to save heatmaps. Defaults to False.
             save_episodes_per_outcome: Number of episodes to save per outcome.
                 Defaults to { Outcome.WIN: 0, Outcome.LOSS: 0, Outcome.DRAW: 0}.
+            train_step: Current training step for logging purposes. Defaults to None.
 
         Returns:
             A dictionary mapping opponent names to their evaluation results (win/loss/draw counts and rates).
@@ -294,14 +336,15 @@ class Evaluator:
 
             results_opponent = {outcome: 0 for outcome in Outcome}
             outcome_video_builders = {outcome: VideoBuilder() for outcome in Outcome}
-            heatmap = Heatmap(device=self.device)
+            heatmap = Heatmap(device=self.device) if save_heatmaps else None
 
             for _ in range(num_episodes):
                 episode, episode_video = self.run_episode(
                     env, agent, opponent, render_mode=render_mode
                 )
                 results_opponent[episode.outcome] += 1
-                heatmap.add_episode(episode)
+                if heatmap is not None:
+                    heatmap.add_episode(episode)
 
                 if (
                     render_mode == "rgb_array"
@@ -316,24 +359,25 @@ class Evaluator:
             results[opponent.name] = self._prettify_results(results_opponent)
             print(f"Results against {opponent.name}: {results_opponent}")
             if save_path is not None:
-                opponent_save_path = Path(save_path) / f"vs_{opponent.name}"
-                opponent_save_path.mkdir(parents=True, exist_ok=True)
-
-                with open(opponent_save_path / "results.json", "w") as f:
-                    json.dump(results[opponent.name], f, indent=4)
-
-                heatmap.save(
-                    opponent_save_path,
-                    title=f"{agent.name} vs {opponent.name} evaluation over {num_episodes} episodes",
-                    suffix=f"_{agent.name}_vs_{opponent.name}",
+                self._save_per_opponent_metrics_locally(
+                    save_path,
+                    agent.name,
+                    opponent.name,
+                    results[opponent.name],
+                    outcome_video_builders,
+                    heatmap if save_heatmaps else None,
                 )
 
-                for outcome, builder in outcome_video_builders.items():
-                    video_filename = (
-                        opponent_save_path
-                        / f"{agent.name}_vs_{opponent.name}_{outcome.value}.mp4"
-                    )
-                    builder.save(str(video_filename))
+            if wandb_run is not None:
+                self._log_per_opponent_metrics_to_wandb(
+                    wandb_run,
+                    agent.name,
+                    opponent.name,
+                    results[opponent.name],
+                    outcome_video_builders,
+                    heatmap if save_heatmaps else None,
+                    train_step,
+                )
 
         if save_path is not None:
             save_path = Path(save_path)
@@ -342,6 +386,71 @@ class Evaluator:
                 json.dump(results, f, indent=4)
 
         return results
+
+    @staticmethod
+    def _log_per_opponent_metrics_to_wandb(
+        wandb_run: wandb.Run,
+        agent_name: str,
+        opponent_name: str,
+        results_opponent: dict[str, int],
+        outcome_video_builders: dict[Outcome, VideoBuilder],
+        heatmap: Optional[Heatmap] = None,
+        train_step: Optional[int] = None,
+    ) -> None:
+        """Log the results for a single opponent to wandb."""
+        print(f"Logging results against {opponent_name} to wandb...")
+        wandb_run.log(
+            {
+                f"eval/{metric_name}/{opponent_name}": metric
+                for metric_name, metric in results_opponent.items()
+            },
+            step=train_step,
+        )
+
+        for outcome, builder in outcome_video_builders.items():
+            builder.save_to_wandb(
+                wandb_run,
+                video_label=f"eval/{agent_name}_vs_{opponent_name}_{outcome.value}",
+                step=train_step,
+            )
+
+        if heatmap is not None:
+            heatmap.save_to_wandb(
+                wandb_run,
+                title=f"{agent_name} vs {opponent_name} evaluation heatmaps",
+                suffix=f"_{agent_name}_vs_{opponent_name}",
+                step=train_step,
+            )
+
+    @staticmethod
+    def _save_per_opponent_metrics_locally(
+        save_path: str | Path,
+        agent_name: str,
+        opponent_name: str,
+        results_opponent: dict[Outcome, int],
+        outcome_video_builders: dict[Outcome, VideoBuilder],
+        heatmap: Optional[Heatmap] = None,
+    ) -> None:
+        """Save the results for a single opponent to a local JSON file."""
+        opponent_save_path = Path(save_path) / f"vs_{opponent_name}"
+        opponent_save_path.mkdir(parents=True, exist_ok=True)
+
+        with open(opponent_save_path / "results.json", "w") as f:
+            json.dump(results_opponent, f, indent=4)
+
+        for outcome, builder in outcome_video_builders.items():
+            video_filename = (
+                opponent_save_path / f"{opponent_name}_{outcome.value}_episode.mp4"
+            )
+            builder.save(str(video_filename))
+
+        num_episodes = sum(results_opponent.values())
+        if heatmap is not None:
+            heatmap.save(
+                opponent_save_path,
+                title=f"{agent_name} vs {opponent_name} evaluation heatmaps ({num_episodes} episodes)",
+                suffix=f"_{agent_name}_vs_{opponent_name}",
+            )
 
     @staticmethod
     def _prettify_results(opponent_results: dict[Outcome:int]):
@@ -366,16 +475,27 @@ if __name__ == "__main__":
     )
     env = SparseRewardHockeyEnv()
     tdmpc_agent = TDMPCAgent(MODEL_PATH, None)
+    tdmpc2 = TDMPCAgent(MODEL_PATH, None, name_suffix="_2")
     strong_bot = StrongBot()
     weak_bot = WeakBot()
     evaluator = Evaluator(device="cuda")
+    wandb_run = wandb.init(
+        entity="wayne-gradientzky",
+        project="hockey-rl",
+        name="test_run_eval",
+        config=OmegaConf.to_container(tdmpc_agent.tdmpc.cfg),
+    )
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
         agent=tdmpc_agent,
         opponents=[weak_bot, strong_bot],
         num_episodes=20,
         render_mode="rgb_array",
-        save_path=Path(__file__).resolve().parent / "evaluation_proba",
+        save_path="./evaluation_test",
+        wandb_run=wandb_run,
+        save_heatmaps=True,
         save_episodes_per_outcome={Outcome.WIN: 5, Outcome.LOSS: 5, Outcome.DRAW: 5},
+        train_step=22,
     )
     print(results)
+    wandb_run.finish()

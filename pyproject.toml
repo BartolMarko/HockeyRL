@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "HockeyRL"
+version = "0.1.0"
+dependencies = [
+    "comprl",
+    "gymnasium[mujoco]>=1.2.3",
+    "hockey",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.1",
+    "omegaconf>=2.3.0",
+    "opencv-python>=4.11.0.86",
+    "wandb[media]>=0.23.1",
+]
+
+[tool.uv.sources]
+hockey = { git = "https://github.com/martius-lab/hockey-env.git" }
+comprl = { git = "https://github.com/martius-lab/teamproject-competition-server.git", subdirectory = "comprl", rev = "afb8f28ce94a4d3e706e4637d93450b93c16ccb4" }
+
+[dependency-groups]
+local = [
+    "torch>=2.9.1",
+    "torchvision>=0.24.1",
+]

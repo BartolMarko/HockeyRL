@@ -19,7 +19,6 @@ torch.backends.cudnn.benchmark = True
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "default.yaml"
 RUN_NAME = "tdmpc_baseline_weak_and_strong_bots_only"
-MODEL_CHECKPOINTS_DIR = Path("./model_checkpoints")
 
 
 def set_seed(seed):
@@ -142,13 +141,10 @@ def train(cfg):
             (env_step - last_save_step >= cfg.save_model_freq)
             or step >= cfg.train_steps
         ):
-            MODEL_CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
-            checkpoint_path = MODEL_CHECKPOINTS_DIR / f"tdmpc_step_{step}.pt"
-            tdmpc.save(checkpoint_path)
+            tdmpc.save_to_wandb(training_monitor.run, step=step)
             last_save_step = env_step
-            print(f"Saved model checkpoint to {checkpoint_path}.")
-    training_monitor.finish_training()
 
+    training_monitor.finish_training()
     print("Training completed successfully")
 
 

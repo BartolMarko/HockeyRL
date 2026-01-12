@@ -1,4 +1,5 @@
 absl-py==2.3.1
+annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
 anyio==4.12.0
 argon2-cffi==25.1.0
@@ -12,6 +13,7 @@ babel==2.17.0
 bcrypt==5.0.0
 beautifulsoup4==4.14.3
 bleach==6.3.0
+bokeh==3.8.2
 box2d-py==2.3.8
 certifi==2025.11.12
 cffi==2.0.0
@@ -33,16 +35,20 @@ filelock==3.20.2
 fonttools==4.61.1
 fqdn==1.5.1
 fsspec==2025.12.0
+gitdb==4.0.12
+GitPython==3.1.46
 greenlet==3.3.0
 grpcio==1.76.0
 gymnasium==1.2.3
 h11==0.16.0
 hockey @ git+https://github.com/martius-lab/hockey-env.git@47fabe8a75d7e519193bc3c417cb16929f53df8a
--e git+ssh://git@github.com/BartolMarko/HockeyRL.git@151f1fc46c7a40257168cf2395d5069e9be45fe1#egg=HockeyRL
+-e git+ssh://git@github.com/BartolMarko/HockeyRL.git@056b7283c43306014e40957ea472e3d14e70fb64#egg=HockeyRL
 httpcore==1.0.9
 httpx==0.28.1
 hyperlink==21.0.0
 idna==3.11
+ImageIO==2.37.2
+imageio-ffmpeg==0.6.0
 Incremental==24.11.0
 ipykernel==7.1.0
 ipython==9.8.0
@@ -72,7 +78,9 @@ matplotlib==3.10.8
 matplotlib-inline==0.2.1
 mdurl==0.1.2
 mistune==3.2.0
+moviepy==2.2.1
 mpmath==1.3.0
+narwhals==2.15.0
 nbclient==0.10.4
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -99,11 +107,14 @@ omegaconf==2.3.0
 opencv-python==4.12.0.88
 openskill==6.0.2
 packaging==25.0
+pandas==2.3.3
 pandocfilters==1.5.1
 parso==0.8.5
 pexpect==4.9.0
-pillow==12.1.0
+pillow==11.3.0
 platformdirs==4.5.1
+plotly==6.5.1
+proglog==0.1.12
 prometheus_client==0.23.1
 prompt_toolkit==3.0.52
 protobuf==6.33.2
@@ -111,13 +122,18 @@ psutil==7.2.1
 ptyprocess==0.7.0
 pure_eval==0.2.3
 pycparser==2.23
+pydantic==2.12.5
+pydantic_core==2.41.5
 pygame==2.6.1
 Pygments==2.19.2
 pyparsing==3.3.1
 python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
 python-json-logger==4.0.0
+pytz==2025.2
 PyYAML==6.0.3
 pyzmq==27.1.0
+rdkit==2025.9.3
 referencing==0.37.0
 requests==2.32.5
 rfc3339-validator==0.1.4
@@ -126,9 +142,12 @@ rfc3987-syntax==1.1.0
 rich==14.2.0
 rpds-py==0.30.0
 Send2Trash==2.0.0
+sentry-sdk==2.49.0
 setuptools==80.9.0
 shellingham==1.5.4
 six==1.17.0
+smmap==5.0.2
+soundfile==0.13.1
 soupsieve==2.8.1
 SQLAlchemy==2.0.45
 stack-data==0.6.3
@@ -140,18 +159,22 @@ terminado==0.18.1
 tinycss2==1.4.0
 torch==2.9.1
 tornado==6.5.4
+tqdm==4.67.1
 traitlets==5.14.3
 triton==3.5.1
 Twisted==24.11.0
 typer==0.21.0
+typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2025.3
 uri-template==1.3.0
 urllib3==2.6.2
 variconf==1.0.1
+wandb==0.23.1
 wcwidth==0.2.14
 webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
 Werkzeug==3.1.4
+xyzservices==2025.11.0
 zope.interface==8.1.1

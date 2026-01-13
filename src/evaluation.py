@@ -471,35 +471,33 @@ class Evaluator:
 
 if __name__ == "__main__":
     MODEL_PATH = (
-        Path(__file__).resolve().parent
-        / "TDMPC"
-        / "results"
-        / "baseline_sparse_reward"
-        / "final_model"
+        Path(__file__).resolve().parent.parent
+        / "models"
+        / "tdmpc_baseline_weak_and_strong_bots_only"
     )
     env = SparseRewardHockeyEnv()
-    tdmpc_agent = TDMPCAgent(MODEL_PATH, None)
-    tdmpc2 = TDMPCAgent(MODEL_PATH, None, name_suffix="_2")
+    tdmpc_agent = TDMPCAgent(MODEL_PATH, tdmpc=None, step=400_000)
+    tdmpc_agent_2 = TDMPCAgent(MODEL_PATH, tdmpc=None, step=400_000, name_suffix="_2")
     strong_bot = StrongBot()
     weak_bot = WeakBot()
     evaluator = Evaluator(device="cuda")
-    wandb_run = wandb.init(
-        entity="wayne-gradientzky",
-        project="hockey-rl",
-        name="test_run_eval",
-        config=OmegaConf.to_container(tdmpc_agent.tdmpc.cfg),
-    )
+    # wandb_run = wandb.init(
+    #     entity="wayne-gradientzky",
+    #     project="hockey-rl",
+    #     name="test_run_eval",
+    #     config=OmegaConf.to_container(tdmpc_agent.tdmpc.cfg),
+    # )
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
         agent=tdmpc_agent,
-        opponents=[weak_bot, strong_bot],
-        num_episodes=20,
-        render_mode="rgb_array",
-        save_path="./evaluation_test",
-        wandb_run=wandb_run,
+        opponents=[tdmpc_agent_2],
+        num_episodes=30,
+        render_mode="human",
+        save_path=None,
+        wandb_run=None,
         save_heatmaps=True,
         save_episodes_per_outcome={Outcome.WIN: 5, Outcome.LOSS: 5, Outcome.DRAW: 5},
         train_step=22,
     )
     print(results)
-    wandb_run.finish()
+    # wandb_run.finish()

@@ -60,4 +60,4 @@ video_episodes_per_outcome: 30
 # Self play
 selfplay: true
 selfplay_start_step: 150000
-selfplay_freq: 150000
+selfplay_freq: 100000

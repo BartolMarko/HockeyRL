@@ -18,7 +18,7 @@ from src.TDMPC.agent import TDMPCAgent
 torch.backends.cudnn.benchmark = True
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "selfplay.yaml"
-RUN_NAME = "tdmpc_baseline_self_play_every_150k_1M_steps"
+RUN_NAME = "tdmpc_baseline_self_play_150k_start_100k_freq_1M_steps"
 
 
 def set_seed(seed):

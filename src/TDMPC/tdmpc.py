@@ -106,13 +106,17 @@ class TDMPC:
         with open(path / CONFIG_FILE, "r") as f:
             self.cfg = OmegaConf.load(f)
 
+    def load_state_dict(self, state_dict: dict):
+        """Load a saved state dict."""
+        self.model.load_state_dict(state_dict["model"])
+        self.model_target.load_state_dict(state_dict["model_target"])
+
     def load(self, path: str | Path):
         """Load a saved state dict and  current agent."""
         path = Path(path)
         self.load_config(path)
         d = torch.load(path / MODEL_FILE)
-        self.model.load_state_dict(d["model"])
-        self.model_target.load_state_dict(d["model_target"])
+        self.load_state_dict(d)
 
     @torch.no_grad()
     def estimate_value(self, z, actions, horizon):

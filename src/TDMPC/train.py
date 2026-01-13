@@ -17,8 +17,8 @@ from src.TDMPC.agent import TDMPCAgent
 
 torch.backends.cudnn.benchmark = True
 
-CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "default.yaml"
-RUN_NAME = "tdmpc_baseline_weak_and_strong_bots_only"
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "selfplay.yaml"
+RUN_NAME = "tdmpc_baseline_self_play_every_150k_1M_steps"
 
 
 def set_seed(seed):
@@ -35,6 +35,26 @@ def add_env_variables_to_config(env, cfg):
 
     cfg.action_dim = env.action_space.shape[0] // 2
     return cfg
+
+
+def add_self_to_opponent_pool(
+    tdmpc: TDMPC,
+    opponent_pool: OpponentPoolThompsonSampling,
+    step: int,
+    cfg: OmegaConf,
+):
+    """Add the current TD-MPC agent to the opponent pool for self-play."""
+    tdmpc_copy = TDMPC(cfg)
+    tdmpc_copy.load_state_dict(tdmpc.state_dict())
+
+    self_opponent = TDMPCAgent(
+        load_dir=None,
+        tdmpc=tdmpc_copy,
+        step=step,
+        eval_mode=True,
+        name_suffix=f"_selfplay_step_{step}",
+    )
+    opponent_pool.add_opponent(self_opponent)
 
 
 def train(cfg):
@@ -64,8 +84,17 @@ def train(cfg):
 
     # Run training
     episode_idx, step = 0, 0
-    last_update_step, last_eval_step, last_save_step = 0, 0, 0
+    last_update_step, last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0, 0
     while step < cfg.train_steps:
+        if (
+            cfg.get("selfplay", False)
+            and step >= cfg.selfplay_start_step
+            and (step - last_selfplay_step) >= cfg.selfplay_freq
+        ):
+            add_self_to_opponent_pool(tdmpc, opponent_pool, step, cfg)
+            last_selfplay_step = step
+            print(f"Added self-play agent to opponent pool at step {step}.")
+
         episode_start_time = time.time()
 
         agent = TDMPCAgent(

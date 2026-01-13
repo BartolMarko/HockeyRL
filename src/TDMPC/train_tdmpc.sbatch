@@ -4,7 +4,7 @@
 #a) Define slurm job parameters
 ####
 
-#SBATCH --job-name=rl-sac
+#SBATCH --job-name=wayne
 
 #resources:
 

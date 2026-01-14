@@ -25,8 +25,7 @@ def run_episode(cfg, agent, env, episode_index=None):
         agent_action = agent.choose_action(obs, episode_index)
 
         obs_, reward, done, truncated, info = env.step(agent_action)
-        # reward = reward_shaper.transform(reward, info, done or truncated)
-        # IDEE: Reward Manipulation could be done here
+        reward = reward_shaper.transform(reward, info, done or truncated)
 
         done = done or truncated
         score += reward

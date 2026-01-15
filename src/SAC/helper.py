@@ -122,3 +122,16 @@ def read_commit_info(filename='git-commit-hash.txt'):
             'git-commit-log': 'N/A'
         }
     return commit_info
+
+def get_latest_checkpoint(models_dir, prefix='episode_'):
+    """Returns the folder path containing the latest checkpoint."""
+    episode_dirs = [d for d in os.listdir(models_dir) if d.startswith(prefix)]
+    if not episode_dirs:
+        return None
+    latest_episode = max(int(d.split('_')[1]) for d in episode_dirs)
+    latest_dir = os.path.join(models_dir, f"{prefix}{latest_episode}")
+    return latest_dir
+
+def set_env_params(cfg, env):
+    cfg.input_dims = env.observation_space.shape
+    return cfg

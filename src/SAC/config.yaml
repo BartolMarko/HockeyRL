@@ -31,6 +31,7 @@ lr_alpha: 0.001
 target_update_freq: 1
 
 # Network
+algorithm: "sac"
 hidden_size: 256
 
 # Evaluation
@@ -44,6 +45,7 @@ save_model_freq: 300
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "reward-v0-sac"
+exp_name: "reward-v0-sac-strong-bot"
+resume: True
 save_video: True
 log_gradients: False

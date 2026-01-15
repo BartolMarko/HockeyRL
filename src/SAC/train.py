@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import csv
 from omegaconf import OmegaConf
-from helper import Logger
+from helper import Logger, set_env_params
 from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
 
@@ -126,10 +126,6 @@ def set_dry_run_params(cfg):
         cfg.batch_size = 16
         cfg.hidden_dim = 16
         cfg.use_wandb = False
-    return cfg
-
-def set_env_params(cfg, env):
-    cfg.input_dims = env.observation_space.shape
     return cfg
 
 if __name__ == '__main__':

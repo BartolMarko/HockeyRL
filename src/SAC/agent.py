@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 import torch as T
 import torch.nn.functional as F
 import numpy as np
+import helper
 from memory import ReplayBuffer
 from network import ActorNet, CriticNet
 import pickle
@@ -39,6 +41,23 @@ class Agent:
             self.target_entropy = -np.prod(cfg.n_actions).item()
         else:
             self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
+
+        if getattr(cfg, 'resume', False):
+            if not self.use_most_recent_models():
+                raise ValueError
+
+
+    def use_most_recent_models(self):
+        """Loads the most recent models from the results directory."""
+        results_dir = Path(__file__).resolve().parent / "results" / self.cfg.exp_name / 'models'
+        best_model_dir = helper.get_latest_checkpoint(results_dir)
+        if best_model_dir is not None:
+            print("Resuming from checkpoint:", best_model_dir)
+            self.load_models(best_model_dir)
+            return True
+        else:
+            print(f"No checkpoint found at {best_model_dir} to resume from.")
+            return False
 
     def get_alpha(self):
         """Returns the current value of the entropy coefficient alpha."""
@@ -78,6 +97,10 @@ class Agent:
         """Alias for choose_action"""
         return self.choose_action(observation)
 
+    def act(self, x):
+        """Alias for choose_action"""
+        return self.choose_action(x)
+
     def store(self, state, action, reward, new_state, done):
         """Stores a transition in the replay buffer."""
         self.memory.store_transition(state, action, reward, new_state, done)
@@ -94,11 +117,14 @@ class Agent:
         self.critic_1.save(file_path_critic1)
         self.critic_2.save(file_path_critic2)
 
-    def load_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None):
+    def load_models(self, folder_path):
         """Loads the parameters of the actor and critic networks."""
         print('loading models ..')
+        file_path_actor = os.path.join(folder_path, 'actor.pth')
         self.actor.load(file_path_actor)
+        file_path_critic1 = os.path.join(folder_path, 'critic_1.pth')
         self.critic_1.load(file_path_critic1)
+        file_path_critic2 = os.path.join(folder_path, 'critic_2.pth')
         self.critic_2.load(file_path_critic2)
         self.update_target_networks(method='hard')
 

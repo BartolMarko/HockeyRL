@@ -56,7 +56,7 @@ class ActorNet(nn.Module):
         T.save(self.state_dict(), file_path)
 
     def load(self, file_path):
-        self.load_state_dict(T.load(file_path))
+        self.load_state_dict(T.load(file_path, weights_only=False, map_location=self.device))
 
 
 class CriticNet(nn.Module):
@@ -85,4 +85,4 @@ class CriticNet(nn.Module):
         T.save(self.state_dict(), file_path)
 
     def load(self, file_path):
-        self.load_state_dict(T.load(file_path))
+        self.load_state_dict(T.load(file_path, weights_only=False, map_location=self.device))

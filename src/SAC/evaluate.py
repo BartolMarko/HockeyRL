@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 from omegaconf import OmegaConf
-
+import helper
 from hockey import hockey_env as h_env
 
 from agent import Agent
@@ -69,27 +69,44 @@ def evaluate_env_bot(env, agent, num_episodes, step, render=False, save=None):
     return win_count, lose_count, draw_count
 
 
-# def main():
-#     with open(CONFIG_PATH, 'r') as f:
-#         cfg = OmegaConf.load(f)
-#
-#     env = h_env.HockeyEnv()
-#     cfg.obs_dim = env.observation_space.shape[0]
-#     cfg.obs_shape = env.observation_space.shape
-#     cfg.state_dim = env.observation_space.shape[0]
-#     cfg.opponent_action_dim = env.action_space.shape[0] // 2
-#
-#     if cfg.device == 'cuda' and not torch.cuda.is_available():
-#         cfg.device = 'cpu'
-#     agent = Agent(cfg)
-#     agent.load(MODEL_PATH)
-#
-#     opponent = h_env.BasicOpponent(weak=False)
-#
-#     # Evaluate agent
-#     win_count, lose_count, draw_count = evaluate(env, agent, opponent, 100, step=0, render=True, save=GIF_SAVE_PATH)
-#     print(f"Evaluation over {cfg.eval_episodes} episodes: "
-#           f"Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.\n")
-#
-# if __name__ == '__main__':
-#     main()
+def main():
+    with open('config.yaml', 'r') as f:
+        cfg = OmegaConf.load(f)
+
+    env = h_env.HockeyEnv()
+    cfg = helper.set_env_params(cfg, env)
+    cfg.resume = True
+    agent = Agent(cfg)
+
+    BEST_EXPERIMENT_NAME = 'reward-v0-sac'
+    cfg_2 = OmegaConf.load(Path('results') / BEST_EXPERIMENT_NAME / 'config.yaml')
+    cfg_2 = helper.set_env_params(cfg_2, env)
+    cfg_2.resume = True
+    best_so_far = Agent(cfg_2)
+
+    EVAL_EPISODES = 100
+    cfg.eval_episodes = EVAL_EPISODES
+    print(f"Evaluation over {EVAL_EPISODES} episodes each: ")
+    opponents = {
+            "WEAK": h_env.BasicOpponent(weak=True),
+            "STRG": h_env.BasicOpponent(weak=False),
+            "BEST": best_so_far
+    }
+    all_stats = {'win': 0, 'lose': 0, 'draw': 0}
+    for opponent_name, opponent in opponents.items():
+        win_count, lose_count, draw_count = evaluate(env, agent, opponent, EVAL_EPISODES, step=0, render=False)
+        all_stats['win'] += win_count
+        all_stats['lose'] += lose_count
+        all_stats['draw'] += draw_count
+        rates = (win_count / cfg.eval_episodes, lose_count / cfg.eval_episodes, draw_count / cfg.eval_episodes)
+        print(f"{opponent_name}: Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}, Rates: {rates}.")
+
+    print(f"Overall: Wins: {all_stats['win']}, Losses: {all_stats['lose']}, Draws: {all_stats['draw']}.")
+    win_rate = all_stats['win'] / (len(opponents) * EVAL_EPISODES)
+    lose_rate = all_stats['lose'] / (len(opponents) * EVAL_EPISODES)
+    draw_rate = all_stats['draw'] / (len(opponents) * EVAL_EPISODES)
+    rates = (win_rate, lose_rate, draw_rate)
+    print("Rates: " + "{:.2f}, {:.2f}, {:.2f}".format(*rates))
+
+if __name__ == '__main__':
+    main()

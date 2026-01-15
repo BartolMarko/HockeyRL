@@ -7,7 +7,7 @@ from hockey import hockey_env as h_env
 from agent import Agent
 import imageio
 
-def evaluate(env, agent, opponent, num_episodes, step, render=False, save=None):
+def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=None):
     """Evaluate a trained agent and optionally save a video."""
     win_count, lose_count, draw_count = 0, 0, 0
     frames = []
@@ -19,10 +19,10 @@ def evaluate(env, agent, opponent, num_episodes, step, render=False, save=None):
             if render or save is not None:
                 mode = 'human' if render else 'rgb_array'
                 frames.append(env.render(mode=mode))
-            action = agent.plan(obs, eval_mode=True, step=step)
+            action = agent.plan(obs, eval_mode=True)
             if not isinstance(action, np.ndarray):
                 action = action.cpu().numpy()
-            opponent_action = opponent.act(obs_opponent)
+            opponent_action = opponent.get_step(obs_opponent)
             obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
             obs_opponent = env.obs_agent_two()
 
@@ -32,41 +32,25 @@ def evaluate(env, agent, opponent, num_episodes, step, render=False, save=None):
             win_count += 1
         else:
             draw_count += 1
-
-    if save is not None:
-        imageio.mimsave(save, frames, fps=30)
-        print(f"Saved evaluation video to {GIF_SAVE_PATH}.")
-
-    return win_count, lose_count, draw_count
-
-def evaluate_env_bot(env, agent, num_episodes, step, render=False, save=None):
-    """Evaluate a trained agent against the built-in environment bot and optionally save a video."""
-    win_count, lose_count, draw_count = 0, 0, 0
-    frames = []
-    for i in range(num_episodes):
-        obs, _ = env.reset()
-        done = False
-        while not done:
-            if render or save is not None:
-                mode = 'human' if render else 'rgb_array'
-                frames.append(env.render(mode=mode))
-            action = agent.plan(obs, eval_mode=True, step=step)
-            if not isinstance(action, np.ndarray):
-                action = action.cpu().numpy()
-            obs, reward, done, _, info = env.step(action)
-
-        if reward < 0:
-            lose_count += 1
-        elif reward > 0:
-            win_count += 1
-        else:
-            draw_count += 1
-
+    opponent.record_play_scores(lose_count, win_count, draw_count)
     if save is not None:
         imageio.mimsave(save, frames, fps=30)
         print(f"Saved evaluation video to {save}.")
 
     return win_count, lose_count, draw_count
+
+def evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, step: int = 0):
+    """Evaluate a trained agent against a pool of opponents."""
+    overall_stats = {}
+    for opponent in opponent_pool.get_all_opponents():
+        win_count, lose_count, draw_count = evaluate(env, agent, opponent, num_episodes, step)
+        overall_stats[opponent.name] = {
+            'win': win_count,
+            'lose': lose_count,
+            'draw': draw_count
+        }
+        print(f"Against {opponent.name}: Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.")
+    return overall_stats
 
 
 def main():

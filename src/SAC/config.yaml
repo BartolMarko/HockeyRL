@@ -2,7 +2,8 @@ dry_run: False
 
 # Environment
 n_actions: 4
-weak_opponent: True
+opponents:
+  - type: 'StrongBot'
 # rewards
 reward_transform: "v0"
 # rewards: v1

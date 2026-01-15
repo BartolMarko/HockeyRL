@@ -151,7 +151,8 @@ class Agent:
         done = T.tensor(done).to(self.actor.device)
         state_ = T.tensor(new_state, dtype=T.float).to(self.actor.device)
         state = T.tensor(state, dtype=T.float).to(self.actor.device)
-        action = T.tensor(action, dtype=T.float).to(self.actor.device)
+        action = T.as_tensor(np.asarray(action), dtype=T.float, device=self.actor.device)
+
 
         # Compute target Q-values
         with T.no_grad():

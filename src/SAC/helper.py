@@ -9,6 +9,7 @@ from torch.distributions.utils import _standard_normal
 from torch.utils.tensorboard import SummaryWriter
 import wandb
 from omegaconf import OmegaConf
+from opponents import OpponentInPool, OpponentPool
 
 def get_tensor(x, device, dtype=torch.float32):
     """Converts input to a torch tensor on the specified device."""
@@ -80,9 +81,9 @@ class Logger:
             self.wandb.log({key: value}, step=step)
         self.data[key] = (step, value)
 
-    def add_gif(self, key, gif_path, step):
+    def add_gif(self, key, gif_path, step, caption=""):
         if self.wandb is not None and gif_path is not None:
-            self.wandb.log({key: wandb.Video(gif_path, caption=f"step: {step}", format="gif")}, step=step)
+            self.wandb.log({key: wandb.Video(gif_path, caption=caption, format="gif")}, step=step)
 
     def add_historam(self, key, values, step, bins='auto'):
         if self.tb_logger is not None:
@@ -90,6 +91,22 @@ class Logger:
         if self.wandb is not None:
             self.wandb.log({key: wandb.Histogram(values)}, step=step)
         self.data[key] = (step, values)
+
+    def add_opponent_stats(self, opponent: OpponentInPool, step: int):
+        stats = {
+            f"Opponent/{opponent.name}/win_rate": opponent.win_count / max(1, opponent.get_games_played()),
+            f"Opponent/{opponent.name}/priority": opponent.priority
+        }
+        for key, value in stats.items():
+            if self.tb_logger is not None:
+                self.tb_logger.add_scalar(key, value, step)
+            if self.wandb is not None:
+                self.wandb.log({key: value}, step=step)
+            self.data[key] = (step, value)
+
+    def add_opponent_pool_stats(self, opponent_pool: OpponentPool, step: int):
+        for opponent in opponent_pool.get_all_opponents():
+            self.add_opponent_stats(opponent, step)
 
     def get_logs(self):
         return self.data

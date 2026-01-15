@@ -1,8 +1,9 @@
 import numpy as np
 from agent import Agent
-from evaluate import evaluate_env_bot
+from evaluate import evaluate, evaluate_against_pool
 import hockey.hockey_env as h_env
 import helper as h
+import opponents as opp
 import os
 from pathlib import Path
 import csv
@@ -11,9 +12,10 @@ from helper import Logger, set_env_params
 from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
 
-def run_episode(cfg, agent, env, episode_index=None):
+def run_episode(cfg, agent, opponent, env, episode_index=None):
     reward_shaper = RewardShaper(cfg)
     obs = env.reset()[0]
+    obs_opponent = env.obs_agent_two()
     done = False
     truncated = False
     score = 0.0
@@ -22,9 +24,10 @@ def run_episode(cfg, agent, env, episode_index=None):
     steps = 0
 
     while not done:
+        opponent_action = opponent.get_step(obs_opponent)
         agent_action = agent.choose_action(obs, episode_index)
 
-        obs_, reward, done, truncated, info = env.step(agent_action)
+        obs_, reward, done, truncated, info = env.step(np.hstack([agent_action, opponent_action]))
         reward = reward_shaper.transform(reward, info, done or truncated)
 
         done = done or truncated
@@ -33,6 +36,7 @@ def run_episode(cfg, agent, env, episode_index=None):
 
         agent.store(obs, agent_action, reward, obs_, done)
         obs = obs_
+        obs_opponent = env.obs_agent_two()
 
     episode_metrics['episode_score'] = score
     episode_metrics['episode_length'] = steps
@@ -50,13 +54,17 @@ def train_agent(cfg, agent, env, logger):
     last_eval_step = 0
     env_step = 0
 
+    opponent_pool = opp.get_opponent_pool(cfg)
+
     score_history = []
     len_history = []
 
     for i in range(n_games):
+        opponent = opponent_pool.sample_opponent()
         metrics = run_episode(
             cfg=cfg,
             agent=agent,
+            opponent=opponent,
             env=env,
             episode_index=i,
         )
@@ -71,10 +79,9 @@ def train_agent(cfg, agent, env, logger):
 
         if i >= cfg.warmup_games:
             for _ in range(cfg.learn_steps_per_episode):
-                metrics = agent.learn(step=i)
-                if metrics is not None:
-                    __import__('pdb').set_trace()
-                    for key, value in metrics.items():
+                l_metrics = agent.learn(step=i)
+                if l_metrics is not None:
+                    for key, value in l_metrics.items():
                         if 'hist:' in key:
                             logger.add_historam(key.replace('hist:', ''), value, i)
                         else:
@@ -97,25 +104,55 @@ def train_agent(cfg, agent, env, logger):
                 gif_save_path = gif_save_dir / f'eval_episode_{i}.gif'
             else:
                 gif_save_path = None
-            eval_win, eval_lose, eval_draw = evaluate_env_bot(
+            eval_win, eval_lose, eval_draw = evaluate(
                 env=env,
                 agent=agent,
+                opponent=opponent,
                 num_episodes=cfg.eval_episodes,
                 step=i,
                 render=False,
                 save=gif_save_path
             )
-            logger.add_scalar("Eval/Win Rate", eval_win / cfg.eval_episodes, i)
-            logger.add_scalar("Eval/Lose Rate", eval_lose / cfg.eval_episodes, i)
-            logger.add_scalar("Eval/Draw Rate", eval_draw / cfg.eval_episodes, i)
-            logger.add_gif("Eval/Episode", gif_save_path, i)
-            print(f"Evaluation at Episode {i}: Win: {eval_win}, Lose: {eval_lose}, Draw: {eval_draw}")
+            logger.add_gif("Eval/Episode", gif_save_path, i, caption=f"{opponent.name}")
+            final_eval = evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+            logger.add_opponent_pool_stats(opponent_pool, i)
+            win_rate, lose_rate, draw_rate = 0.0, 0.0, 0.0
+            total_episodes = 0
+            for stats in final_eval.values():
+                win_rate += stats['win']
+                lose_rate += stats['lose']
+                draw_rate += stats['draw']
+            total_episodes = len(final_eval) * cfg.eval_episodes
+            win_rate /= total_episodes
+            lose_rate /= total_episodes
+            draw_rate /= total_episodes
+            logger.add_scalar("Eval/Win Rate", win_rate, i)
+            logger.add_scalar("Eval/Lose Rate", lose_rate, i)
+            logger.add_scalar("Eval/Draw Rate", draw_rate, i)
+            print(f"Evaluation at Episode {i}: Win: {win_rate}, Lose: {lose_rate}, Draw: {draw_rate}")
         env_step = i + 1
         print(f"Episode {i} completed. Recent Avg Score: {average_score:.2f}, Recent Avg Episode Length: {average_length:.2f}")
 
     logger.close()
     env.close()
     print("[Training completed]")
+    final_eval = evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+    print("Opponents Stats:")
+    opponent_pool.show_scoreboard()
+    print("Agent Stats:")
+    win_rate, lose_rate, draw_rate = 0.0, 0.0, 0.0
+    total_episodes = 0
+    for stats in final_eval.values():
+        win_rate += stats['win']
+        lose_rate += stats['lose']
+        draw_rate += stats['draw']
+    total_episodes = len(final_eval) * cfg.eval_episodes
+    win_rate /= total_episodes
+    lose_rate /= total_episodes
+    draw_rate /= total_episodes
+    print(f"Win Rate: {win_rate:.2f}, Lose Rate: {lose_rate:.2f}, Draw Rate: {draw_rate:.2f}")
+    print(f"{win_rate:.2f}, {lose_rate:.2f}, {draw_rate:.2f}")
+
 
 def set_dry_run_params(cfg):
     if cfg.get('dry_run', False):
@@ -135,7 +172,7 @@ if __name__ == '__main__':
     with open('config.yaml', 'r') as f:
         cfg = OmegaConf.load(f)
     cfg = set_dry_run_params(cfg)
-    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=cfg.weak_opponent)
+    env = h_env.HockeyEnv()
     cfg = set_env_params(cfg, env)
     agent = Agent(cfg)
     results_dir = Path(__file__).resolve().parent / "results" / cfg.exp_name

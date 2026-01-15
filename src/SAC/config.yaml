@@ -34,7 +34,7 @@ target_update_freq: 1
 
 # Network
 algorithm: "sac"
-hidden_size: 512
+hidden_size: 1024
 
 # Evaluation
 eval_freq: 150

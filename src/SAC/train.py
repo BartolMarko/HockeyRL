@@ -49,7 +49,6 @@ def train_agent(cfg, agent, env, logger):
     last_save_step = 0
     last_eval_step = 0
     env_step = 0
-    train_step = 0
 
     score_history = []
     len_history = []
@@ -72,11 +71,14 @@ def train_agent(cfg, agent, env, logger):
 
         if i >= cfg.warmup_games:
             for _ in range(cfg.learn_steps_per_episode):
-                losses = agent.learn(step=train_step)
-                if losses is not None:
-                    for key, value in losses.items():
-                        logger.add_scalar(key, value, train_step)
-                train_step += 1
+                metrics = agent.learn(step=i)
+                if metrics is not None:
+                    __import__('pdb').set_trace()
+                    for key, value in metrics.items():
+                        if 'hist:' in key:
+                            logger.add_historam(key.replace('hist:', ''), value, i)
+                        else:
+                            logger.add_scalar(key, value, i)
 
         # save models if we have a new "best" average score
         if cfg.save_model and \
@@ -126,6 +128,7 @@ def set_dry_run_params(cfg):
         cfg.batch_size = 16
         cfg.hidden_dim = 16
         cfg.use_wandb = False
+        cfg.exp_name = f"dry_run_{cfg.exp_name}"
     return cfg
 
 if __name__ == '__main__':

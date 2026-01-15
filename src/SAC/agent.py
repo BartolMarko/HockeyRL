@@ -4,7 +4,7 @@ import torch as T
 import torch.nn.functional as F
 import numpy as np
 import helper
-from memory import ReplayBuffer
+from memory import ReplayBuffer, PrioritizedReplayBuffer
 from network import ActorNet, CriticNet
 import pickle
 
@@ -12,7 +12,11 @@ class Agent:
     def __init__(self, cfg):
         self.cfg = cfg
         self.gamma = cfg.gamma
-        self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
+        self.buffer_type = cfg.get('buffer_type', 'replay')
+        if self.buffer_type == 'per':
+            self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size)
+        else:
+            self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
         self.batch_size = cfg.batch_size
         self.n_actions = cfg.n_actions
         self.scale = cfg.reward_scale
@@ -137,7 +141,11 @@ class Agent:
         if step is not None and step < self.cfg.warmup_games:
             return log_data
 
-        state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
+        if self.buffer_type == 'per':
+            state, action, reward, new_state, done, indices, weights = self.memory.sample_buffer(self.batch_size)
+            weights = T.tensor(weights, dtype=T.float).to(self.actor.device)
+        else:
+            state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
 
         reward = T.tensor(reward, dtype=T.float).to(self.actor.device)
         done = T.tensor(done).to(self.actor.device)
@@ -158,8 +166,13 @@ class Agent:
         self.critic_2.optimizer.zero_grad()
         q1_old = self.critic_1.forward(state, action).view(-1)
         q2_old = self.critic_2.forward(state, action).view(-1)
-        critic_1_loss = 0.5 * F.mse_loss(q1_old, q_target)
-        critic_2_loss = 0.5 * F.mse_loss(q2_old, q_target)
+        if self.buffer_type == 'per':
+            critic_1_loss = (0.5 * F.mse_loss(q1_old, q_target, reduction='none') * weights).mean()
+            critic_2_loss = (0.5 * F.mse_loss(q2_old, q_target, reduction='none') * weights).mean()
+            priorities = (0.5 * (T.abs(q1_old - q_target) + T.abs(q2_old - q_target))).cpu().detach().numpy() + 1e-6
+        else:
+            critic_1_loss = 0.5 * F.mse_loss(q1_old, q_target)
+            critic_2_loss = 0.5 * F.mse_loss(q2_old, q_target)
         critic_loss = critic_1_loss + critic_2_loss
         critic_loss.backward()
         self.critic_1.optimizer.step()
@@ -183,8 +196,20 @@ class Agent:
             self.alpha_optim.step()
             log_data.update({'Losses/alpha_loss': alpha_loss.item()})
 
+        # Update target networks
         if step is not None and step % self.target_update_freq == 0:
             self.update_target_networks(method='soft')
+
+        # Update Replay Buffer priorities if using PER
+        if self.buffer_type == 'per':
+            self.memory.update_priorities(indices, priorities)
+            log_data.update({
+                'per/avg_priority': np.mean(priorities),
+                'per/max_priority': np.max(priorities),
+                'hist:per/priority_distribution': priorities,
+                'per/mean_weight': np.mean(weights.cpu().numpy()),
+                'per/max_weight': np.max(weights.cpu().numpy())
+            })
 
         log_data.update({
             'Losses/actor_loss': actor_loss.item(),

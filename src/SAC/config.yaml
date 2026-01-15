@@ -4,6 +4,9 @@ dry_run: False
 n_actions: 4
 opponents:
   - type: 'StrongBot'
+    priority: 0.7
+  - type: 'WeakBot'
+    priority: 0.3
 # rewards
 reward_transform: "v0"
 # rewards: v1
@@ -34,7 +37,7 @@ target_update_freq: 1
 
 # Network
 algorithm: "sac"
-hidden_size: 1024
+hidden_size: 512
 
 # Evaluation
 eval_freq: 150
@@ -47,7 +50,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "reward-v0-per-strong-bot-2"
+exp_name: "reward-v0-per-7_3-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

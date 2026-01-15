@@ -23,9 +23,16 @@ class RewardShaper:
 
         return new_reward
 
+    def transform_v2(self, reward, info, done_or_truncated):
+        """ Sparse Rewards, only win/loss/draw rewards """
+        reward_closeness_to_puck = info['reward_closeness_to_puck']
+        return reward - reward_closeness_to_puck
+
     def transform(self, reward, info, done_or_truncated):
         if self.cfg.reward_transform == 'v1':
             return self.transform_v1(reward, info, done_or_truncated)
+        elif self.cfg.reward_transform == 'v2':
+            return self.transform_v2(reward, info, done_or_truncated)
         else:
             # using v0 as default
             return reward

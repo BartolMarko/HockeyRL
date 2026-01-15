@@ -58,7 +58,8 @@ class Logger:
             print("wandb:")
             print(" - Project:", self.cfg.get('wandb_project'))
             return wandb.init(project=self.cfg.get('wandb_project'),
-                           config=dict(self.cfg), monitor_gym=True)
+                              name=self.cfg.get('exp_name'), config=dict(self.cfg),
+                              monitor_gym=True)
         return None
 
 

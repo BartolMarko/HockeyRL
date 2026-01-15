@@ -4,11 +4,11 @@ dry_run: False
 n_actions: 4
 opponents:
   - type: 'StrongBot'
-    priority: 0.7
+    priority: 0.6
   - type: 'WeakBot'
-    priority: 0.3
+    priority: 0.4
 # rewards
-reward_transform: "v0"
+reward_transform: "v2"
 # rewards: v1
 reward_scale: 2.1
 closeness_to_puck_reward_weight: 1.2
@@ -50,7 +50,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "reward-v0-per-7_3-bot-pool"
+exp_name: "v2-per-6_4-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

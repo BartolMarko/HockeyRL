@@ -19,10 +19,10 @@ buffer_max_size: 1000000
 
 # Training
 n_games: 50000
-warmup_games: 50
+warmup_games: 100
 learn_steps_per_episode: 1
 batch_size: 1024
-lr_actor: 0.0003
+lr_actor: 0.0004
 lr_critic: 0.0003
 gamma: 0.99
 tau: 0.005
@@ -37,17 +37,17 @@ algorithm: "sac"
 hidden_size: 256
 
 # Evaluation
-eval_freq: 100
+eval_freq: 150
 eval_episodes: 20
 
 # Model saving
 save_model: True
-save_model_freq: 300
+save_model_freq: 400
 
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "reward-v0-sac-strong-bot"
-resume: True
+exp_name: "reward-v0-per-strong-bot"
+resume: False
 save_video: True
 log_gradients: False

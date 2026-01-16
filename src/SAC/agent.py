@@ -45,7 +45,7 @@ class Agent:
         # entropy coefficient
         if cfg.automatic_entropy_tuning:
             if not hasattr(self, 'log_alpha'):
-                if cfg.alpha:
+                if hasattr(cfg, 'alpha') and cfg.alpha:
                     self.log_alpha = T.tensor(np.log(cfg.alpha), requires_grad=True).to(self.actor.device)
                 else:
                     self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor.device)

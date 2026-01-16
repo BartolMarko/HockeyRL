@@ -4,11 +4,11 @@ dry_run: False
 n_actions: 4
 opponents:
   - type: 'StrongBot'
-    priority: 0.7
+    priority: 0.6
   - type: 'WeakBot'
-    priority: 0.3
+    priority: 0.4
 # rewards
-reward_transform: "v0"
+reward_transform: "v2"
 # rewards: v1
 reward_scale: 2.1
 closeness_to_puck_reward_weight: 1.2
@@ -21,27 +21,26 @@ buffer_type: "per"
 buffer_max_size: 1000000
 
 # Training
-n_games: 5000
-warmup_games: 100
+n_games: 100000
+warmup_games: 200
 learn_steps_per_episode: 1
-batch_size: 1024
+batch_size: 2048
 lr_actor: 0.0004
 lr_critic: 0.0003
 gamma: 0.99
 tau: 0.005
 # alpha
-alpha: 0.02109163999557495
 automatic_entropy_tuning: True
-lr_alpha: 0.001
+lr_alpha: 0.0005
 # critic target network
 target_update_freq: 1
 
 # Network
 algorithm: "sac"
-hidden_size: 512
+hidden_size: 1024
 
 # Evaluation
-eval_freq: 150
+eval_freq: 300
 eval_episodes: 20
 
 # Model saving
@@ -51,8 +50,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "reward-v0-per-7_3-bot-pool"
-resume: True
-wandb_run_id: "tmx8xmke"
+exp_name: "v2-per-6_4-bot-pool-deeper"
+resume: False
 save_video: True
 log_gradients: False

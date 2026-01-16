@@ -28,7 +28,7 @@ def run_episode(cfg, agent, opponent, env, episode_index=None):
         agent_action = agent.choose_action(obs, episode_index)
 
         obs_, reward, done, truncated, info = env.step(np.hstack([agent_action, opponent_action]))
-        reward = reward_shaper.transform(reward, info, done or truncated)
+        reward = reward_shaper.transform(reward, info, done or truncated, obs)
 
         done = done or truncated
         score += reward

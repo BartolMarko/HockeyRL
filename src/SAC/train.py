@@ -37,7 +37,7 @@ def run_episode(cfg, agent, opponent, env, episode_index=None):
         agent.store(obs, agent_action, reward, obs_, done)
         obs = obs_
         obs_opponent = env.obs_agent_two()
-
+    agent.end_episode()
     episode_metrics['episode_score'] = score
     episode_metrics['episode_length'] = steps
     return episode_metrics

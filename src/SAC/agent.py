@@ -4,7 +4,7 @@ import torch as T
 import torch.nn.functional as F
 import numpy as np
 import helper
-from memory import ReplayBuffer, PrioritizedReplayBuffer
+from memory import ReplayBuffer, PrioritizedReplayBuffer, NStepCollector
 from network import ActorNet, CriticNet
 import pickle
 
@@ -15,6 +15,9 @@ class Agent:
         self.buffer_type = cfg.get('buffer_type', 'replay')
         if self.buffer_type == 'per':
             self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size)
+        elif self.buffer_type == 'n-step-per':
+            base_buffer = PrioritizedReplayBuffer(cfg.buffer_max_size)
+            self.memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
         else:
             self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
         self.batch_size = cfg.batch_size
@@ -54,6 +57,9 @@ class Agent:
         else:
             self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
 
+    def end_episode(self):
+        if self.buffer_type == 'n-step-per':
+            self.memory.flush()
 
     def use_most_recent_models(self):
         """Loads the most recent models from the results directory."""
@@ -74,7 +80,6 @@ class Agent:
         else:
             return self.alpha
 
-
     def update_target_networks(self, method='soft'):
         """Updates the target networks with the current critic networks' parameters."""
         if method == 'hard':
@@ -88,7 +93,6 @@ class Agent:
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
         else:
             raise ValueError("Invalid update type. Use 'soft' or 'hard'.")
-
 
     def get_models(self):
         return self.actor, self.critic_1, self.critic_2
@@ -158,7 +162,7 @@ class Agent:
         if step is not None and step < self.cfg.warmup_games:
             return log_data
 
-        if self.buffer_type == 'per':
+        if self.buffer_type in [ 'per', 'n-step-per' ]:
             state, action, reward, new_state, done, indices, weights = self.memory.sample_buffer(self.batch_size)
             weights = T.tensor(weights, dtype=T.float).to(self.actor.device)
         else:
@@ -177,7 +181,11 @@ class Agent:
             q1_next = self.critic_1_target.forward(state_, next_actions)
             q2_next = self.critic_2_target.forward(state_, next_actions)
             q_next = T.min(q1_next, q2_next) - self.get_alpha() * next_log_probs
-            q_target = self.scale * reward + self.gamma * (1 - done.float()) * q_next.view(-1)
+            if self.buffer_type == 'n-step-per':
+                # use gamma^n for skipping n-1 steps
+                q_target = self.scale * reward + ( self.gamma ** self.cfg.n_step_buffer_n ) * (1 - done.float()) * q_next.view(-1)
+            else:
+                q_target = self.scale * reward + self.gamma * (1 - done.float()) * q_next.view(-1)
 
         # Update critics
         self.critic_1.optimizer.zero_grad()

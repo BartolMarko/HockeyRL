@@ -1,4 +1,5 @@
 import numpy as np
+from collections import deque
 
 class ReplayBuffer:
     """
@@ -146,3 +147,56 @@ class PrioritizedReplayBuffer:
 
     def __len__(self):
         return len(self.buffer)
+
+class NStepCollector:
+    """
+    N-Step Experience Collector
+    Collects n-step transitions and stores them in the provided replay buffer.
+    """
+    def __init__(self, n_step, gamma, replay_buffer):
+        self.n_step = n_step
+        self.gamma = gamma
+        self.replay_buffer = replay_buffer
+        self.n_step_buffer = deque(maxlen=n_step)
+        self.mem_cntr = 0
+
+    def store_transition(self, state, action, reward, next_state, done):
+        self.n_step_buffer.append((state, action, reward, next_state, done))
+
+        if len(self.n_step_buffer) < self.n_step:
+            return
+
+        reward, next_state, done = self._get_n_step_info()
+        state, action = self.n_step_buffer[0][:2]
+
+        self.replay_buffer.store_transition(state, action, reward, next_state, done)
+        self.mem_cntr = self.replay_buffer.mem_cntr
+
+    def _get_n_step_info(self):
+        reward, next_state, done = self.n_step_buffer[-1][-3:]
+
+        for transition in reversed(list(self.n_step_buffer)[:-1]):
+            r, n_s, d = transition[2], transition[3], transition[4]
+            reward = r + self.gamma * reward * (1 - d)
+            next_state, done = (n_s, d) if d else (next_state, done)
+
+        return reward, next_state, done
+
+    def flush(self):
+        while len(self.n_step_buffer) > 0:
+            reward, next_state, done = self._get_n_step_info()
+            state, action = self.n_step_buffer[0][:2]
+            self.replay_buffer.store_transition(state, action, reward, next_state, done)
+            self.n_step_buffer.popleft()
+
+    def reset(self):
+        self.n_step_buffer.clear()
+
+    def sample_buffer(self, batch_size):
+        return self.replay_buffer.sample_buffer(batch_size)
+
+    def update_priorities(self, batch_indices, batch_priorities):
+        self.replay_buffer.update_priorities(batch_indices, batch_priorities)
+
+    def __len__(self):
+        return len(self.replay_buffer)

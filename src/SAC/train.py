@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import csv
 from omegaconf import OmegaConf
-from helper import Logger, set_env_params
+from helper import Logger, set_env_params, get_resume_episode_number
 from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
 
@@ -42,7 +42,7 @@ def run_episode(cfg, agent, opponent, env, episode_index=None):
     episode_metrics['episode_length'] = steps
     return episode_metrics
 
-def train_agent(cfg, agent, env, logger):
+def train_agent(cfg, agent, env, logger, start_episode=0):
     n_games = cfg.n_games
 
     gif_save_path = None
@@ -135,7 +135,7 @@ def train_agent(cfg, agent, env, logger):
 
     logger.close()
     env.close()
-    print("[Training completed]")
+    print("[Training completed] [episodes: {} + {} = {}]".format(start_episode, env_step, env_step + start_episode))
     final_eval = evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
     print("Opponents Stats:")
     opponent_pool.show_scoreboard()
@@ -165,10 +165,12 @@ def set_dry_run_params(cfg):
         cfg.batch_size = 16
         cfg.hidden_dim = 16
         cfg.use_wandb = False
-        cfg.exp_name = f"dry_run_{cfg.exp_name}"
+        if not cfg.resume:
+            cfg.exp_name = f"dry_run_{cfg.exp_name}"
     return cfg
 
 if __name__ == '__main__':
+    start_episode = 0
     with open('config.yaml', 'r') as f:
         cfg = OmegaConf.load(f)
     cfg = set_dry_run_params(cfg)
@@ -180,4 +182,7 @@ if __name__ == '__main__':
     logger.log_git_info()
     if cfg.log_gradients:
         logger.add_model(agent)
-    train_agent(cfg, agent, env, logger)
+    if cfg.resume:
+        start_episode = get_resume_episode_number(results_dir / 'models')
+        print(f"Resume training from Episode {start_episode}.")
+    train_agent(cfg, agent, env, logger, start_episode=start_episode)

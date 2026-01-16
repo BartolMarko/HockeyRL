@@ -38,17 +38,21 @@ class Agent:
         self.tau = cfg.tau
         self.target_update_freq = cfg.target_update_freq
 
+        if getattr(cfg, 'resume', False):
+            if not self.use_most_recent_models():
+                raise ValueError
+
         # entropy coefficient
         if cfg.automatic_entropy_tuning:
-            self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor.device)
+            if not hasattr(self, 'log_alpha'):
+                if cfg.alpha:
+                    self.log_alpha = T.tensor(np.log(cfg.alpha), requires_grad=True).to(self.actor.device)
+                else:
+                    self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor.device)
             self.alpha_optim = T.optim.Adam([self.log_alpha], lr=cfg.lr_alpha)
             self.target_entropy = -np.prod(cfg.n_actions).item()
         else:
             self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
-
-        if getattr(cfg, 'resume', False):
-            if not self.use_most_recent_models():
-                raise ValueError
 
 
     def use_most_recent_models(self):
@@ -120,6 +124,9 @@ class Agent:
         self.actor.save(file_path_actor)
         self.critic_1.save(file_path_critic1)
         self.critic_2.save(file_path_critic2)
+        if hasattr(self, 'log_alpha'):
+            file_path_alpha = os.path.join(folder_path, 'log_alpha.pth')
+            T.save(self.log_alpha, file_path_alpha)
 
     def load_models(self, folder_path):
         """Loads the parameters of the actor and critic networks."""
@@ -131,6 +138,16 @@ class Agent:
         file_path_critic2 = os.path.join(folder_path, 'critic_2.pth')
         self.critic_2.load(file_path_critic2)
         self.update_target_networks(method='hard')
+        if hasattr(self, 'log_alpha') or self.cfg.automatic_entropy_tuning:
+            file_path_alpha = os.path.join(folder_path, 'log_alpha.pth')
+            # check if file exists
+            if os.path.exists(file_path_alpha):
+                self.log_alpha = T.load(file_path_alpha, map_location=self.actor.device, weights_only=True)
+            elif self.cfg.alpha:
+                self.log_alpha = T.tensor(np.log(self.cfg.alpha), requires_grad=True).to(self.actor.device)
+            else:
+                raise ValueError(f"No alpha file / value found to load from at {file_path_alpha} / config yaml.")
+            self.log_alpha = self.log_alpha.clone().detach().requires_grad_(True)
 
     def learn(self, step=None):
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""

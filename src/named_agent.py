@@ -20,6 +20,9 @@ class WeakBot(NamedAgent):
     
     def get_step(self, obs: np.ndarray) -> np.ndarray:
         return self.bot.act(obs)
+    
+    def act(self, obs: np.ndarray) -> np.ndarray:
+        return self.bot.act(obs)
 
 
 class StrongBot(NamedAgent):
@@ -28,4 +31,7 @@ class StrongBot(NamedAgent):
         self.bot = h_env.BasicOpponent(weak=False)
     
     def get_step(self, obs: np.ndarray) -> np.ndarray:
+        return self.bot.act(obs)
+    
+    def act(self, obs: np.ndarray) -> np.ndarray:
         return self.bot.act(obs)

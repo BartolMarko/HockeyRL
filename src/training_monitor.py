@@ -5,8 +5,8 @@ from queue import Queue
 from src.episode import Episode, Outcome
 from src.evaluation import Heatmap
 
-TEAM_NAME = "wayne-gradientzky"
-PROJECT_NAME = "hockey-rl"
+TEAM_NAME = "rajinishaneel-universit-tsstadt-t-bingen"
+PROJECT_NAME = "rl-proj"
 
 
 class TrainingMonitor:
@@ -84,6 +84,7 @@ class TrainingMonitor:
                     opponent_name
                 ],
                 "train/episode_index": episode_index,
+                "train/episode_reward": episode.reward.sum(),
                 "train/episode_length": len(episode),
             },
             step=step,

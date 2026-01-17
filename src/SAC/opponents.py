@@ -53,6 +53,12 @@ class OpponentInPool(NamedAgent):
         else:
             raise NotImplementedError("The base agent does not have a method to get actions.")
 
+    def get_win_rate(self):
+        games_played = self.get_games_played()
+        if games_played == 0:
+            return 0.0
+        return self.win_count / games_played
+
     def record_play_scores(self, win_count, loss_count, draw_count):
         self.win_count = win_count
         self.loss_count = loss_count

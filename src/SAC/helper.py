@@ -10,6 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 import wandb
 from omegaconf import OmegaConf
 from opponents import OpponentInPool, OpponentPool
+from agent import Agent
+from pathlib import Path
 
 def get_tensor(x, device, dtype=torch.float32):
     """Converts input to a torch tensor on the specified device."""
@@ -176,3 +178,20 @@ def get_latest_checkpoint(models_dir, prefix='episode_'):
 def set_env_params(cfg, env):
     cfg.input_dims = env.observation_space.shape
     return cfg
+
+def load_agent_from_config(experiment_name: str, env) -> Agent:
+    """Load an agent from a configuration file."""
+    config_path = Path('results') / experiment_name / 'config.yaml'
+    cfg = OmegaConf.load(config_path)
+    cfg = set_env_params(cfg, env)
+    cfg.resume = True
+    agent = Agent(cfg)
+    return agent
+
+def create_opponent_pool_from_config(cfg, env) -> OpponentPool:
+    """Create an opponent pool based on the configuration."""
+    opponent_pool = OpponentPool()
+    for experiment_name in cfg.keys():
+        opponent = load_agent_from_config(experiment_name, env=env)
+        opponent_pool.add_opponent(opponent)
+    return opponent_pool

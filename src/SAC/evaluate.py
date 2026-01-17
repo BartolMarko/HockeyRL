@@ -52,39 +52,43 @@ def evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, st
         print(f"Against {opponent.name}: Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.")
     return overall_stats
 
-
-def main():
-    with open('config.yaml', 'r') as f:
-        cfg = OmegaConf.load(f)
+def main(args):
+    if len(args) < 1:
+        with open('config.yaml', 'r') as f:
+            cfg = OmegaConf.load(f)
+        experiment_name = cfg.exp_name
+    else:
+        experiment_name = args[0]
 
     env = h_env.HockeyEnv()
-    cfg = helper.set_env_params(cfg, env)
-    cfg.resume = True
-    agent = Agent(cfg)
-
-    BEST_EXPERIMENT_NAME = 'reward-v0-sac'
-    cfg_2 = OmegaConf.load(Path('results') / BEST_EXPERIMENT_NAME / 'config.yaml')
-    cfg_2 = helper.set_env_params(cfg_2, env)
-    cfg_2.resume = True
-    best_so_far = Agent(cfg_2)
+    agent = helper.load_agent_from_config(experiment_name, env)
 
     EVAL_EPISODES = 100
-    cfg.eval_episodes = EVAL_EPISODES
     print(f"Evaluation over {EVAL_EPISODES} episodes each: ")
-    opponents = {
-            "WEAK": h_env.BasicOpponent(weak=True),
-            "STRG": h_env.BasicOpponent(weak=False),
-            "BEST": best_so_far
-    }
-    all_stats = {'win': 0, 'lose': 0, 'draw': 0}
-    for opponent_name, opponent in opponents.items():
-        win_count, lose_count, draw_count = evaluate(env, agent, opponent, EVAL_EPISODES, step=0, render=False)
-        all_stats['win'] += win_count
-        all_stats['lose'] += lose_count
-        all_stats['draw'] += draw_count
-        rates = (win_count / cfg.eval_episodes, lose_count / cfg.eval_episodes, draw_count / cfg.eval_episodes)
-        print(f"{opponent_name}: Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}, Rates: {rates}.")
 
+    with open('best_agents.yaml', 'r') as f:
+        opponents_cfg = OmegaConf.load(f)
+    opponent_pool = helper.create_opponent_pool_from_config(opponents_cfg, env)
+
+    all_stats = evaluate_against_pool(env, agent, opponent_pool, EVAL_EPISODES)
+    opponents = opponent_pool.get_all_opponents()
+    strongest_opponent = max(opponents, key=lambda o: o.get_win_rate())
+    print("\nSummary of Evaluation:")
+    print("-" * 65)
+    print(f"{'Experiment':45} | {'Wins':5} | {'Loss':4} | {'Draw':4}")
+    print("-" * 65)
+    for opponent in opponents:
+        if opponent.name == agent.name:
+            continue
+        stats = all_stats[opponent.name]
+        all_stats['win'] = all_stats.get('win', 0) + stats['win']
+        all_stats['lose'] = all_stats.get('lose', 0) + stats['lose']
+        all_stats['draw'] = all_stats.get('draw', 0) + stats['draw']
+        if opponent == strongest_opponent:
+            print(f"{opponent.name:42}(*) | {stats['win']:5} | {stats['lose']:4} | {stats['draw']:4}")
+        else:
+            print(f"{opponent.name:45} | {stats['win']:5} | {stats['lose']:4} | {stats['draw']:4}")
+    print("-" * 65)
     print(f"Overall: Wins: {all_stats['win']}, Losses: {all_stats['lose']}, Draws: {all_stats['draw']}.")
     win_rate = all_stats['win'] / (len(opponents) * EVAL_EPISODES)
     lose_rate = all_stats['lose'] / (len(opponents) * EVAL_EPISODES)
@@ -93,4 +97,6 @@ def main():
     print("Rates: " + "{:.2f}, {:.2f}, {:.2f}".format(*rates))
 
 if __name__ == '__main__':
-    main()
+    import sys
+    arguments = sys.argv[1:]
+    main(arguments)

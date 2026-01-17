@@ -11,6 +11,7 @@ import pickle
 class Agent:
     def __init__(self, cfg):
         self.cfg = cfg
+        self.name = cfg.exp_name
         self.gamma = cfg.gamma
         self.buffer_type = cfg.get('buffer_type', 'replay')
         if self.buffer_type == 'per':
@@ -55,7 +56,11 @@ class Agent:
             self.alpha_optim = T.optim.Adam([self.log_alpha], lr=cfg.lr_alpha)
             self.target_entropy = -np.prod(cfg.n_actions).item()
         else:
-            self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
+            if hasattr(cfg, 'alpha') and cfg.alpha:
+                self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
+            else:
+                print("Warning: No alpha value specified in config for fixed alpha. Using default alpha=0.2")
+                self.alpha = T.tensor(0.2).to(self.actor.device)
 
     def end_episode(self):
         if self.buffer_type == 'n-step-per':
@@ -66,7 +71,9 @@ class Agent:
         results_dir = Path(__file__).resolve().parent / "results" / self.cfg.exp_name / 'models'
         best_model_dir = helper.get_latest_checkpoint(results_dir)
         if best_model_dir is not None:
-            print("Resuming from checkpoint:", best_model_dir)
+            # remove till the results part
+            model_dir_striped = str(best_model_dir).split('results' + os.sep)[-1]
+            print("Resuming from checkpoint:", model_dir_striped)
             self.load_models(best_model_dir)
             return True
         else:
@@ -147,10 +154,11 @@ class Agent:
             # check if file exists
             if os.path.exists(file_path_alpha):
                 self.log_alpha = T.load(file_path_alpha, map_location=self.actor.device, weights_only=True)
-            elif self.cfg.alpha:
+            elif hasattr(self.cfg, 'alpha') and self.cfg.alpha:
                 self.log_alpha = T.tensor(np.log(self.cfg.alpha), requires_grad=True).to(self.actor.device)
             else:
-                raise ValueError(f"No alpha file / value found to load from at {file_path_alpha} / config yaml.")
+                print(f"Warning: No alpha file / value found to load from at {file_path_alpha} / config yaml. Using default alpha=0.2")
+                self.log_alpha = T.tensor(np.log(0.2), requires_grad=True).to(self.actor.device)
             self.log_alpha = self.log_alpha.clone().detach().requires_grad_(True)
 
     def learn(self, step=None):

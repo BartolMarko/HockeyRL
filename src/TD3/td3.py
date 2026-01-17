@@ -1,0 +1,199 @@
+import itertools
+
+import numpy as np
+import torch
+from torch import nn
+import wandb
+from pathlib import Path
+
+from src.TD3.actor_critic import ActorCritic
+from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
+from src.named_agent import NamedAgent
+
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
+class TD3(NamedAgent):
+    def __init__(self, obs_space, act_space, config = dict()):
+        super().__init__('TD3')
+        self.obs_space = obs_space
+        self.act_space = act_space
+        self._config = {
+            "gamma": .99,
+            "buffer_size": int(1e6),
+            "batch_size": 128,
+            "actor": {"hidden_sizes": [256, 256], 
+                      "learning_rate": 1e-4},
+            "critic": {"hidden_sizes": [256, 256],
+                       "learning_rate": 1e-3},
+            "polyak":.995,
+            'target_noise': 0.2,
+            'noise_clip':0.5,
+            'policy_delay':2,
+            'prioritized_replay': False,
+            'pr_alpha': 0.6,
+            'pr_beta': 0.4,
+            "pr_epsilon": 1e-6
+        } 
+
+        self._config.update(config)
+
+        self.pr_replay = self._config['prioritized_replay']
+        self.polyak = self._config['polyak']
+
+        self._action_n = act_space.shape[0]
+        self._obs_dim = obs_space.shape[0]
+
+        self.high = torch.from_numpy(self.act_space.high).to(device)
+        self.low  = torch.from_numpy(self.act_space.low).to(device)
+
+        self.output_activation = lambda x : self.low + (self.high - self.low) * (nn.Tanh()(x) + 1.)/2
+
+        self.model = ActorCritic(self._obs_dim, self._action_n, 
+                                 actor_hidden_sizes=self._config['actor']['hidden_sizes'],
+                                 actor_activation_fun=nn.ReLU(), 
+                                 actor_ouput_activation_fun=self.output_activation,
+                                 critic_hidden_sizes=self._config['actor']['hidden_sizes'],
+                                 critic_activation_fun=nn.ReLU()
+                                 ).to(device)
+        
+        self.model_target = ActorCritic(self._obs_dim, self._action_n, 
+                                 actor_hidden_sizes=self._config['critic']['hidden_sizes'],
+                                 actor_activation_fun=nn.ReLU(), 
+                                 actor_ouput_activation_fun=self.output_activation,
+                                 critic_hidden_sizes=self._config['critic']['hidden_sizes'],
+                                 critic_activation_fun=nn.ReLU()
+                                 ).to(device)
+        
+        self._hard_copy_nets()
+        
+        self.policy_optimizer = torch.optim.Adam(self.model.actor.parameters(), 
+                                                 lr = self._config['actor']['learning_rate'])
+        
+        self.q_params = list(itertools.chain(self.model.critic1.parameters(), 
+                                             self.model.critic2.parameters()))
+        self.critic_optimizer = torch.optim.Adam(self.q_params,
+                                                 lr = self._config['critic']['learning_rate'])
+        
+        if self.pr_replay:
+            self.buffer = PrioritizedReplayBuffer(self._obs_dim, self._action_n, self._config['buffer_size'], 
+                                                  alpha = self._config['pr_alpha'], beta = self._config['pr_beta'])
+        else:
+            self.buffer = ReplayBuffer(self._obs_dim, self._action_n, self._config['buffer_size'])
+
+    def _hard_copy_nets(self):
+        self.model_target.restore_state(self.model.state())
+
+    def _copy_nets(self):
+        with torch.no_grad():
+            for w, w_targ in zip(self.model.parameters(), self.model_target.parameters()):
+                w_targ.data.mul_(self.polyak)
+                w_targ.data.add_((1-self.polyak)*w.data)
+
+    def store_transition(self, transition):
+        self.buffer.add_transition(*transition)
+
+
+    def compute_q_loss(self, data):
+        if self.pr_replay:
+            obs, act, rew, obs_new, done, weights, inds = data
+        else:
+            obs, act, rew, obs_new, done = data
+            weights = torch.ones_like(rew, device=rew.device)
+
+        q1 = self.model.q1(obs, act)
+        q2 = self.model.q2(obs, act)
+
+        with torch.no_grad():
+            pi_targ = self.model_target.actor(obs_new)
+            eps = torch.randn_like(pi_targ, device=device) * self._config['target_noise']
+            eps = torch.clamp(eps, -self._config['noise_clip'], self._config['noise_clip'])
+
+            a2 = pi_targ + eps
+            a2 = torch.clamp(a2, self.low, self.high)
+
+            q1_pi_targ = self.model_target.q1(obs_new, a2)
+            q2_pi_targ = self.model_target.q2(obs_new, a2)
+
+            q_pi_targ  = torch.min(q1_pi_targ, q2_pi_targ)
+            target = rew + self._config['gamma']*(1-done)*q_pi_targ
+        
+        td_error1 = q1 - target
+        td_error2 = q2 - target
+        td_errors = td_error1
+
+        loss_q1 = (weights * (td_error1)**2).mean()
+        loss_q2 = (weights * (td_error2)**2).mean()
+        
+        loss_q = loss_q1 + loss_q2
+
+        return loss_q, td_errors
+    
+    def compute_actor_loss(self, data):
+        obs = data[0]
+        action = self.model.actor(obs)
+        q1_pi = self.model.q1(obs, action)
+        return -q1_pi.mean()
+    
+    def update(self, t):
+
+        data = self.buffer.sample_torch(self._config['batch_size'])
+
+        self.critic_optimizer.zero_grad()
+        loss_q, td_errors = self.compute_q_loss(data)
+        loss_q.backward()
+        self.critic_optimizer.step()
+
+        if self.pr_replay:
+            td_errs_npy = td_errors.detach().cpu().numpy()
+            new_pr = np.abs(td_errs_npy) + self._config['pr_epsilon']
+            inds = data[-1]
+            self.buffer.update_priorities(inds, new_pr)
+
+        loss_pi = None
+
+        if t % self._config['policy_delay'] == 0:
+
+            self.policy_optimizer.zero_grad()
+            loss_pi = self.compute_actor_loss(data)
+            loss_pi.backward()
+            self.policy_optimizer.step()
+
+            self._copy_nets()
+    
+        return loss_q.item(), loss_pi.item() if loss_pi is not None else None
+    
+    def act(self, obs):
+        obs = torch.tensor(obs, dtype=torch.float32, device=device)
+        return self.model.act(obs)
+    
+    def get_step(self, obs):
+        return self.act(obs)
+
+    def state(self):
+        return self.model.state()
+    
+    def restore_state(self, state):
+        self.model.restore_state(state)
+        self._hard_copy_nets()
+
+    def save_to_wandb(self, wandb_run, step):
+        save_dir = Path(wandb_run.dir) / f"checkpoint_step_{step}"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        torch.save(self.state(), save_dir / "model.pt")
+
+        wandb.save(str(save_dir / 'model.pt'))
+
+    def get_policy_config(self):
+        return {
+            "input_size": self._obs_dim,
+            "hidden_sizes": self._config['actor']['hidden_sizes'],
+            "output_size": self._action_n,
+            "activation_func": nn.ReLU(),
+            "output_activation": self.output_activation,
+            "state_dict": self.model.actor.state_dict()
+        }
+
+        

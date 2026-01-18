@@ -23,7 +23,7 @@ still_puck_penalty: 0.25
 buffer_type: "n-step-per"
 buffer_max_size: 1000000
 # buffer_type: n-step-per
-n_step_buffer_n: 2
+n_step_buffer_n: 8
 
 # Training
 n_games: 50000
@@ -74,7 +74,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v0-2-step-per-6_4-bot-pool"
+exp_name: "v0-8-step-per-6_4-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

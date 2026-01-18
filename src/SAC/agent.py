@@ -3,7 +3,6 @@ from pathlib import Path
 import torch as T
 import torch.nn.functional as F
 import numpy as np
-import helper
 from memory import ReplayBuffer, PrioritizedReplayBuffer, NStepCollector
 from network import ActorNet, CriticNet
 import pickle
@@ -68,8 +67,9 @@ class Agent:
 
     def use_most_recent_models(self):
         """Loads the most recent models from the results directory."""
+        from helper import get_latest_checkpoint
         results_dir = Path(__file__).resolve().parent / "results" / self.cfg.exp_name / 'models'
-        best_model_dir = helper.get_latest_checkpoint(results_dir)
+        best_model_dir = get_latest_checkpoint(results_dir)
         if best_model_dir is not None:
             # remove till the results part
             model_dir_striped = str(best_model_dir).split('results' + os.sep)[-1]
@@ -165,9 +165,6 @@ class Agent:
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""
         log_data = {}
         if self.memory.mem_cntr < self.batch_size:
-            return log_data
-
-        if step is not None and step < self.cfg.warmup_games:
             return log_data
 
         if self.buffer_type in [ 'per', 'n-step-per' ]:

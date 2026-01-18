@@ -3,19 +3,24 @@ from pathlib import Path
 from omegaconf import OmegaConf
 import helper
 from hockey import hockey_env as h_env
-
 from agent import Agent
 import imageio
 
-def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=None):
+def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=None, heatmap=False):
     """Evaluate a trained agent and optionally save a video."""
     win_count, lose_count, draw_count = 0, 0, 0
+    if heatmap:
+        hm = helper.HeatmapTracker()
+        if step is None:
+            step = 0
     frames = []
     for i in range(num_episodes):
         obs, _ = env.reset()
         obs_opponent = env.obs_agent_two()
         done = False
         while not done:
+            if heatmap:
+                hm.record_step(obs)
             if render or save is not None:
                 mode = 'human' if render else 'rgb_array'
                 frames.append(env.render(mode=mode))
@@ -36,14 +41,15 @@ def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=N
     if save is not None:
         imageio.mimsave(save, frames, fps=30)
         print(f"Saved evaluation video to {save}.")
-
+    if heatmap:
+        hm.save_heatmap(f"heatmap_{agent.name}_vs_{opponent.name}_step{step}.png")
     return win_count, lose_count, draw_count
 
-def evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, step: int = 0):
+def evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, step: int | None = None, heatmap: bool = False):
     """Evaluate a trained agent against a pool of opponents."""
     overall_stats = {}
     for opponent in opponent_pool.get_all_opponents():
-        win_count, lose_count, draw_count = evaluate(env, agent, opponent, num_episodes, step)
+        win_count, lose_count, draw_count = evaluate(env, agent, opponent, num_episodes, step, heatmap=heatmap)
         overall_stats[opponent.name] = {
             'win': win_count,
             'lose': lose_count,
@@ -70,7 +76,7 @@ def main(args):
         opponents_cfg = OmegaConf.load(f)
     opponent_pool = helper.create_opponent_pool_from_config(opponents_cfg, env)
 
-    all_stats = evaluate_against_pool(env, agent, opponent_pool, EVAL_EPISODES)
+    all_stats = evaluate_against_pool(env, agent, opponent_pool, EVAL_EPISODES, heatmap=True)
     opponents = opponent_pool.get_all_opponents()
     strongest_opponent = max(opponents, key=lambda o: o.get_win_rate())
     print("\nSummary of Evaluation:")

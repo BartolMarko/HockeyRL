@@ -2,3 +2,4 @@ results/
 wandb/
 git-commit-hash.txt
 best_agents.yaml
+*.png

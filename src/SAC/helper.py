@@ -1,6 +1,9 @@
 import os
 import re
 import numpy as np
+import matplotlib.pyplot as plt
+import gymnasium as gym
+import hockey.hockey_env as h_env
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -38,6 +41,78 @@ def linear_schedule(schdl, step):
             return (1.0 - mix) * init + mix * final
     raise NotImplementedError(schdl)
 
+class HeatmapTracker:
+    def __init__(self, x_range=(-4, 4), y_range=(-2.5, 2.5), bins=(48, 32)):
+        """
+        Tracks agent positioning and generates a heatmap.
+
+        Args:
+            x_range: Bounds of the hockey rink on the x-axis.
+            y_range: Bounds of the hockey rink on the y-axis.
+            bins: Resolution of the heatmap.
+        """
+        self.x_range = x_range
+        self.y_range = y_range
+        self.bins = bins
+
+        self.heatmap = np.zeros(bins)
+        self.x_data = np.linspace(x_range[0], x_range[1], bins[0] + 1)
+        self.y_data = np.linspace(y_range[0], y_range[1], bins[1] + 1)
+
+        self.total_steps = 0
+
+    def reset(self):
+        self.heatmap = np.zeros(self.bins)
+        self.total_steps = 0
+
+    def record_step(self, obs):
+        x, y = obs[0], obs[1]
+        ix = np.clip(np.digitize(x, self.x_data) - 1, 0, self.bins[0] - 1)
+        iy = np.clip(np.digitize(y, self.y_data) - 1, 0, self.bins[1] - 1)
+
+        self.heatmap[ix, iy] += 1
+        self.total_steps += 1
+
+    def save_heatmap(self, filename="agent_heatmap.png", title="Agent Position Density"):
+        """
+        Visualizes the accumulated histogram.
+        """
+        if np.sum(self.heatmap) == 0:
+            print("No data recorded yet.")
+            return
+
+        plt.figure(figsize=(12, 7))
+        extent = [self.x_range[0], self.x_range[1], self.y_range[0], self.y_range[1]]
+        im = plt.imshow(
+            self.heatmap.T,
+            extent=extent,
+            origin='lower',
+            cmap='viridis',
+            interpolation='gaussian' # Smooths the bins for a cleaner look
+        )
+
+        cbar = plt.colorbar(im)
+        cbar.set_label('% of Total Training Time', rotation=270, labelpad=15)
+        plt.title(title)
+        plt.xlabel('x')
+        plt.ylabel('y')
+
+        self._draw_rink_elements()
+
+        plt.savefig(filename, bbox_inches='tight', dpi=300)
+        plt.close()
+        self.reset()
+
+    def _draw_rink_elements(self):
+        # Center red line
+        plt.axvline(x=0, color='white', linestyle='-', linewidth=2, alpha=0.5)
+
+        # Goal areas (approximate)
+        goal_l = plt.Rectangle((-4, -0.7), 0.2, 1.4, color='white', alpha=0.3)
+        goal_r = plt.Rectangle((3.8, -0.7), 0.2, 1.4, color='white', alpha=0.3)
+        plt.gca().add_patch(goal_l)
+        plt.gca().add_patch(goal_r)
+
 class Logger:
     """
     Simple logger class to store training statistics.
@@ -51,6 +126,7 @@ class Logger:
         self.wandb = self._init_wandb()
         assert self.tb_logger is not None or self.wandb is not None, "No logging method specified."
         self.data = {}
+        self.agent_pos_heatmap = HeatmapTracker()
         self.log_config()
 
     def _init_wandb(self):
@@ -75,10 +151,31 @@ class Logger:
                 wandb.config.update(dict(self.cfg), allow_val_change=True)
         return None
 
-
     def log_config(self):
         with open(self.project_dir / "config.yaml", 'w') as f:
             OmegaConf.save(self.cfg, f)
+
+    def add_state(self, obs):
+        """
+        Saves the state for later visualization.
+        """
+        self.agent_pos_heatmap.record_step(obs)
+
+    def log_state(self, step: int = 0):
+        """
+        Logs the saved states for an episode.
+        """
+        heatmap_title = "Agent Position"
+        heatmap_folder = self.get_project_dir() / "heatmaps"
+        heatmap_folder.mkdir(parents=True, exist_ok=True)
+        heatmap_filename = heatmap_folder / f"agent_position_episode_{step}.png"
+        self.agent_pos_heatmap.save_heatmap(filename=heatmap_filename,
+                                           title=f"{heatmap_title} - Step {step}")
+        if self.tb_logger is not None:
+            self.tb_logger.add_image(f"heatmap/" + heatmap_title,
+                                     plt.imread(heatmap_filename), dataformats='HWC')
+        if self.wandb is not None:
+            self.wandb.log({"heatmap/" + heatmap_title: wandb.Image(str(heatmap_filename))})
 
     def get_project_dir(self):
         return self.project_dir
@@ -88,39 +185,39 @@ class Logger:
             for model in agent.get_models():
                 self.wandb.watch(model, log="all", log_freq=self.cfg.get('wandb_model_log_freq', 100))
 
-    def add_scalar(self, key, value, step):
+    def add_scalar(self, key, value):
         if self.tb_logger is not None:
-            self.tb_logger.add_scalar(key, value, step)
+            self.tb_logger.add_scalar(key, value)
         if self.wandb is not None:
-            self.wandb.log({key: value}, step=step)
-        self.data[key] = (step, value)
+            self.wandb.log({key: value})
+        self.data[key] = value
 
-    def add_gif(self, key, gif_path, step, caption=""):
+    def add_gif(self, key, gif_path, caption=""):
         if self.wandb is not None and gif_path is not None:
-            self.wandb.log({key: wandb.Video(gif_path, caption=caption, format="gif")}, step=step)
+            self.wandb.log({key: wandb.Video(gif_path, caption=caption, format="gif")})
 
-    def add_historam(self, key, values, step, bins='auto'):
+    def add_historam(self, key, values, bins='auto'):
         if self.tb_logger is not None:
-            self.tb_logger.add_histogram(key, values, step, bins=bins)
+            self.tb_logger.add_histogram(key, values, bins=bins)
         if self.wandb is not None:
-            self.wandb.log({key: wandb.Histogram(values)}, step=step)
-        self.data[key] = (step, values)
+            self.wandb.log({key: wandb.Histogram(values)})
+        self.data[key] = values
 
-    def add_opponent_stats(self, opponent: OpponentInPool, step: int):
+    def add_opponent_stats(self, opponent: OpponentInPool):
         stats = {
             f"Opponent/{opponent.name}/win_rate": opponent.win_count / max(1, opponent.get_games_played()),
             f"Opponent/{opponent.name}/priority": opponent.priority
         }
         for key, value in stats.items():
             if self.tb_logger is not None:
-                self.tb_logger.add_scalar(key, value, step)
+                self.tb_logger.add_scalar(key, value)
             if self.wandb is not None:
-                self.wandb.log({key: value}, step=step)
-            self.data[key] = (step, value)
+                self.wandb.log({key: value})
+            self.data[key] = value
 
-    def add_opponent_pool_stats(self, opponent_pool: OpponentPool, step: int):
+    def add_opponent_pool_stats(self, opponent_pool: OpponentPool):
         for opponent in opponent_pool.get_all_opponents():
-            self.add_opponent_stats(opponent, step)
+            self.add_opponent_stats(opponent)
 
     def get_logs(self):
         return self.data
@@ -195,3 +292,17 @@ def create_opponent_pool_from_config(cfg, env) -> OpponentPool:
         opponent = load_agent_from_config(experiment_name, env=env)
         opponent_pool.add_opponent(opponent)
     return opponent_pool
+
+if __name__ == '__main__':
+    # test heatmap
+    env = h_env.HockeyEnv()
+    heatmap_logger = HeatmapTracker()
+    obs = env.reset()
+    for i in range(100000):
+        agent_action = env.action_space.sample() if i % 10 == 0 else agent_action
+        opponent_action = env.action_space.sample()
+        obs, reward, done, truncated, info = env.step(np.hstack([agent_action, opponent_action]))
+        heatmap_logger.record_step(obs)
+        if done:
+            obs = env.reset()
+    heatmap_logger.save_heatmap(filename='heatmap_test.png')

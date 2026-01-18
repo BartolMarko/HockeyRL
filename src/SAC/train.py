@@ -12,7 +12,7 @@ from helper import Logger, set_env_params, get_resume_episode_number
 from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
 
-def run_episode(cfg, agent, opponent, env, episode_index=None):
+def run_episode(cfg, agent, opponent, env, logger=None, episode_index=None):
     reward_shaper = RewardShaper(cfg)
     obs = env.reset()[0]
     obs_opponent = env.obs_agent_two()
@@ -24,6 +24,8 @@ def run_episode(cfg, agent, opponent, env, episode_index=None):
     steps = 0
 
     while not done:
+        if logger is not None:
+            logger.add_state(obs)
         opponent_action = opponent.get_step(obs_opponent)
         agent_action = agent.choose_action(obs, episode_index)
 
@@ -66,7 +68,8 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             agent=agent,
             opponent=opponent,
             env=env,
-            episode_index=i,
+            logger=logger,
+            episode_index=i + start_episode,
         )
         score_history.append(metrics['episode_score'])
         average_score = np.mean(score_history[-AVG_WINDOW_SIZE:])
@@ -74,8 +77,12 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         len_history.append(metrics['episode_length'])
         average_length = np.mean(len_history[-AVG_WINDOW_SIZE:])
 
-        logger.add_scalar("Rollout/Episode Score", metrics['episode_score'], i)
-        logger.add_scalar("Rollout/Episode Length", metrics['episode_length'], i)
+        logger.add_scalar("Rollout/Episode Score", metrics['episode_score'])
+        logger.add_scalar("Rollout/Episode Length", metrics['episode_length'])
+
+        if i == cfg.warmup_games:
+            print(f"Warmup phase completed (step: {i}). Starting learning...")
+            logger.log_state(i)
 
         if i >= cfg.warmup_games:
             for _ in range(cfg.learn_steps_per_episode):
@@ -83,9 +90,9 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
                 if l_metrics is not None:
                     for key, value in l_metrics.items():
                         if 'hist:' in key:
-                            logger.add_historam(key.replace('hist:', ''), value, i)
+                            logger.add_historam(key.replace('hist:', ''), value)
                         else:
-                            logger.add_scalar(key, value, i)
+                            logger.add_scalar(key, value)
 
         # save models if we have a new "best" average score
         if cfg.save_model and \
@@ -113,9 +120,9 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
                 render=False,
                 save=gif_save_path
             )
-            logger.add_gif("Eval/Episode", gif_save_path, i, caption=f"{opponent.name}")
+            logger.add_gif("Eval/Episode", gif_save_path, caption=f"{opponent.name}")
             final_eval = evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
-            logger.add_opponent_pool_stats(opponent_pool, i)
+            logger.add_opponent_pool_stats(opponent_pool)
             win_rate, lose_rate, draw_rate = 0.0, 0.0, 0.0
             total_episodes = 0
             for stats in final_eval.values():
@@ -126,9 +133,10 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             win_rate /= total_episodes
             lose_rate /= total_episodes
             draw_rate /= total_episodes
-            logger.add_scalar("Eval/Win Rate", win_rate, i)
-            logger.add_scalar("Eval/Lose Rate", lose_rate, i)
-            logger.add_scalar("Eval/Draw Rate", draw_rate, i)
+            logger.add_scalar("Eval/Win Rate", win_rate)
+            logger.add_scalar("Eval/Lose Rate", lose_rate)
+            logger.add_scalar("Eval/Draw Rate", draw_rate)
+            logger.log_state(i)
             print(f"Evaluation at Episode {i}: Win: {win_rate}, Lose: {lose_rate}, Draw: {draw_rate}")
         env_step = i + 1
         print(f"Episode {i} completed. Recent Avg Score: {average_score:.2f}, Recent Avg Episode Length: {average_length:.2f}")

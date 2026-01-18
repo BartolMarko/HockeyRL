@@ -4,6 +4,7 @@ from omegaconf import OmegaConf
 import helper
 from hockey import hockey_env as h_env
 from agent import Agent
+import opponents as opp
 import imageio
 
 def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=None, heatmap=False):
@@ -74,7 +75,7 @@ def main(args):
 
     with open('best_agents.yaml', 'r') as f:
         opponents_cfg = OmegaConf.load(f)
-    opponent_pool = helper.create_opponent_pool_from_config(opponents_cfg, env)
+    opponent_pool = opp.get_opponent_pool(opponents_cfg, env)
 
     all_stats = evaluate_against_pool(env, agent, opponent_pool, EVAL_EPISODES, heatmap=True)
     opponents = opponent_pool.get_all_opponents()

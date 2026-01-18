@@ -32,6 +32,7 @@ def find_best_agent_in_server_folder(server, sac_folder):
 
     cmd = f'ssh {server} "ls {results_path}"'
     experiment_folders = os.popen(cmd).read().strip().split('\n')
+    print(experiment_folders)
 
     for experiment in experiment_folders:
         if experiment in best_agents.keys():
@@ -52,38 +53,51 @@ def find_best_agent_in_server_folder(server, sac_folder):
 
         if best_folder:
             local_path = Path(f"results/{experiment}/models/{best_folder}")
+            copy = True
             if os.path.exists(local_path):
                 if not any(local_path.iterdir()):
                     print(f"Warning: Experiment {experiment} folder exists but is empty, overwriting.")
                 else:
                     print(f"Warning: Experiment {experiment} already exists, skipping copy.")
-                    continue
+                    copy = False
             if os.path.exists(local_path.parent):
-                print(f"Warning: Experiment {experiment} already exists with other max episode (new = {best_episode}).")
-            local_path.parent.mkdir(parents=True, exist_ok=True)
-            cmd = f'scp -r {server}:{experiment_path}/{best_folder} {local_path}'
-            os.system(f'scp -r {server}:{experiment_path}/{best_folder} {local_path}')
-            cmd = f'scp -r {server}:{results_path}/{experiment}/config.yaml {local_path.parent.parent}/config.yaml'
-            os.system(cmd)
+                print(f"Warning: Experiment {experiment} already exists with lower episode (new = {best_episode}).")
+            if copy:
+                local_path.parent.mkdir(parents=True, exist_ok=True)
+                cmd = f'scp -r {server}:{experiment_path}/{best_folder} {local_path}'
+                os.system(cmd)
+                cmd = f'scp -r {server}:{results_path}/{experiment}/config.yaml {local_path.parent.parent}/config.yaml'
+                os.system(cmd)
             new_agents.add(experiment)
             best_agents[experiment] = {
                 'folder_path': f"results/{experiment}/models/{best_folder}"
             }
+        else:
+            print(f"Warning: No valid model folders found for experiment {experiment} in {sac_folder}.")
 
-
-    return best_agents
+    result = {'opponents': []}
+    for agent in new_agents:
+        result['opponents'].append({
+            'type': 'CustomAgent',
+            'experiment_name': agent,
+            'folder_path': best_agents[agent]['folder_path']
+        })
+    return result
 
 def find_best_agents(server='tcml1'):
     cmd = f'ssh {server} "ls ~ | grep SAC"'
     sac_folders = os.popen(cmd).read().strip().split('\n')
-    all_best_agents = defaultdict(dict)
+    all_agents = {'opponents': []}
+    # add WeakBot and StrongBot as default opponents
+    all_agents['opponents'].append({'type': 'WeakBot'})
+    all_agents['opponents'].append({'type': 'StrongBot'})
     for sac_folder in sac_folders:
         best_agents = find_best_agent_in_server_folder(server, sac_folder)
-        all_best_agents.update(best_agents)
+        all_agents['opponents'].extend(best_agents['opponents'])
 
     # Write the results to a YAML file
     with open('best_agents.yaml', 'w') as yaml_file:
-        yaml.dump(dict(all_best_agents), yaml_file)
+        yaml.dump(dict(all_agents), yaml_file)
 
     print("Best agents information saved to best_agents.yaml")
 

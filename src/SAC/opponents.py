@@ -149,7 +149,7 @@ def get_bot_pool(cfg) -> OpponentPool:
     pool.add_opponent(StrongBot(), priority=strg_prior)
     return pool
 
-def get_opponent_pool(cfg) -> OpponentPool:
+def get_opponent_pool(cfg, env=None) -> OpponentPool:
     pool = OpponentPool()
     opponents_cfg = cfg.get('opponents', [])
     for opp_cfg in opponents_cfg:
@@ -159,6 +159,10 @@ def get_opponent_pool(cfg) -> OpponentPool:
             opponent = WeakBot()
         elif opp_type == 'StrongBot':
             opponent = StrongBot()
+        elif opp_type == 'CustomAgent':
+            experiment_name = opp_cfg.get('experiment_name')
+            from helper import load_agent_from_config
+            opponent = load_agent_from_config(experiment_name, env)
         else:
             raise ValueError(f"Unknown opponent type: {opp_type}")
         pool.add_opponent(opponent, priority=priority)

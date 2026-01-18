@@ -23,9 +23,9 @@ class ExplorerStrategy:
 
 class RandomExplorer(ExplorerStrategy):
     """
-    Random exploration strategy for continuous action spaces.
+    Random (Uniform) exploration strategy for continuous action spaces.
     """
-    def __init__(self, n_actions: int, low=-1, high=1, name: str = "random-explorer"):
+    def __init__(self, n_actions: int, low=-1, high=1, name: str = "uniform-explorer"):
         self.n_actions = n_actions
         self.name = name
         self.low = low
@@ -38,7 +38,7 @@ class RandomExplorer(ExplorerStrategy):
         return self.name + f" ({self.n_actions} actions)"
 
     def id(self):
-        return "random_explorer"
+        return "uniform_explorer"
 
 class GaussianExplorer(ExplorerStrategy):
     """

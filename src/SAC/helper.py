@@ -149,6 +149,7 @@ class Logger:
                               monitor_gym=True)
             if self.cfg.resume:
                 wandb.config.update(dict(self.cfg), allow_val_change=True)
+            return wandb
         return None
 
     def log_config(self):

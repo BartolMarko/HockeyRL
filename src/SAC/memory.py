@@ -1,7 +1,27 @@
 import numpy as np
 from collections import deque
 
-class ReplayBuffer:
+class MemoryBuffer:
+    def store_transition(self, state, action, reward, next_state, done):
+        raise NotImplementedError
+
+    def sample_buffer(self, batch_size):
+        raise NotImplementedError
+
+    def flush(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def update_priorities(self, batch_indices, batch_priorities):
+        pass
+
+    def __len__(self):
+        raise NotImplementedError
+
+
+class ReplayBuffer(MemoryBuffer):
     """
     A fixed-size buffer to store transitions, implemented with PyTorch tensors.
     """
@@ -69,7 +89,7 @@ class ReplayBuffer:
         return states, actions, rewards, states_, dones
 
 
-class PrioritizedReplayBuffer:
+class PrioritizedReplayBuffer(MemoryBuffer):
     """
     Proportional Experience Prioritization
     """
@@ -148,7 +168,7 @@ class PrioritizedReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-class NStepCollector:
+class NStepCollector(MemoryBuffer):
     """
     N-Step Experience Collector
     Collects n-step transitions and stores them in the provided replay buffer.

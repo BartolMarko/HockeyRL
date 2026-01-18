@@ -39,6 +39,25 @@ automatic_entropy_tuning: True
 lr_alpha: 0.0005
 # critic target network
 target_update_freq: 1
+# Explorer
+explorer:
+  # type: random
+
+  # type: 'gaussian'
+  # mu: 0.1
+  # std_dev: 0.85
+
+  # type: ou
+  # theta: 0.25
+  # sigma: 0.3
+
+  # type: optimistic
+  # beta: 1.1
+
+  type: curious
+  beta: 0.3
+  hidden_dim: 64
+  lr_pred: 0.001
 
 # Network
 algorithm: "sac"

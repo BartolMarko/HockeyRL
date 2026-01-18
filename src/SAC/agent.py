@@ -4,6 +4,7 @@ import torch as T
 import torch.nn.functional as F
 import numpy as np
 from memory import ReplayBuffer, PrioritizedReplayBuffer, NStepCollector
+from exploration import RandomExplorer, GaussianExplorer, OrnsteinUhlenbeckExplorer, CuriousExplorer, OptimisticExplorer
 from network import ActorNet, CriticNet
 import pickle
 
@@ -20,6 +21,7 @@ class Agent:
             self.memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
         else:
             self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
+
         self.batch_size = cfg.batch_size
         self.n_actions = cfg.n_actions
         self.scale = cfg.reward_scale
@@ -41,6 +43,27 @@ class Agent:
         self.tau = cfg.tau
         self.target_update_freq = cfg.target_update_freq
 
+        # exploration strategy
+        explorer_cfg = cfg.get('explorer', {'type': 'random'})
+        explorer_type = explorer_cfg.get('type', 'random')
+        if explorer_type == 'random':
+            self.explorer = RandomExplorer(cfg.n_actions)
+        elif explorer_type == 'gaussian':
+            mu = explorer_cfg.get('mu', 0)
+            std_dev = explorer_cfg.get('std_dev', 0.8)
+            self.explorer = GaussianExplorer(cfg.n_actions, mu=mu, sigma=std_dev)
+        elif explorer_type == 'ou':
+            theta = explorer_cfg.get('theta', 0.15)
+            sigma = explorer_cfg.get('sigma', 0.2)
+            dt = explorer_cfg.get('dt', 1e-2)
+            self.explorer = OrnsteinUhlenbeckExplorer(cfg.n_actions, theta=theta, sigma=sigma, dt=dt)
+        elif explorer_type == 'optimistic':
+            self.explorer = OptimisticExplorer(self, explorer_cfg)
+        elif explorer_type == 'curious':
+            self.explorer = CuriousExplorer(self, explorer_cfg)
+        else:
+            raise ValueError(f"Unknown explorer type: {explorer_type}")
+
         if getattr(cfg, 'resume', False):
             if not self.use_most_recent_models():
                 raise ValueError
@@ -61,9 +84,29 @@ class Agent:
                 print("Warning: No alpha value specified in config for fixed alpha. Using default alpha=0.2")
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
+        self.display_info()
+
+    def display_info(self):
+        print("Agent Configuration:")
+        print(f"  Algorithm: Soft Actor-Critic (SAC)")
+        print(f"  Replay Buffer Type: {self.buffer_type}")
+        print(f"  Batch Size: {self.batch_size}")
+        print(f"  Discount Factor (Gamma): {self.gamma}")
+        print(f"  Reward Scale: {self.scale}")
+        print(f"  Target Network Update Frequency: {self.target_update_freq}")
+        print(f"  Tau (Soft Update Coefficient): {self.tau}")
+        if hasattr(self, 'log_alpha'):
+            print(f"  Automatic Entropy Tuning: Enabled")
+            print(f"  Initial Alpha (Entropy Coefficient): {self.get_alpha().item()}")
+            print(f"  Target Entropy: {self.target_entropy}")
+        else:
+            print(f"  Automatic Entropy Tuning: Disabled")
+            print(f"  Fixed Alpha (Entropy Coefficient): {self.alpha.item()}")
+        print(f"  Explorer Type: {self.explorer.id()}")
+
     def end_episode(self):
-        if self.buffer_type == 'n-step-per':
-            self.memory.flush()
+        self.explorer.end_episode()
+        self.memory.flush()
 
     def use_most_recent_models(self):
         """Loads the most recent models from the results directory."""
@@ -77,7 +120,7 @@ class Agent:
             self.load_models(best_model_dir)
             return True
         else:
-            print(f"No checkpoint found at {best_model_dir} to resume from.")
+            print(f"No checkpoint found from {results_dir} to resume from.")
             return False
 
     def get_alpha(self):
@@ -104,10 +147,14 @@ class Agent:
     def get_models(self):
         return self.actor, self.critic_1, self.critic_2
 
+    def reset_explorer(self):
+        """Resets the exploration strategy."""
+        self.explorer.reset()
+
     def choose_action(self, observation, step=None):
         """Chooses an action based on the current policy (actor network)."""
         if step is not None and step < self.cfg.warmup_games:
-            return np.random.uniform(low=-1, high=1, size=self.n_actions)
+            return self.explorer.choose_action(observation)
         state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()[0]
@@ -141,7 +188,6 @@ class Agent:
 
     def load_models(self, folder_path):
         """Loads the parameters of the actor and critic networks."""
-        print('loading models ..')
         file_path_actor = os.path.join(folder_path, 'actor.pth')
         self.actor.load(file_path_actor)
         file_path_critic1 = os.path.join(folder_path, 'critic_1.pth')
@@ -197,7 +243,7 @@ class Agent:
         self.critic_2.optimizer.zero_grad()
         q1_old = self.critic_1.forward(state, action).view(-1)
         q2_old = self.critic_2.forward(state, action).view(-1)
-        if self.buffer_type == 'per':
+        if self.buffer_type in ['per', 'n-step-per']:
             critic_1_loss = (0.5 * F.mse_loss(q1_old, q_target, reduction='none') * weights).mean()
             critic_2_loss = (0.5 * F.mse_loss(q2_old, q_target, reduction='none') * weights).mean()
             priorities = (0.5 * (T.abs(q1_old - q_target) + T.abs(q2_old - q_target))).cpu().detach().numpy() + 1e-6
@@ -231,8 +277,8 @@ class Agent:
         if step is not None and step % self.target_update_freq == 0:
             self.update_target_networks(method='soft')
 
-        # Update Replay Buffer priorities if using PER
-        if self.buffer_type == 'per':
+        # Update Replay Buffer priorities if using PER or N-Step-PER
+        if self.buffer_type in [ 'per', 'n-step-per' ]:
             self.memory.update_priorities(indices, priorities)
             log_data.update({
                 'per/avg_priority': np.mean(priorities),

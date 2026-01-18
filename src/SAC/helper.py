@@ -88,11 +88,11 @@ class HeatmapTracker:
             extent=extent,
             origin='lower',
             cmap='viridis',
-            interpolation='gaussian' # Smooths the bins for a cleaner look
+            interpolation='gaussian'
         )
 
         cbar = plt.colorbar(im)
-        cbar.set_label('% of Total Training Time', rotation=270, labelpad=15)
+        cbar.set_label('# of Visits', rotation=270, labelpad=15)
         plt.title(title)
         plt.xlabel('x')
         plt.ylabel('y')
@@ -112,6 +112,15 @@ class HeatmapTracker:
         goal_r = plt.Rectangle((3.8, -0.7), 0.2, 1.4, color='white', alpha=0.3)
         plt.gca().add_patch(goal_l)
         plt.gca().add_patch(goal_r)
+
+    def compute_entropy(self):
+        """
+        Computes the Shannon entropy of the heatmap distribution.
+        """
+        prob_dist = self.heatmap / np.sum(self.heatmap)
+        prob_dist = prob_dist[prob_dist > 0]
+        shannon_entropy = -np.sum(prob_dist * np.log(prob_dist))
+        return shannon_entropy
 
 class Logger:
     """

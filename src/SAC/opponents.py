@@ -132,6 +132,15 @@ class OpponentPool:
     def __len__(self):
         return len(self.opponents)
 
+    def __add__(self, other):
+        if not isinstance(other, OpponentPool):
+            raise ValueError("Can only add another OpponentPool.")
+        new_pool = OpponentPool()
+        for opponent, priority in zip(self.opponents + other.opponents,
+                                      self.priority + other.priority):
+            new_pool.add_opponent(opponent.agent, priority)
+        return new_pool
+
 def get_bot_pool(cfg) -> OpponentPool:
     weak_prior = cfg.get('weak_bot_priority', 0.5)
     strg_prior = cfg.get('strg_bot_priority', 0.5)

@@ -41,11 +41,11 @@ lr_alpha: 0.0005
 target_update_freq: 1
 # Explorer
 explorer:
-  # type: random
+  type: random
 
-  type: 'gaussian'
-  mu: 0.5
-  std_dev: 0.85
+  # type: 'gaussian'
+  # mu: 0.5
+  # std_dev: 0.85
 
   # type: ou
   # theta: 0.25
@@ -74,7 +74,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v0-gaussian-4-step-per-6_4-bot-pool"
+exp_name: "v0-random-4-step-per-6_4-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

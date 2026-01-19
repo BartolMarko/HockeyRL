@@ -9,293 +9,259 @@ class ExplorerStrategy:
     """
     Base class for exploration strategies.
     """
-    def choose_action(self, x):
+    def __init__(self, n_actions: int, low=-1, high=1, name: str = "base-explorer"):
+        self.n_actions = n_actions
+        self.low = low
+        self.high = high
+        self.name = name
+
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
         raise NotImplementedError
 
-    def reset(self):
+    def get_intrinsic_reward(self, state, action, next_state):
+        return 0.0
+
+    def update(self, *args, **kwargs):
         pass
 
-    def start_episode(self):
+    def reset(self):
         pass
 
     def end_episode(self):
         pass
 
-class RandomExplorer(ExplorerStrategy):
-    """
-    Random (Uniform) exploration strategy for continuous action spaces.
-    """
-    def __init__(self, n_actions: int, low=-1, high=1, name: str = "uniform-explorer"):
-        self.n_actions = n_actions
-        self.name = name
-        self.low = low
-        self.high = high
-
-    def choose_action(self, x):
-        return np.random.uniform(low=self.low, high=self.high, size=self.n_actions)
+    def id(self):
+        return self.name
 
     def __str__(self):
-        return self.name + f" ({self.n_actions} actions)"
+        return self.name
+
+
+class RandomExplorer(ExplorerStrategy):
+    """
+    Random (Uniform) exploration strategy.
+    """
+    def __init__(self, n_actions: int, low=-1, high=1, name: str = "uniform-explorer"):
+        super().__init__(n_actions, low, high, name)
+
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
+        if warmup:
+            return np.random.uniform(low=self.low, high=self.high, size=self.n_actions)
+
+        # use agent's policy, the alpha-scaled entropy should be good enough
+        return agent.choose_action_from_policy(observation)
 
     def id(self):
         return "uniform_explorer"
 
+    def __str__(self):
+        return f"{self.name} ({self.n_actions} actions)"
+
+
 class GaussianExplorer(ExplorerStrategy):
     """
-    Gaussian exploration strategy for continuous action spaces.
+    Gaussian exploration strategy.
     """
     def __init__(self, n_actions: int, mu=0.0, sigma=0.8, low=-1, high=1, name: str = "gaussian-explorer"):
-        self.n_actions = n_actions
+        super().__init__(n_actions, low, high, name)
         self.mu = mu
         self.sigma = sigma
-        self.name = name
-        self.low = low
-        self.high = high
 
-    def choose_action(self, x):
-        out = np.random.normal(loc=self.mu, scale=self.sigma, size=self.n_actions)
-        return np.clip(out, self.low, self.high)
+    def get_noise(self):
+        out_l = np.random.normal(loc=-1 * self.mu, scale=self.sigma, size=self.n_actions)
+        out_r = np.random.normal(loc=self.mu, scale=self.sigma, size=self.n_actions)
+        noise = np.where(np.random.rand(self.n_actions) < 0.5, out_l, out_r)
+        return noise
 
-    def __str__(self):
-        return self.name + f" ({self.n_actions} actions, mu={self.mu}, sigma={self.sigma})"
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
+        if warmup:
+            return np.clip(self.get_noise(), self.low, self.high)
+
+        return agent.choose_action_from_policy(observation)
+
 
     def id(self):
-        if self.mu != 0.0:
-            return f"gaussian_explorer_mu_{self.mu:.2f}_sigma_{self.sigma:.2f}"
         return f"gaussian_explorer_sigma_{self.sigma:.2f}"
+
+    def __str__(self):
+        return f"{self.name} (sigma={self.sigma})"
+
 
 class OrnsteinUhlenbeckExplorer(ExplorerStrategy):
     """
-    Ornstein-Uhlenbeck exploration strategy for continuous action spaces.
+    Ornstein-Uhlenbeck exploration strategy.
     """
-    def __init__(self, n_actions: int, mu=0.0, theta=0.15, sigma=0.2, dt=1e-2, x0=None, max_episodes=int(1e5 // 200), low=-1, high=1, name: str = "ou-explorer"):
-        self.n_actions = n_actions
+    def __init__(self, n_actions: int, mu=0.0, theta=0.15, sigma=0.2, dt=1e-2, x0=None,
+                 max_episodes=int(1e5 // 200), low=-1, high=1, name: str = "ou-explorer"):
+        super().__init__(n_actions, low, high, name)
         self.mu = mu
         self.theta = theta
-        self.init_sigma = sigma
         self.sigma = sigma
+        self.init_sigma = sigma
         self.dt = dt
         self.x0 = x0
-        self.name = name
-        self.low = low
-        self.high = high
         self.max_episodes = max_episodes
+        self.x_prev = np.zeros(self.n_actions) if x0 is None else x0
         self.reset()
 
     def reset(self):
-        if self.x0 is not None:
-            self.x_prev = self.x0
-        else:
-            self.x_prev = np.zeros(self.n_actions)
+        self.x_prev = self.x0 if self.x0 is not None else np.zeros(self.n_actions)
 
-    def anneal_sigma(self):
-        self.sigma = self.sigma * min((1 - 1 / self.max_episodes), 0.99)
-
-    def choose_action(self, x):
+    def noise(self):
         x = (self.x_prev +
              self.theta * (self.mu - self.x_prev) * self.dt +
              self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.n_actions))
-        x = np.clip(x, self.low, self.high)
         self.x_prev = x
         return x
 
-    def end_episode(self):
-        self.anneal_sigma()
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
+        ou_noise = self.noise()
 
-    def __str__(self):
-        return (self.name + f" ({self.n_actions} actions, mu={self.mu}, "
-                f"theta={self.theta}, sigma0={self.init_sigma}, dt={self.dt})")
+        if warmup:
+            return np.clip(ou_noise, self.low, self.high)
+
+        state_tensor = T.from_numpy(observation).float().unsqueeze(0).to(agent.actor.device)
+        with T.no_grad():
+            mu, _ = agent.actor.sample_normal(state_tensor, reparameterize=False)
+            action_mean = mu.cpu().detach().numpy()[0]
+
+        action = action_mean + ou_noise
+        return np.clip(action, self.low, self.high)
+
+    def end_episode(self):
+        self.sigma = self.sigma * min((1 - 1 / self.max_episodes), 0.99)
 
     def id(self):
         return f"ou_explorer_theta_{self.theta:.2f}_sigma_{self.init_sigma:.2f}"
 
+    def __str__(self):
+        return f"{self.name} (theta={self.theta}, sigma={self.init_sigma})"
+
+
 class OptimisticExplorer(ExplorerStrategy):
     """
-    Optimistic exploration strategy for continuous action spaces.
-    Ref: Better Exploration with Optimistic Actor-Critic
-         Ciosek, et al., 2020
+    Optimistic Actor Critic (OAC) Approximation.
+    Uses Upper Confidence Bound of Q-values to guide exploration.
+    Ref: Better Exploration with Optimistic Actor-Critic (Ciosek et al., 2020)
     """
     def __init__(self, agent, sub_cfg, low=-1, high=1, name: str = "optimistic-explorer"):
-        self.agent = agent
-        self.n_actions = agent.cfg.n_actions
+        super().__init__(agent.cfg.n_actions, low, high, name)
         self.beta = sub_cfg.beta
-        self.low = low
-        self.high = high
-        self.name = name
 
-    def choose_action(self, state):
-        # mux, stdx from agent's Actor
-        # compute q_avg = (critic1 + critic2) / 2 at (state, mux)
-        # compute gradient of q_avg wrt mux
-        # mu_opt = mux + beta * stdx * grad_q_avg_wrt_mux
-        # action = sample from N(mu_opt, stdx)
-        # tanh and clip action to [low, high]
-        state_tensor = T.tensor(state, dtype=T.float32).unsqueeze(0)
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
+        if warmup:
+             return np.random.uniform(low=self.low, high=self.high, size=self.n_actions)
+
+        state_tensor = T.tensor(observation, dtype=T.float32).unsqueeze(0).to(agent.actor.device)
         with T.no_grad():
-            mux, stdx = self.agent.actor.forward(state_tensor)
+            mux, stdx = agent.actor.forward(state_tensor)
         mux.requires_grad_(True)
-        q1_opt = self.agent.critic_1.forward(state_tensor, mux)
-        q2_opt = self.agent.critic_2.forward(state_tensor, mux)
-        q_avg_opt = (q1_opt + q2_opt) / 2.0
-        q_avg_opt.backward()
-        grad_q_avg_wrt_mux = mux.grad
-        mu_opt = mux + self.beta * stdx * grad_q_avg_wrt_mux
+        q1 = agent.critic_1.forward(state_tensor, mux)
+        q2 = agent.critic_2.forward(state_tensor, mux)
+        mean_q = (q1 + q2) / 2.0
+        std_q = T.abs(q1 - q2) / 2.0
+        q_ub = mean_q + self.beta * std_q
+
+        q_ub.backward()
+        grad_mu = mux.grad
+
+        # mu_opt = mux + k_UB * Sigma_pi * grad_Q (approx)
+        if grad_mu is not None:
+             mu_opt = mux + self.beta * stdx * grad_mu
+        else:
+             mu_opt = mu
         mu_opt = mu_opt.detach()
+
         action = T.normal(mu_opt, stdx)
         action = T.tanh(action)
         action = action.squeeze(0).cpu().detach().numpy()
-        action = np.clip(action, self.low, self.high)
-        return action
-
-    def __str__(self):
-        return self.name + f" (beta={self.beta})"
+        return np.clip(action, self.low, self.high)
 
     def id(self):
         return f"optimistic_explorer_beta_{self.beta:.2f}"
 
+    def __str__(self):
+        return f"{self.name} (beta={self.beta})"
+
+
 class CuriousExplorer(ExplorerStrategy):
     """
-    Curious exploration strategy for continuous action spaces.
-    Ref: Exploration by Random Network Distillation
-         Burda, et al., 2018
+    Curious Explorer using Random Network Distillation (RND).
+    Adds intrinsic reward based on prediction error of a fixed random network.
+    Ref: Exploration by Random Network Distillation (Burda et al., 2018)
     """
     def __init__(self, agent, sub_cfg, low=-1, high=1, name: str = "curious-explorer"):
-        self.cfg = agent.cfg
+        super().__init__(agent.cfg.n_actions, low, high, name)
+        self.beta = sub_cfg.beta # Intrinsic reward scale
+        self.device = agent.actor.device
+
         state_dim = agent.cfg.input_dims[0]
-        n_actions = agent.cfg.n_actions
-        self.n_actions = n_actions
-        self.low = low
-        self.high = high
-        self.name = name
-        self.beta = sub_cfg.beta
+        hidden_dim = sub_cfg.hidden_dim
+        lr_pred = sub_cfg.lr_pred
 
-        self.obs_list = []
-
-        # Curiosity Networks
         self.target = nn.Sequential(
-            nn.Linear(state_dim, sub_cfg.hidden_dim),
+            nn.Linear(state_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(sub_cfg.hidden_dim, sub_cfg.hidden_dim),
-        )
+            nn.Linear(hidden_dim, hidden_dim // 2)
+        ).to(self.device)
         for param in self.target.parameters():
             param.requires_grad = False
 
         self.predictor = nn.Sequential(
-            nn.Linear(state_dim, sub_cfg.hidden_dim),
+            nn.Linear(state_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(sub_cfg.hidden_dim, sub_cfg.hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(sub_cfg.hidden_dim, sub_cfg.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(sub_cfg.hidden_dim, sub_cfg.hidden_dim),
-        )
+            nn.Linear(hidden_dim, hidden_dim // 2)
+        ).to(self.device)
 
-        self.optimizer = T.optim.Adam(self.predictor.parameters(), lr=sub_cfg.lr_pred)
-        self.agent = agent
-        self.target.to(agent.actor.device)
-        self.predictor.to(agent.actor.device)
+        self.optimizer = T.optim.Adam(self.predictor.parameters(), lr=lr_pred)
 
-    def compute_novelty(self, state):
+        self.obs_buffer = []
+
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
+        if warmup:
+             return np.random.uniform(low=self.low, high=self.high, size=self.n_actions)
+
+        return agent.choose_action_from_policy(observation)
+
+    def get_intrinsic_reward(self, state, action, next_state):
+        next_state_t = T.tensor(next_state, dtype=T.float32, device=self.device).unsqueeze(0)
         with T.no_grad():
-            target_features = self.target(state)
-        predicted_features = self.predictor(state)
-        novelty = T.mean((predicted_features - target_features) ** 2, dim=-1)
-        return novelty.item()
+            target_feat = self.target(next_state_t)
+            pred_feat = self.predictor(next_state_t)
 
-    def choose_action(self, state):
-        # mux, stdx from agent's actor
-        # compute_novelty for state
-        # update std = stdx * (1 + novelty * beta)
-        # action = sample from N(mux, std)
-        # tanh and clip action to [low, high]
-        self.obs_list.append(state)
-        state_tensor = T.tensor(state, dtype=T.float32).unsqueeze(0)
-        with T.no_grad():
-            mux, stdx = self.agent.actor.forward(state_tensor)
-        novelty = self.compute_novelty(state_tensor)
-        std_modified = stdx * (1 + novelty * self.beta)
-        action = T.normal(mux, std_modified)
-        action = T.tanh(action)
-        action = action.squeeze(0).cpu().detach().numpy()
-        action = np.clip(action, self.low, self.high)
-        return action
+        error = T.sum((pred_feat - target_feat) ** 2, dim=-1)
+        intrinsic_reward = self.beta * error.item()
+
+        self.obs_buffer.append(next_state)
+
+        return intrinsic_reward
 
     def end_episode(self):
-        # Update predictor network using collected states
-        if len(self.obs_list) == 0:
+        if not self.obs_buffer:
             return
-        states = np.array(self.obs_list)
-        states_tensor = T.tensor(states, dtype=T.float32, device=self.agent.actor.device)
+
+        states = np.array(self.obs_buffer)
+        states_t = T.tensor(states, dtype=T.float32, device=self.device)
+
         with T.no_grad():
-            target_features = self.target(states_tensor)
-        predicted_features = self.predictor(states_tensor)
-        loss = T.mean((predicted_features - target_features) ** 2)
+            target_feat = self.target(states_t)
+
+        pred_feat = self.predictor(states_t)
+        loss = T.mean((pred_feat - target_feat) ** 2)
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self.obs_list = []
+
+        self.obs_buffer = []
 
     def reset(self):
-        self.obs_list = []
-
-    def __str__(self):
-        return self.name + f" (beta={self.beta})"
+        self.obs_buffer = []
 
     def id(self):
         return f"curious_explorer_beta_{self.beta:.2f}"
 
-
-if __name__ == "__main__":
-    import hockey.hockey_env as h_env
-    from helper import HeatmapTracker, load_agent_from_config
-    from agent import Agent
-    from omegaconf import OmegaConf
-
-    env = h_env.HockeyEnv()
-    agent = load_agent_from_config('reward-v0-per-7_3-bot-pool', env)
-    heatmap_logger = HeatmapTracker()
-    n_actions = env.action_space.shape[0] // 2
-    n_episodes = 100
-    explorers = [
-        # random-explorer
-        RandomExplorer(n_actions),
-        # gaussian-explorer: sigma
-        GaussianExplorer(n_actions, sigma=0.2),
-        GaussianExplorer(n_actions, sigma=0.5),
-        GaussianExplorer(n_actions, sigma=0.8),
-        # ou-explorer: sigma
-        OrnsteinUhlenbeckExplorer(n_actions, sigma=0.2, max_episodes=n_episodes),
-        OrnsteinUhlenbeckExplorer(n_actions, sigma=0.5, max_episodes=n_episodes),
-        OrnsteinUhlenbeckExplorer(n_actions, sigma=0.8, max_episodes=n_episodes),
-        # ou-explorer: theta
-        OrnsteinUhlenbeckExplorer(n_actions, theta=0.05, max_episodes=n_episodes),
-        OrnsteinUhlenbeckExplorer(n_actions, theta=0.15, max_episodes=n_episodes),
-        OrnsteinUhlenbeckExplorer(n_actions, theta=0.3, max_episodes=n_episodes),
-        # optimistic-explorer: beta
-        OptimisticExplorer(agent, beta=0.1),
-        OptimisticExplorer(agent, beta=0.5),
-        OptimisticExplorer(agent, beta=1),
-        # curious-explorer: beta
-        CuriousExplorer(agent, beta=0.1),
-        CuriousExplorer(agent, beta=0.5),
-        CuriousExplorer(agent, beta=1.0),
-    ]
-    random_explorer = RandomExplorer(n_actions)
-    for explorer in explorers:
-        heatmap_logger.reset()
-        for i in range(n_episodes):
-            all_frames = []
-            obs, _ = env.reset()
-            while True:
-                heatmap_logger.record_step(obs)
-                agent_action = explorer.choose_action(obs)
-                opponent_action = random_explorer.choose_action()
-                obs, reward, done, truncated, info = env.step(np.hstack([agent_action, opponent_action]))
-                all_frames.append(obs)
-                if done or truncated:
-                    obs, _ = env.reset()
-                    break
-            explorer.end_episode()
-        entropy = heatmap_logger.compute_entropy()
-        heatmap_logger.save_heatmap(filename=f'heatmap_{explorer.id()}.png')
-        print(str( explorer ) + f" - Entropy: {entropy:.4f}")
+    def __str__(self):
+        return f"{self.name} (beta={self.beta})"

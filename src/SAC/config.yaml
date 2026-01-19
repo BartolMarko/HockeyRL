@@ -23,7 +23,7 @@ still_puck_penalty: 0.25
 buffer_type: "n-step-per"
 buffer_max_size: 1000000
 # buffer_type: n-step-per
-n_step_buffer_n: 8
+n_step_buffer_n: 4
 
 # Training
 n_games: 50000
@@ -41,18 +41,18 @@ lr_alpha: 0.0005
 target_update_freq: 1
 # Explorer
 explorer:
-  type: random
+  # type: random
 
   # type: 'gaussian'
-  # mu: 0.1
+  # mu: 0.5
   # std_dev: 0.85
 
   # type: ou
   # theta: 0.25
   # sigma: 0.3
 
-  # type: optimistic
-  # beta: 1.1
+  type: optimistic
+  beta: 1.1
 
   # type: curious
   # beta: 0.3
@@ -74,7 +74,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v0-8-step-per-6_4-bot-pool"
+exp_name: "v0-optimistic-4-step-per-6_4-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

@@ -24,7 +24,6 @@ class Agent:
 
         self.batch_size = cfg.batch_size
         self.n_actions = cfg.n_actions
-        self.scale = cfg.reward_scale
 
         # initialize actor and critic networks
         self.actor = ActorNet(cfg.lr_actor, cfg.input_dims, n_actions=cfg.n_actions,
@@ -92,7 +91,6 @@ class Agent:
         print(f"  Replay Buffer Type: {self.buffer_type}")
         print(f"  Batch Size: {self.batch_size}")
         print(f"  Discount Factor (Gamma): {self.gamma}")
-        print(f"  Reward Scale: {self.scale}")
         print(f"  Target Network Update Frequency: {self.target_update_freq}")
         print(f"  Tau (Soft Update Coefficient): {self.tau}")
         if hasattr(self, 'log_alpha'):
@@ -151,25 +149,32 @@ class Agent:
         """Resets the exploration strategy."""
         self.explorer.reset()
 
-    def choose_action(self, observation, step=None):
+    def choose_action(self, observation, step=None, eval_mode=False):
         """Chooses an action based on the current policy (actor network)."""
-        if step is not None and step < self.cfg.warmup_games:
-            return self.explorer.choose_action(observation)
+        if eval_mode:
+             return self.choose_action_from_policy(observation)
+        warmup = (step is not None) and (step < self.cfg.warmup_games)
+        return self.explorer.choose_action(observation, agent=self, step=step, warmup=warmup)
+
+    def plan(self, observation, eval_mode=True, step=None):
+        """Alias for choose_action with eval_mode defaulting to True"""
+        return self.choose_action(observation, step=step, eval_mode=eval_mode)
+
+    def act(self, x):
+        """Alias for choose_action with eval_mode set to True"""
+        return self.choose_action(x, eval_mode=True)
+
+    def choose_action_from_policy(self, observation):
+        """Helper for explorers to get the raw policy action"""
         state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()[0]
 
-    def plan(self, observation, eval_mode=False, step=None):
-        """Alias for choose_action"""
-        return self.choose_action(observation)
-
-    def act(self, x):
-        """Alias for choose_action"""
-        return self.choose_action(x)
-
     def store(self, state, action, reward, new_state, done):
-        """Stores a transition in the replay buffer."""
-        self.memory.store_transition(state, action, reward, new_state, done)
+        """Stores a transition in the replay buffer, adding intrinsic reward (curious)."""
+        intrinsic_reward = self.explorer.get_intrinsic_reward(state, action, new_state)
+        total_reward = reward + intrinsic_reward
+        self.memory.store_transition(state, action, total_reward, new_state, done)
 
     def save_models(self, folder_path):
         """Saves the parameters of the actor and critic networks."""
@@ -234,9 +239,9 @@ class Agent:
             q_next = T.min(q1_next, q2_next) - self.get_alpha() * next_log_probs
             if self.buffer_type == 'n-step-per':
                 # use gamma^n for skipping n-1 steps
-                q_target = self.scale * reward + ( self.gamma ** self.cfg.n_step_buffer_n ) * (1 - done.float()) * q_next.view(-1)
+                q_target = reward + ( self.gamma ** self.cfg.n_step_buffer_n ) * (1 - done.float()) * q_next.view(-1)
             else:
-                q_target = self.scale * reward + self.gamma * (1 - done.float()) * q_next.view(-1)
+                q_target = reward + self.gamma * (1 - done.float()) * q_next.view(-1)
 
         # Update critics
         self.critic_1.optimizer.zero_grad()

@@ -47,17 +47,17 @@ explorer:
   # mu: 0.5
   # std_dev: 0.85
 
-  # type: ou
-  # theta: 0.25
-  # sigma: 0.3
+  type: ou
+  theta: 0.25
+  sigma: 0.3
 
   # type: optimistic
   # beta: 1.1
 
-  type: curious
-  beta: 0.3
-  hidden_dim: 64
-  lr_pred: 0.001
+  # type: curious
+  # beta: 0.3
+  # hidden_dim: 64
+  # lr_pred: 0.001
 
 # Network
 algorithm: "sac"
@@ -74,7 +74,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v0-curious-4-step-per-6_4-bot-pool"
+exp_name: "v0-ou-4-step-per-6_4-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

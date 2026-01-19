@@ -8,7 +8,7 @@ opponents:
   - type: 'WeakBot'
     priority: 0.4
 # rewards
-reward_transform: "v0"
+reward_transform: "v1"
 # rewards: v1
 reward_scale: 2.1
 closeness_to_puck_reward_weight: 1.2
@@ -74,7 +74,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v0-random-4-step-per-6_4-bot-pool"
+exp_name: "v1-random-4-step-per-6_4-bot-pool"
 resume: False
 save_video: True
 log_gradients: False

@@ -164,7 +164,6 @@ class TDMPC:
         mean = torch.zeros(horizon, self.cfg.action_dim, device=self.device)
         std = 2 * torch.ones(horizon, self.cfg.action_dim, device=self.device)
         if not t0 and hasattr(self, "_prev_mean"):
-            # TODO: questionable fix for horizon change
             prev_mean_shifted = self._prev_mean[1:]
             valid_len = min(prev_mean_shifted.shape[0], mean.shape[0] - 1)
             if valid_len > 0:

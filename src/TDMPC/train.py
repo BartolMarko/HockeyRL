@@ -5,9 +5,9 @@ import random
 from pathlib import Path
 from omegaconf import OmegaConf
 
-from src.environments import SparseRewardHockeyEnv
+from src.agent_factory import agent_factory
+from src.environments import environment_factory
 from src.evaluation import Evaluator
-from src.named_agent import WeakBot, StrongBot
 from src.opponent_pool import OpponentPoolThompsonSampling
 from src.training_monitor import TrainingMonitor
 
@@ -18,7 +18,6 @@ from src.TDMPC.agent import TDMPCAgent
 torch.backends.cudnn.benchmark = True
 
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "selfplay.yaml"
-RUN_NAME = "tdmpc_baseline_self_play_150k_start_100k_freq_1M_steps"
 
 
 def set_seed(seed):
@@ -35,6 +34,15 @@ def add_env_variables_to_config(env, cfg):
 
     cfg.action_dim = env.action_space.shape[0] // 2
     return cfg
+
+
+def load_opponents_from_config(opponents_cfg: OmegaConf) -> list:
+    """Load opponents from the configuration."""
+    opponents = []
+    for opp_name, opp_cfg in opponents_cfg.items():
+        opponent = agent_factory(opp_name, opp_cfg)
+        opponents.append(opponent)
+    return opponents
 
 
 def add_self_to_opponent_pool(
@@ -59,26 +67,29 @@ def add_self_to_opponent_pool(
 
 def train(cfg):
     """Training script for TD-MPC"""
-    # TODO: Add choice of opponents and env to config
-    # TOOD: Add run_name to config
-
     assert torch.cuda.is_available()
     set_seed(cfg.seed)
 
-    env = SparseRewardHockeyEnv()
+    env = environment_factory(cfg.env_name)
     cfg = add_env_variables_to_config(env, cfg)
+
+    additional_evaluation_opponents = load_opponents_from_config(
+        cfg.evaluation_opponents
+    )
+    training_opponents = [
+        (opp_cfg["start_step"], agent_factory(opp_name, opp_cfg))
+        for opp_name, opp_cfg in cfg.training_opponents.items()
+    ]
+    training_opponents.sort(key=lambda x: x[0])
+    opponent_pool = OpponentPoolThompsonSampling(
+        opponents=[],
+        window_size_episodes=cfg.opponent_pool_window_size,
+    )
 
     tdmpc, buffer = TDMPC(cfg), ReplayBuffer(cfg)
     evaluator = Evaluator(device=cfg.device)
-
-    weak_bot = WeakBot()
-    strong_bot = StrongBot()
-    opponent_pool = OpponentPoolThompsonSampling(
-        opponents=[weak_bot, strong_bot],
-        window_size_episodes=cfg.opponent_pool_window_size,
-    )
     training_monitor = TrainingMonitor(
-        run_name=RUN_NAME,
+        run_name=cfg.run_name,
         config=OmegaConf.to_container(cfg),
     )
 
@@ -86,6 +97,13 @@ def train(cfg):
     episode_idx, step = 0, 0
     last_update_step, last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0, 0
     while step < cfg.train_steps:
+        while len(training_opponents) and step >= training_opponents[0][0]:
+            _, new_opponent = training_opponents.pop(0)
+            opponent_pool.add_opponent(new_opponent)
+            print(
+                f"Added new opponent '{new_opponent.name}' to opponent pool at step {step}."
+            )
+
         if (
             cfg.get("selfplay", False)
             and step >= cfg.selfplay_start_step
@@ -153,7 +171,7 @@ def train(cfg):
             evaluator.evaluate_agent_and_save_metrics(
                 env,
                 agent,
-                opponent_pool.get_opponents(),
+                opponent_pool.get_opponents() + additional_evaluation_opponents,
                 num_episodes=cfg.eval_episodes_per_opponent,
                 render_mode="rgb_array" if final_evaluation else None,
                 save_heatmaps=final_evaluation,

@@ -46,6 +46,6 @@
 
 MY_WANDB_KEY=$(cat ~/.wandb_key)
 
-singularity run --nv --env PYTHONPATH="$PWD" --env WANDB_API_KEY="$MY_WANDB_KEY" --bind "$PWD:$PWD" hockey_env.sif python3 src/TDMPC/train.py
+singularity run --nv --env PYTHONPATH="$PWD" --env WANDB_API_KEY="$MY_WANDB_KEY" --bind "$PWD:$PWD" cuda11_container.sif python3 src/TDMPC/train.py
 
 echo DONE!

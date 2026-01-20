@@ -84,6 +84,7 @@ class TrainingMonitor:
                     opponent_name
                 ],
                 "train/episode_index": episode_index,
+                "train/episode_reward": episode.reward.sum(),
                 "train/episode_length": len(episode),
             },
             step=step,

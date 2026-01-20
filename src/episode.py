@@ -1,9 +1,9 @@
 import numpy as np
 import torch
-from enum import StrEnum
+from enum import Enum
 
 
-class Outcome(StrEnum):
+class Outcome(Enum):
     WIN = "win"
     LOSS = "loss"
     DRAW = "draw"

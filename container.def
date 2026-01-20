@@ -15,8 +15,9 @@ from: ubuntu:24.04
 
     pip install "hockey @ git+https://git@github.com/martius-lab/hockey-env.git"
     pip install "comprl @ git+https://github.com/martius-lab/teamproject-competition-server.git#egg=comprl&subdirectory=comprl"
-
-    pip install torch torchvision gymnasium[mujoco] matplotlib numpy omegaconf opencv-python wandb[media]
+    
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+    pip install gymnasium[mujoco] matplotlib numpy omegaconf opencv-python wandb[media]
 
     # cleanup
     apt-get clean

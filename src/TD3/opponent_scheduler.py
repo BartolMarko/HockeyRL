@@ -82,7 +82,7 @@ class SingleOpponent(Opponent):
 
 class SamplingStrategy(Enum):
     UNIFORM     = 1
-    PRIORITIZED = 2
+    THOMPSON    = 2
     
 class MultiOpponent(Opponent):
     def __init__(self, opps, probs : list[float] | str):
@@ -100,7 +100,6 @@ class MultiOpponent(Opponent):
             chosen = chosen.get()
 
         return chosen
-
 
 class FixedOpponentScheduler(OpponentScheduler):
     def __init__(self, max_timesteps : int, max_pool_size : int):
@@ -174,8 +173,8 @@ class LinearOpponentScheduler(OpponentScheduler):
 
 
     def __init__(self, phase_shifts : list[int], opponent_types : list[tuple[str, None | str]], 
-                 max_pool_size : int, obs_space, act_space, td3_cfg,
-                 min_winrate = .55, eval_games = 20, on_phase_change = None):
+                 max_pool_size : int, td3_cfg, min_winrate = .55, 
+                 eval_games = 20, on_phase_change = None):
         
         assert len(phase_shifts) == len(opponent_types)
         self.phase_shifts     = phase_shifts
@@ -187,9 +186,7 @@ class LinearOpponentScheduler(OpponentScheduler):
         self.test_env         = HockeyEnv()
         self.weak_opp         = WeakBot()
         self.on_phase_change  = on_phase_change
-        self.obs_space = obs_space
-        self.act_space = act_space
-        self.td3_cfg = td3_cfg
+        self.td3_cfg          = td3_cfg
 
         assert len(phase_shifts) > 0
         assert phase_shifts[0] == 0, "phase shift list must start with 0"
@@ -229,7 +226,7 @@ class LinearOpponentScheduler(OpponentScheduler):
             case _:
                 if os.path.exists(code[0]):
                     print("loading", code[0])
-                    td3 = TD3(self.obs_space, self.act_space, self.td3_cfg)
+                    td3 = TD3(self.td3_cfg)
                     td3.restore_state(torch.load(code[0]))
                     actor = td3.model.actor
                     actor.eval()
@@ -252,7 +249,7 @@ class LinearOpponentScheduler(OpponentScheduler):
         return self.current_opponent.get()
     
     def get_opponents(self):
-        opps = [self.weak_opp, self.strong_opp, self.custom_opp]
+        opps = [WeakBot(), StrongBot(), CustomOpponent()]
         opps.extend(self.pool)
         return opps
     
@@ -298,14 +295,14 @@ class ThompsonScheduler(OpponentPoolThompsonSampling):
 
         super().add_opponent(wrapped, prior)
 
-    def get_opponent(self):
+    def get_opponent(self, t):
         return super().sample_opponent()
 
 
 
 class OpponentSchedulerFactory:
     @staticmethod
-    def get_scheduler(full_config : dict, obs_space, action_space, on_phase_change = None) -> Opponent:
+    def get_scheduler(full_config : dict, on_phase_change = None) -> Opponent:
         td3_config = full_config['td3']
         config = full_config['training']
         opp_cfg = config['opponent_scheduler']
@@ -321,8 +318,8 @@ class OpponentSchedulerFactory:
                                                min_winrate=opp_cfg['min_winrate'],
                                                eval_games=opp_cfg['eval_games'],
                                                on_phase_change = on_phase_change, 
-                                               obs_space=obs_space,
-                                               act_space=action_space,
                                                td3_cfg=td3_config)
+            case 'thompson':
+                return ThompsonScheduler()
             case _:
                 raise Exception(f"Invalid opponent scheduler {scheduler}")

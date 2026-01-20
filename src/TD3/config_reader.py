@@ -9,10 +9,18 @@ class Config:
             with open(source) as f:
                 self.cfg = yaml.safe_load(f)
         
-        Config._build_recursive(self, self.cfg)
+        self._build_recursive()
     
     def __getitem__(self, item):
         return self.cfg[item]
+    
+    def __setitem__(self, item, val):
+        self.cfg[item] = val
+        if isinstance(val, dict):
+            new_obj = Config(val)
+            setattr(self, item, new_obj)
+        else:
+            setattr(self, item, val)
     
     def get(self, item, alt = None):
         return self.cfg.get(item, alt)
@@ -32,12 +40,10 @@ class Config:
     def __repr__(self):
         return self.cfg.__repr__()
 
-    @staticmethod
-    def _build_recursive(obj, atts):
-        for k, v in atts.items():
+    def _build_recursive(self):
+        for k, v in self.cfg.items():
             if isinstance(v, dict):
                 new_obj = Config(v)
-                setattr(obj, k, new_obj)
-                Config._build_recursive(new_obj, v)
+                setattr(self, k, new_obj)
             else:
-                setattr(obj, k, v)
+                setattr(self, k, v)

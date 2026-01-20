@@ -16,10 +16,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class TD3(NamedAgent):
-    def __init__(self, obs_space, act_space, config = dict()):
+    def __init__(self, config : dict):
         super().__init__('TD3')
-        self.obs_space = obs_space
-        self.act_space = act_space
+        self.obs_space = config['observation_space']
+        self.act_space = config['action_space']
         self._config = {
             "gamma": .99,
             "buffer_size": int(1e6),
@@ -43,8 +43,8 @@ class TD3(NamedAgent):
         self.pr_replay = self._config['prioritized_replay']
         self.polyak = self._config['polyak']
 
-        self._action_n = act_space.shape[0]
-        self._obs_dim = obs_space.shape[0]
+        self._action_n = self.act_space.shape[0]
+        self._obs_dim = self.obs_space.shape[0]
 
         self.high = torch.from_numpy(self.act_space.high).to(device)
         self.low  = torch.from_numpy(self.act_space.low).to(device)
@@ -185,6 +185,11 @@ class TD3(NamedAgent):
         torch.save(self.state(), save_dir / "model.pt")
 
         wandb.save(str(save_dir / 'model.pt'))
+
+    def save_locally(self, directory, step):
+        save_dir = Path(directory) / f"checkpoint_step_{step}"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        torch.save(self.state(), save_dir / "model.pt")
 
     def get_policy_config(self):
         return {

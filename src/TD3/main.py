@@ -20,7 +20,7 @@ from src.named_agent import WeakBot
 from src.evaluation import Evaluator
 
 
-RUN_NAME = "td3_self_play"
+RUN_NAME = "td3_self_play_test_run_thompson"
 
 def set_seed(random_seed):
     if random_seed is not None:
@@ -29,6 +29,12 @@ def set_seed(random_seed):
         random.seed(random_seed)
         torch.cuda.manual_seed(random_seed)
 
+
+def update_cfg(env, action_space, cfg):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    cfg['observation_space'] = env.observation_space
+    cfg['device'] = device
+    cfg['action_space'] = action_space
 
 def main():
     parser = argparse.ArgumentParser()
@@ -40,7 +46,11 @@ def main():
 
     t_cfg = cfg.training
     env = HockeyEnv()
+    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
     env_name = env.__class__.__name__
+
+    update_cfg(env, action_space, cfg)
+    update_cfg(env, action_space, cfg['td3'])
 
     log_interval = 20
     total_timesteps = t_cfg['total_timesteps']
@@ -48,16 +58,20 @@ def main():
 
     set_seed(t_cfg.get('seed'))
 
-    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
 
     noise_scheduler = SchedulerFactory.get_scheduler(t_cfg['noise_scheduler']) 
 
     noise_sampler = NosieFactory.get_noise(t_cfg['action_noise'], action_dim=action_space.shape[0])
 
-    opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, env.observation_space, action_space,
-                                                            on_phase_change=noise_scheduler.reset)
+    opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=noise_scheduler.reset)
 
-    td3 = TD3(env.observation_space, action_space, cfg['td3'])
+    td3 = TD3(cfg['td3'])
+
+    training_monitor = TrainingMonitor(
+        run_name=RUN_NAME,
+        config=cfg
+    )
+    evaluator = Evaluator(cfg['device'])
 
     print(next(td3.model.actor.parameters()).device)
     
@@ -67,6 +81,12 @@ def main():
             noise_scale = noise_scheduler.value()
             action += noise_sampler.sample() * noise_scale
         return np.clip(action, action_space.low, action_space.high)
+    
+    def save_ckpt(episode):
+        print("########## Saving a checkpoint... ##########")
+        td3.save_to_wandb(training_monitor.run, episode)
+        if t_cfg.get('save_ckpt_locally'):
+            td3.save_locally(t_cfg['result_directory'], episode)
 
     
     if t_cfg.get('resume_from') is not None:
@@ -75,7 +95,6 @@ def main():
 
     k = 0
 
-    epi_rewards = np.zeros(log_interval)
     win_info = np.zeros(log_interval)
     last_n_winrates = np.zeros(log_interval)
     
@@ -100,11 +119,6 @@ def main():
         agent2 = WeakBot()
 
     episode = Episode(ob)
-    training_monitor = TrainingMonitor(
-        run_name=RUN_NAME,
-        config=cfg
-    )
-    evaluator = Evaluator(torch.device('cuda'))
     for t in range(1 + start_idx, total_timesteps + 1):
         if t > t_cfg.start_after:
             a1 = get_action(t, ob)
@@ -114,6 +128,7 @@ def main():
         a2 = agent2.act(ob_agent2)
         (ob_new, reward, done, trunc, info) = env.step(np.hstack([a1, a2]))
         total_reward+= reward
+        total_length += 1
         td3.store_transition((ob, a1, reward, ob_new, done))
         ob=ob_new
         ob_agent2 = env.obs_agent_two()
@@ -121,30 +136,30 @@ def main():
         if done or trunc or total_length == max_episode_length: 
             ob, _ = env.reset()
             ob_agent2 = env.obs_agent_two()
+            win_info[i_episode % log_interval] = info['winner']
             i_episode += 1
-            win_info[(i_episode - 1) % log_interval] = (info['winner'])# == 1)
-            epi_rewards[(i_episode - 1) % log_interval] = total_reward
-            total_reward, total_length = (0,)*2
+            total_length = 0
 
             if i_episode % 1000 == 0:
-                print("########## Saving a checkpoint... ##########")
-                td3.save_to_wandb(training_monitor.run, step=i_episode)
+                save_ckpt(i_episode)
 
             training_monitor.log_training_episode(opponent_name=agent2.name,
                                                   episode=episode,
                                                   step=t,
                                                   episode_index=i_episode)
+            
+            if hasattr(opp_scheduler, 'add_episode_outcome'):
+                opp_scheduler.add_episode_outcome(agent2, episode.outcome)
 
             if i_episode % log_interval == 0:
                 winrate  = (win_info == 1).mean()
                 last_n_winrates[k % log_interval] = winrate
                 k += 1
 
-
                 if last_n_winrates.mean() > .88:
                     if hasattr(opp_scheduler, "trigger_phase_change"):
                         if opp_scheduler.trigger_phase_change():
-                            torch.save(td3.state(), f'./{t_cfg.result_directory}/td3_{env_name}_{i_episode}-s{random_seed}.pth')
+                            save_ckpt(i_episode)
                             print(f"triggered phase change at episode: {i_episode}")
             
             if t_cfg.use_opp_scheduler:
@@ -173,7 +188,6 @@ def main():
                 "loss_pi": mean_loss_pi},
                 step = t
             )
-
 
         if t % t_cfg['eval_freq'] == 0:
             final_eval = (t == total_timesteps)

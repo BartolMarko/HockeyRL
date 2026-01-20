@@ -10,6 +10,7 @@ from hockey import hockey_env as h_env
 from hockey.hockey_env import BasicOpponent
 from src.TD3.td3 import TD3
 from src.TD3.custom_opponent import CustomOpponent
+from src.TD3.config_reader import Config
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -18,6 +19,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, 
                         help='path for model evaluation')
+    parser.add_argument('--config', type=str,
+                        help='config for td3', default='./src/TD3/config.yaml')
     parser.add_argument('-m', '--maxepisodes', type=int, 
                         default=1000, help='max episodes')
     parser.add_argument('-t', '--maxtimesteps', default=2000, type=int,
@@ -36,8 +39,7 @@ def test():
 
     opts = parse_args()
 
-
-    to_torch = lambda x: torch.from_numpy(x.astype(np.float32)).to(device)
+    cfg = Config(opts.config)['td3']
 
     save_gif = opts.gif
 
@@ -54,6 +56,8 @@ def test():
     opp_type = opts.opponent.lower()
     
     action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
+    cfg['observation_space'] = env.observation_space
+    cfg['action_space'] = action_space
 
     match opp_type:
         case 'weak':
@@ -64,7 +68,7 @@ def test():
             agent2 = CustomOpponent()
         case _:
             if os.path.exists(opp_type):
-                agent2 = TD3(env.observation_space, action_space)
+                agent2 = TD3(cfg)
                 agent2.restore_state(torch.load(opp_type))
                 opp_type = 'td3' # override for gif path
             else:
@@ -75,8 +79,7 @@ def test():
     if opts.path == 'custom':
         algo = CustomOpponent()
     else:
-        algo = TD3(env.observation_space, action_space)
-
+        algo = TD3(cfg)
         algo.restore_state(torch.load(opts.path))
 
     wins = 0

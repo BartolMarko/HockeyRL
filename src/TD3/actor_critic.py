@@ -4,8 +4,6 @@ from torch import nn
 from src.TD3.feedforward import FeedForward
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 class Actor(FeedForward):
     def __init__(self, input_size, hidden_sizes, output_size, **kwargs):
         super().__init__(input_size, hidden_sizes, output_size, **kwargs)

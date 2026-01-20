@@ -5,8 +5,8 @@ from queue import Queue
 from src.episode import Episode, Outcome
 from src.evaluation import Heatmap
 
-TEAM_NAME = "rajinishaneel-universit-tsstadt-t-bingen"
-PROJECT_NAME = "rl-proj"
+TEAM_NAME = "wayne-gradientzky"
+PROJECT_NAME = "hockey-rl"
 
 
 class TrainingMonitor:

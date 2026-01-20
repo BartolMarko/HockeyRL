@@ -11,7 +11,7 @@
 #SBATCH --cpus-per-task=4
 # the job can use and see 4 CPUs (from max 24).
 
-#SBATCH --partition=day
+#SBATCH --partition=week
 # the slurm partition the job is queued to.
 
 #SBATCH --mem-per-cpu=3G
@@ -20,7 +20,7 @@
 #SBATCH --gres=gpu:1
 #the job can use and see 1 GPUs (4 GPUs are available in total on one node)
 
-#SBATCH --time=1-0
+#SBATCH --time=4-0
 # the maximum time the scripts needs to run
 # "minutes:seconds", "hours:minutes:seconds", "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
 

@@ -19,6 +19,7 @@ td3:
     learning_rate: 0.001
 
 training:
+  run_name: td3_self_play_test_run_thompson
   total_timesteps: 5000000 # and this from 4.5M
   max_ep_length: 251
   seed: 699
@@ -81,4 +82,3 @@ training:
     max_pool_size: 20
     min_winrate: 0.65
     eval_games: 20
-    run_name: td3_self_play_test_run_thompson

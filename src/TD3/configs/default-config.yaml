@@ -30,9 +30,9 @@ training:
   start_after: 10000
   use_opp_scheduler: True
   max_opp_pool: 20
-  opp_update_freq: 100000 # orig 10000
+  opp_update_freq: 10000
   save_ckpt_locally: True
-  result_directory: "results6"
+  result_directory: "results"
   eval_freq: 10000
   eval_episodes_per_opp: 20
   video_episodes_per_outcome: 20
@@ -44,7 +44,7 @@ training:
 
   opponent_scheduler:
     # choices [fixed, linear, thompson]
-    type: thompson
+    type: linear
     phase_shifts: [0, 2000000, 4000000]
     # opponent_types: [['basic'], ['multi', [ [.2, ['basic']], [.8, ['strong']] ] ], ['multi', [ [.2, ['basic'] ], [.2, ['strong'] ], [.6, ['self'] ] ] ] ]
     opponent_types:
@@ -81,4 +81,4 @@ training:
     max_pool_size: 20
     min_winrate: 0.65
     eval_games: 20
-    run_name: td3_self_play_test_run_thompson
+    run_name: td3_self_play_baseline

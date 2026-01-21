@@ -19,9 +19,6 @@ from src.training_monitor import TrainingMonitor
 from src.named_agent import WeakBot
 from src.evaluation import Evaluator
 
-
-RUN_NAME = "td3_self_play_test_run_thompson"
-
 def set_seed(random_seed):
     if random_seed is not None:
         torch.manual_seed(random_seed)
@@ -68,7 +65,7 @@ def main():
     td3 = TD3(cfg['td3'])
 
     training_monitor = TrainingMonitor(
-        run_name=RUN_NAME,
+        run_name=t_cfg['run_name'],
         config=cfg
     )
     evaluator = Evaluator(cfg['device'])

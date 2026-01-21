@@ -27,17 +27,21 @@ class Critic(FeedForward):
 class ActorCritic(nn.Module):
     def __init__(self, obs_dim, act_dim, *, actor_hidden_sizes, 
                  actor_activation_fun, actor_ouput_activation_fun,
-                 critic_hidden_sizes, critic_activation_fun):
+                 critic_hidden_sizes, critic_activation_fun, 
+                 use_layernorm = False):
         super().__init__()
 
         self.actor = Actor(obs_dim, actor_hidden_sizes, act_dim,
                            activation_func = actor_activation_fun, 
-                           output_activation = actor_ouput_activation_fun)
+                           output_activation = actor_ouput_activation_fun, 
+                           use_layernorm = use_layernorm)
         
         self.critic1 = Critic(obs_dim, act_dim, critic_hidden_sizes, 
-                              activation_func = critic_activation_fun)
+                              activation_func = critic_activation_fun, 
+                              use_layernorm = use_layernorm)
         self.critic2 = Critic(obs_dim, act_dim, critic_hidden_sizes, 
-                              activation_func = critic_activation_fun)
+                              activation_func = critic_activation_fun,
+                              use_layernorm=use_layernorm)
         
     def q1(self, o, a):
         return self.critic1.q(o, a)

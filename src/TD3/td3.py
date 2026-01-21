@@ -56,7 +56,8 @@ class TD3(NamedAgent):
                                  actor_activation_fun=nn.ReLU(), 
                                  actor_ouput_activation_fun=self.output_activation,
                                  critic_hidden_sizes=self._config['actor']['hidden_sizes'],
-                                 critic_activation_fun=nn.ReLU()
+                                 critic_activation_fun=nn.ReLU(),
+                                 use_layernorm=self._config.get('use_layernorm', False)
                                  ).to(device)
         
         self.model_target = ActorCritic(self._obs_dim, self._action_n, 
@@ -64,7 +65,8 @@ class TD3(NamedAgent):
                                  actor_activation_fun=nn.ReLU(), 
                                  actor_ouput_activation_fun=self.output_activation,
                                  critic_hidden_sizes=self._config['critic']['hidden_sizes'],
-                                 critic_activation_fun=nn.ReLU()
+                                 critic_activation_fun=nn.ReLU(),
+                                 use_layernorm=self._config.get('use_layernorm', False)
                                  ).to(device)
         
         self._hard_copy_nets()
@@ -198,6 +200,7 @@ class TD3(NamedAgent):
             "output_size": self._action_n,
             "activation_func": nn.ReLU(),
             "output_activation": self.output_activation,
+            "use_layernorm": self._config.get('use_layernorm', False),
             "state_dict": self.model.actor.state_dict()
         }
 

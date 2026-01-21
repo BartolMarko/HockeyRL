@@ -6,17 +6,28 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class FeedForward(nn.Module):
     def __init__(self, input_size, hidden_sizes : list, output_size, *,
-                 activation_func = nn.ReLU(), output_activation = None):
+                 activation_func = nn.ReLU(), output_activation = None, 
+                 use_layernorm=False):
         super().__init__()
         self.input_size     = input_size
         self.hidden_sizes   = hidden_sizes
         self.output_size    = output_size
         self.output_act     = output_activation
         layer_sizes         = [input_size] + self.hidden_sizes
-        self.layers = nn.Sequential(
-            *[nn.Sequential(nn.Linear(i, o), activation_func)
-              for i, o in zip(layer_sizes[:-1], layer_sizes[1:])]
-        )
+        # self.layers = nn.Sequential(
+        #     *[nn.Sequential(nn.Linear(i, o), activation_func)
+        #       for i, o in zip(layer_sizes[:-1], layer_sizes[1:])]
+        # )
+        layers = []
+
+        for i, o in zip(layer_sizes[:-1], layer_sizes[1:]):
+            layers.append(nn.Linear(i, o))
+            if (use_layernorm):
+                layers.append(nn.LayerNorm(o))
+            layers.append(activation_func)
+        
+        self.layers = nn.Sequential(*layers)
+
         self.out = nn.Linear(self.hidden_sizes[-1], self.output_size)
         self.output_act = output_activation
 

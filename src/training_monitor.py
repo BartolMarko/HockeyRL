@@ -74,7 +74,7 @@ class TrainingMonitor:
         self.per_opponent_heatmaps[opponent_name].add_episode(episode)
 
         outcome_rates = {
-            f"train/{outcome}_rate/{opponent_name}": count / queue_size
+            f"train/{outcome.value}_rate/{opponent_name}": count / queue_size
             for outcome, count in self.opponent_outcome_counts[opponent_name].items()
         }
         self.run.log(
@@ -83,6 +83,8 @@ class TrainingMonitor:
                 f"train/episodes_played/{opponent_name}": self.opponent_episode_counts[
                     opponent_name
                 ],
+                f"train/episode_length/{opponent_name}": len(episode),
+                f"train/episode_reward/{opponent_name}": episode.reward.sum(),
                 "train/episode_index": episode_index,
                 "train/episode_reward": episode.reward.sum(),
                 "train/episode_length": len(episode),

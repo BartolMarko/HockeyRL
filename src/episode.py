@@ -2,6 +2,22 @@ import numpy as np
 import torch
 from enum import Enum
 
+PUCK_X_COORDINATE_INDEX = 12
+
+
+class Possession(Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
+def get_puck_possession(obs: np.ndarray) -> Possession:
+    """Determine which side has possession of the puck based on the observation."""
+    puck_x_position = obs[PUCK_X_COORDINATE_INDEX]
+    if puck_x_position < 0:
+        return Possession.LEFT
+    else:
+        return Possession.RIGHT
+
 
 class Outcome(Enum):
     WIN = "win"
@@ -53,6 +69,7 @@ class Episode(object):
         self.done = False
         self.length = 0
         self.outcome = None
+        self.first_puck_possession = get_puck_possession(init_obs)
 
     def __len__(self):
         """

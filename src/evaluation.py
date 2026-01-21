@@ -8,12 +8,16 @@ from omegaconf import OmegaConf
 from typing import Optional
 from hockey import hockey_env as h_env
 from pathlib import Path
+from gymnasium import spaces
 
 from src.named_agent import StrongBot, WeakBot
-from src.episode import Episode, Outcome
+from src.episode import Episode, Outcome, Possession
 from src.named_agent import NamedAgent
 from src.environments import SparseRewardHockeyEnv
+
 from src.TDMPC.agent import TDMPCAgent
+from src.TD3.td3 import TD3
+from src.TD3.config_reader import Config
 
 
 class VideoBuilder:
@@ -235,6 +239,8 @@ class Heatmap:
 
 
 class Evaluator:
+    OVERALL_NAME = "overall"
+
     def __init__(self, device: str = "cpu"):
         self.device = device
 
@@ -310,6 +316,7 @@ class Evaluator:
         Evaluate the given agent against a list of opponents in the specified environment.
 
         For each opponent, runs num_episodes episodes and records the outcomes (win/loss/draw).
+        Computes win/loss/draw rates per opponent and per first possession.
         If save_path is provided, saves the results and heatmaps to that directory (per opponent).
         If render_mode is 'rgb_array', saves videos of a specified number of episodes per outcome.
         If render_mode is 'human', renders the episodes to the screen.
@@ -338,7 +345,14 @@ class Evaluator:
         for opponent in opponents:
             print(f"Evaluating {agent.name} against opponent: {opponent.name}")
 
-            results_opponent = {outcome: 0 for outcome in Outcome}
+            results_opponent = {
+                side_name: {outcome: 0 for outcome in Outcome}
+                for side_name in [
+                    Possession.LEFT.value,
+                    Possession.RIGHT.value,
+                    self.OVERALL_NAME,
+                ]
+            }
             outcome_video_builders = {outcome: VideoBuilder() for outcome in Outcome}
             heatmap = Heatmap(device=self.device) if save_heatmaps else None
 
@@ -346,7 +360,11 @@ class Evaluator:
                 episode, episode_video = self.run_episode(
                     env, agent, opponent, render_mode=render_mode
                 )
-                results_opponent[episode.outcome] += 1
+
+                results_opponent[self.OVERALL_NAME][episode.outcome] += 1
+                results_opponent[episode.first_puck_possession.value][
+                    episode.outcome
+                ] += 1
                 if heatmap is not None:
                     heatmap.add_episode(episode)
 
@@ -456,31 +474,89 @@ class Evaluator:
                 suffix=f"_{agent_name}_vs_{opponent_name}",
             )
 
-    @staticmethod
-    def _prettify_results(opponent_results: dict[Outcome:int]):
-        """Convert outcome counts to a dictionary with rates."""
-        result = {outcome.value: count for outcome, count in opponent_results.items()}
+    @classmethod
+    def _prettify_results(
+        cls, opponent_results: dict[str, dict[Outcome, int]]
+    ) -> dict[str, float]:
+        """Convert outcome counts to a dictionary with rates per opponent and first possession."""
+        result = {
+            f"{outcome.value}": count
+            for outcome, count in opponent_results[cls.OVERALL_NAME].items()
+        }
         result.update(
             {
-                f"{outcome.value}_rate": count / sum(opponent_results.values())
-                for outcome, count in opponent_results.items()
+                f"{outcome.value}_rate": count
+                / sum(opponent_results[cls.OVERALL_NAME].values())
+                for outcome, count in opponent_results[cls.OVERALL_NAME].items()
+            }
+        )
+        result.update(
+            {
+                f"{possession}_possession_{outcome.value}": count
+                for possession, possession_results in opponent_results.items()
+                if possession != cls.OVERALL_NAME
+                for outcome, count in possession_results.items()
+            }
+        )
+        result.update(
+            {
+                f"{possession}_possession_{outcome.value}_rate": count
+                / sum(opponent_results[possession].values())
+                for possession, possession_results in opponent_results.items()
+                if possession != cls.OVERALL_NAME
+                and sum(opponent_results[possession].values()) > 0
+                for outcome, count in possession_results.items()
             }
         )
         return result
 
 
 if __name__ == "__main__":
-    MODEL_PATH = (
+    MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "tdmpc_self_play"
+    OLD_MODEL_PATH = (
         Path(__file__).resolve().parent.parent
         / "models"
         / "tdmpc_baseline_weak_and_strong_bots_only"
     )
+    # OPPONENT_PATH = MODEL_PATH / "opponent_350k"
+    TD3_WEIGHTS_PATH = (
+        Path(__file__).resolve().parent.parent
+        / "models"
+        / "td3_HockeyEnv_72000-s699.pth"
+    )
+    TD3_WEIGHTS_PATH_118 = (
+        Path(__file__).resolve().parent.parent
+        / "models"
+        / "td3_benchmarks"
+        / "td3_HockeyEnv_118.pth"
+    )
+    TD3_WEIGHTS_PATH_119 = (
+        Path(__file__).resolve().parent.parent
+        / "models"
+        / "td3_benchmarks"
+        / "td3_HockeyEnv_119.pt"
+    )
     env = SparseRewardHockeyEnv()
-    tdmpc_agent = TDMPCAgent(MODEL_PATH, tdmpc=None, step=400_000)
-    tdmpc_agent_2 = TDMPCAgent(MODEL_PATH, tdmpc=None, step=400_000, name_suffix="_2")
+    tdmpc_agent = TDMPCAgent(MODEL_PATH, tdmpc=None, step=750_000)
+    # self_play_opponent = TDMPCAgent(
+    #     OPPONENT_PATH, tdmpc=None, step=350_000, name_suffix="_self_350k"
+    # )
+    old_opponent = TDMPCAgent(
+        OLD_MODEL_PATH, tdmpc=None, step=500_000, name_suffix="_old_500k"
+    )
     strong_bot = StrongBot()
     weak_bot = WeakBot()
     evaluator = Evaluator(device="cuda")
+
+    td3_config_path = Path(__file__).resolve().parent / "TD3" / "config.yaml"
+    td3_cfg = Config(td3_config_path)["td3"]
+
+    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
+    td3_cfg["observation_space"] = env.observation_space
+    td3_cfg["action_space"] = action_space
+    td3_agent = TD3(td3_cfg)
+    td3_agent.restore_state(torch.load(TD3_WEIGHTS_PATH_118))
+
     # wandb_run = wandb.init(
     #     entity="wayne-gradientzky",
     #     project="hockey-rl",
@@ -490,13 +566,13 @@ if __name__ == "__main__":
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
         agent=tdmpc_agent,
-        opponents=[tdmpc_agent_2],
+        opponents=[td3_agent],
         num_episodes=30,
         render_mode="human",
         save_path=None,
         wandb_run=None,
         save_heatmaps=True,
-        save_episodes_per_outcome={Outcome.WIN: 5, Outcome.LOSS: 5, Outcome.DRAW: 5},
+        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
         train_step=22,
     )
     print(results)

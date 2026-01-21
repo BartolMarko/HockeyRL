@@ -94,6 +94,7 @@ def train(cfg):
     )
 
     # Run training
+    mirror_episodes = cfg.get("mirror_episodes", False)
     episode_idx, step = 0, 0
     last_update_step, last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0, 0
     while step < cfg.train_steps:
@@ -135,6 +136,21 @@ def train(cfg):
 
         opponent_pool.add_episode_outcome(opponent, episode.outcome)
         training_monitor.log_training_episode(opponent.name, episode, step, episode_idx)
+        step += len(episode)
+        episode_idx += 1
+
+        if mirror_episodes:
+            episode.mirror()
+            buffer += episode
+            step += len(episode)
+            episode_idx += 1
+            # TODO: log mirrored episode?
+            # TODO: add mirrored episode outcome to opponent pool?
+            # So far I don't do it, it would lead to doubling statistics
+            # This way, stuff is logged only once every 2 episodes
+
+        env_step = int(step * cfg.action_repeat)
+        # TODO: WATCH OUT FOR ENV STEP WHEN USING ACTION REPEAT
 
         # Update model
         # TODO: Average train metrics, not overwrite
@@ -144,11 +160,6 @@ def train(cfg):
             last_update_step = step
             for i in range(num_updates):
                 train_metrics.update(tdmpc.update(buffer, step + i))
-
-        step += len(episode)
-        episode_idx += 1
-        env_step = int(step * cfg.action_repeat)
-        # TODO: WATCH OUT FOR ENV STEP WHEN USING ACTION REPEAT
 
         # Log training metrics
         train_metrics = {f"Losses/{k}": v for k, v in train_metrics.items()}

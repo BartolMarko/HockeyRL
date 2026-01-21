@@ -3,6 +3,22 @@ import torch
 from enum import Enum
 
 PUCK_X_COORDINATE_INDEX = 12
+OBSERVATION_INDICES_FOR_MIRRORING = [
+    1,  # y pos player one
+    2,  # angle player one
+    4,  # y vel player one
+    5,  # angular vel player one
+    7,  # y pos player two
+    8,  # angle player two
+    10,  # y vel player two
+    11,  # angular vel player two
+    13,  # y pos puck
+    15,  # y vel puck
+]
+ACTION_INDICES_FOR_MIRRORING = [
+    1,  # y force
+    2,  # torque
+]
 
 
 class Possession(Enum):
@@ -126,3 +142,12 @@ class Episode(object):
                 self.outcome = Outcome.LOSS
             else:
                 self.outcome = Outcome.DRAW
+
+    def mirror(self) -> None:
+        """Mirror the episode (up-down mirroring). Changes the episode in place."""
+        for idx in OBSERVATION_INDICES_FOR_MIRRORING:
+            self.obs[:, idx] *= -1
+
+        for idx in ACTION_INDICES_FOR_MIRRORING:
+            self.action[:, idx] *= -1
+            self.opponent_action[:, idx] *= -1

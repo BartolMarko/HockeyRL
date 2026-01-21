@@ -50,6 +50,7 @@ save_model_freq: 50000
 device: cuda
 
 # Opponent Pool
+# TODO: move somehow to kwargs
 opponent_pool_window_size: 100
 opponent_pool_draw_weight: 0.5
 
@@ -70,6 +71,7 @@ evaluation_opponents:
     config_path: ./models/td3_benchmarks/td3_config.yaml
 
 # Training opponents
+opponent_pool: Uniform
 training_opponents:
   StrongBot:
     type: StrongBot

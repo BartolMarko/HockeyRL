@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 from src.agent_factory import agent_factory
 from src.environments import environment_factory
 from src.evaluation import Evaluator
-from src.opponent_pool import OpponentPoolThompsonSampling
+from src.opponent_pool import opponent_pool_factory, OpponentPool
 from src.training_monitor import TrainingMonitor
 
 from src.TDMPC.tdmpc import TDMPC
@@ -47,7 +47,7 @@ def load_opponents_from_config(opponents_cfg: OmegaConf) -> list:
 
 def add_self_to_opponent_pool(
     tdmpc: TDMPC,
-    opponent_pool: OpponentPoolThompsonSampling,
+    opponent_pool: OpponentPool,
     step: int,
     cfg: OmegaConf,
 ):
@@ -81,9 +81,11 @@ def train(cfg):
         for opp_name, opp_cfg in cfg.training_opponents.items()
     ]
     training_opponents.sort(key=lambda x: x[0])
-    opponent_pool = OpponentPoolThompsonSampling(
+    opponent_pool = opponent_pool_factory(
+        cfg.get("opponent_pool", "ThompsonSampling"),
         opponents=[],
-        window_size_episodes=cfg.opponent_pool_window_size,
+        window_size_episodes=cfg.get("opponent_pool_window_size", 100),
+        draw_weight=cfg.get("opponent_pool_draw_weight", 0.5),
     )
 
     tdmpc, buffer = TDMPC(cfg), ReplayBuffer(cfg)

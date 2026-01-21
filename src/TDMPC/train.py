@@ -125,9 +125,7 @@ def train(cfg):
             eval_mode=False,
             name_suffix=f"_step_{step}",
         )
-        opponent = opponent_pool.sample_opponent(
-            draw_weight=cfg.opponent_pool_draw_weight
-        )
+        opponent = opponent_pool.sample_opponent()
         episode, _ = evaluator.run_episode(
             env,
             agent,

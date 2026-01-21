@@ -1,4 +1,4 @@
-run_name: tdmpc_mirroring_self_play_150k_start_100k_freq_2M_steps_window_100
+run_name: tdmpc_uniform_self_play_150k_start_100k_freq_2M_steps_window_100
 
 # environment
 env_name: SparseRewardHockeyEnv
@@ -6,7 +6,7 @@ action_repeat: 1
 discount: 0.99
 max_episode_length: 251
 train_steps: 2000000
-mirror_episodes: True
+mirror_episodes: False
 
 # planning
 iterations: 6

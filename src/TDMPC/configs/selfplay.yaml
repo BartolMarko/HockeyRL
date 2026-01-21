@@ -1,4 +1,4 @@
-run_name: tdmpc_self_play_150k_start_100k_freq_2M_steps_window_100
+run_name: tdmpc_mirroring_self_play_150k_start_100k_freq_2M_steps_window_100
 
 # environment
 env_name: SparseRewardHockeyEnv

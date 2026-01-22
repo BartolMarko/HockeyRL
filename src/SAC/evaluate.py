@@ -1,9 +1,7 @@
 import numpy as np
-from pathlib import Path
 from omegaconf import OmegaConf
 import helper
 from hockey import hockey_env as h_env
-from agent import Agent
 import opponents as opp
 import imageio
 
@@ -49,13 +47,27 @@ def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=N
 def evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, step: int | None = None, heatmap: bool = False):
     """Evaluate a trained agent against a pool of opponents."""
     overall_stats = {}
-    for opponent in opponent_pool.get_all_opponents():
-        win_count, lose_count, draw_count = evaluate(env, agent, opponent, num_episodes, step, heatmap=heatmap)
-        overall_stats[opponent.name] = {
-            'win': win_count,
-            'lose': lose_count,
-            'draw': draw_count
-        }
+    print("Starting evaluation against opponent pool...:", opponent_pool.get_playable_opponents())
+    for opponent in opponent_pool.get_playable_opponents():
+        if opponent.is_mgr():
+            pool = opponent.get_last_n_opponents(20)
+            results = evaluate_against_pool(env, agent, pool, num_episodes, step, heatmap=heatmap)
+            win_count = sum([results[op]['win'] for op in results])
+            lose_count = sum([results[op]['lose'] for op in results])
+            draw_count = sum([results[op]['draw'] for op in results])
+            overall_stats[opponent.name] = {
+                'win': win_count,
+                'lose': lose_count,
+                'draw': draw_count
+            }
+            opponent.record_last_n_scores([results[op]['win'] / num_episodes for op in results])
+        else:
+            win_count, lose_count, draw_count = evaluate(env, agent, opponent, num_episodes, step, heatmap=heatmap)
+            overall_stats[opponent.name] = {
+                'win': win_count,
+                'lose': lose_count,
+                'draw': draw_count
+            }
         print(f"Against {opponent.name}: Wins: {win_count}, Losses: {lose_count}, Draws: {draw_count}.")
     return overall_stats
 

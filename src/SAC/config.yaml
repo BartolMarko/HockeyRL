@@ -2,13 +2,28 @@ dry_run: False
 
 # Environment
 n_actions: 4
+opponent_pool:
+  type: 'weighted'
 opponents:
   - type: 'StrongBot'
-    priority: 0.6
+    priority: 0.65
   - type: 'WeakBot'
-    priority: 0.4
+    priority: 0.35
+self_play:
+  - name: 'SelfPlayMgr'
+    priority: 0.8
+    max_pool_size: 1000
+    activation_type: 'botwin'
+    activation_epsilon: 1.0
+    pooling:
+      - type: 'episode'
+        freq: 5
+    sampler:
+      name: 'pfsp'
+      pfsp_p: 0.5
+
 # rewards
-reward_transform: "v4"
+reward_transform: "v2"
 # rewards: v1
 reward_scale: 2.1
 closeness_to_puck_reward_weight: 1.2
@@ -22,7 +37,6 @@ still_puck_penalty: 0.25
 # Buffers
 buffer_type: "n-step-per"
 buffer_max_size: 1000000
-# buffer_type: n-step-per
 n_step_buffer_n: 4
 
 # Training
@@ -74,7 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v4-random-4-step-per-6_4-bot-pool"
+exp_name: "v2-random-4-step-per-self-play"
 resume: False
 save_video: True
 log_gradients: False

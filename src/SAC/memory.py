@@ -107,11 +107,6 @@ class PrioritizedReplayBuffer(MemoryBuffer):
     def beta_by_frame(self, frame_idx):
         """
         Linearly increases beta from beta_start to 1 over time from 1 to beta_frames.
-
-        3.4 ANNEALING THE BIAS (Paper: PER)
-        We therefore exploit the flexibility of annealing the amount of importance-sampling
-        correction over time, by defining a schedule on the exponent
-        that reaches 1 only at the end of learning. In practice, we linearly anneal from its initial value 0 to 1
         """
         return min(1.0, self.beta_start + frame_idx * (1.0 - self.beta_start) / self.beta_frames)
 
@@ -120,17 +115,15 @@ class PrioritizedReplayBuffer(MemoryBuffer):
         state      = np.expand_dims(state, 0)
         next_state = np.expand_dims(next_state, 0)
 
-        max_prio = self.priorities.max() if self.buffer else 1.0 # gives max priority if buffer is not empty else 1
+        max_prio = self.priorities.max() if self.buffer else 1.0
 
         if len(self.buffer) < self.capacity:
             self.buffer.append((state, action, reward, next_state, done))
         else:
-            # puts the new data on the position of the oldes since it circles via pos variable
-            # since if len(buffer) == capacity -> pos == 0 -> oldest memory (at least for the first round?)
             self.buffer[self.pos] = (state, action, reward, next_state, done)
 
         self.priorities[self.pos] = max_prio
-        self.pos = (self.pos + 1) % self.capacity # lets the pos circle in the ranges of capacity if pos+1 > cap --> new posi = 0
+        self.pos = (self.pos + 1) % self.capacity
 
         self.mem_cntr = min(1 + self.mem_cntr, self.capacity)
 

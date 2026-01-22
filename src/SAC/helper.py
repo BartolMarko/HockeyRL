@@ -226,7 +226,9 @@ class Logger:
             self.data[key] = value
 
     def add_opponent_pool_stats(self, opponent_pool: OpponentPool):
-        for opponent in opponent_pool.get_all_opponents():
+        weights = opponent_pool.sampler.get_weights()
+        for idx, opponent in enumerate(opponent_pool.get_all_opponents()):
+            opponent.priority = weights[idx] if idx < len(weights) else 0.0
             self.add_opponent_stats(opponent)
 
     def get_logs(self):
@@ -282,7 +284,14 @@ def get_latest_checkpoint(models_dir, prefix='episode_'):
     latest_dir = os.path.join(models_dir, f"{prefix}{latest_episode}")
     return latest_dir
 
+def get_Nth_checkpoint(models_dir, nth_episode, prefix='episode_'):
+    """Returns the folder path containing the N-th episode checkpoint."""
+    nth_dir = os.path.join(models_dir, f"{prefix}{nth_episode}")
+    return nth_dir
+
 def set_env_params(cfg, env):
+    if env == None:
+        env = h_env.HockeyEnv()
     cfg.input_dims = env.observation_space.shape
     return cfg
 
@@ -293,6 +302,17 @@ def load_agent_from_config(experiment_name: str, env) -> Agent:
     cfg = set_env_params(cfg, env)
     cfg.resume = True
     agent = Agent(cfg)
+    return agent
+
+def load_agent_Nth_episode(experiment_name: str, n: int, env=None, resume=False) -> Agent:
+    """Load an agent from the N-th episode checkpoint."""
+    config_path = Path('results') / experiment_name / 'config.yaml'
+    cfg = OmegaConf.load(config_path)
+    cfg = set_env_params(cfg, env)
+    cfg.resume = resume
+    agent = Agent(cfg)
+    nth_checkpoint_dir = get_Nth_checkpoint(Path('results') / experiment_name / 'models', n)
+    agent.load_models(nth_checkpoint_dir)
     return agent
 
 def create_opponent_pool_from_config(cfg, env) -> OpponentPool:

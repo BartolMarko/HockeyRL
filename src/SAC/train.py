@@ -58,6 +58,9 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
 
     opponent_pool = opp.get_opponent_pool(cfg)
 
+    agent.show_info()
+    opponent_pool.show_info()
+
     score_history = []
     len_history = []
 
@@ -77,15 +80,16 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         len_history.append(metrics['episode_length'])
         average_length = np.mean(len_history[-AVG_WINDOW_SIZE:])
 
+        print(f"Episode {i} vs {opponent.get_agent_name()}. Recent Avg Score: {average_score:.2f}, Recent Avg Episode Length: {average_length:.2f}")
         logger.add_scalar("Rollout/Episode Score", metrics['episode_score'])
         logger.add_scalar("Rollout/Episode Length", metrics['episode_length'])
 
         if i == cfg.warmup_games:
-            print(f"Warmup phase completed (step: {i}). Starting learning...")
+            print(f"[WARM] Warmup phase completed (step: {i}). Starting learning...")
             logger.log_state(i)
 
         if i >= cfg.warmup_games:
-            for _ in range(cfg.learn_steps_per_episode):
+            for _ in range(cfg.learn_steps_per_episode * metrics['episode_length']):
                 l_metrics = agent.learn(step=i)
                 if l_metrics is not None:
                     for key, value in l_metrics.items():
@@ -94,16 +98,17 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
                         else:
                             logger.add_scalar(key, value)
 
-        # save models if we have a new "best" average score
+        # save models
         if cfg.save_model and \
                 ((env_step - last_save_step >= cfg.save_model_freq) or \
-                (i == n_games - 1)):
+                (i == n_games - 1)) or \
+                opponent_pool.self_play_mgr_needs_save(agent, env_step):
             project_dir = logger.get_project_dir()
             models_dir = os.path.join(project_dir, 'models', f'episode_{i}')
             os.makedirs(models_dir, exist_ok=True)
             agent.save_models(models_dir)
             last_save_step = env_step
-            print(f"Saved models at Episode {i} to {models_dir}.")
+            print(f"[SAVE] Saved models at Episode {i} to {models_dir}.")
 
         if env_step - last_eval_step >= cfg.eval_freq:
             last_eval_step = env_step
@@ -137,9 +142,13 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             logger.add_scalar("Eval/Lose Rate", lose_rate)
             logger.add_scalar("Eval/Draw Rate", draw_rate)
             logger.log_state(i)
-            print(f"Evaluation at Episode {i}: Win: {win_rate}, Lose: {lose_rate}, Draw: {draw_rate}")
+            opponent_pool.show_scoreboard()
+            opponent_pool.end_evaluation()
+            print(f"[EVAL] Evaluation at Episode {i}: Win: {win_rate:.2f}, Lose: {lose_rate:.2f}, Draw: {draw_rate:.2f}")
+
+        # every self play mgr handles the update by itself
+        opponent_pool.update_pool(agent, episode_index=i, logger=logger)
         env_step = i + 1
-        print(f"Episode {i} completed. Recent Avg Score: {average_score:.2f}, Recent Avg Episode Length: {average_length:.2f}")
 
     logger.close()
     env.close()
@@ -165,8 +174,8 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
 def set_dry_run_params(cfg):
     if cfg.get('dry_run', False):
         cfg.n_games = 500
-        cfg.warmup_games = 10
-        cfg.eval_freq = 5
+        cfg.warmup_games = 4
+        cfg.eval_freq = 8
         cfg.eval_episodes = 5
         cfg.save_model_freq = 900
         cfg.max_buffer_size = 128

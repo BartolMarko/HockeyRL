@@ -83,9 +83,7 @@ class Agent:
                 print("Warning: No alpha value specified in config for fixed alpha. Using default alpha=0.2")
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
-        self.display_info()
-
-    def display_info(self):
+    def show_info(self):
         print("Agent Configuration:")
         print(f"  Algorithm: Soft Actor-Critic (SAC)")
         print(f"  Replay Buffer Type: {self.buffer_type}")
@@ -290,8 +288,11 @@ class Agent:
                 'per/max_priority': np.max(priorities),
                 'hist:per/priority_distribution': priorities,
                 'per/mean_weight': np.mean(weights.cpu().numpy()),
-                'per/max_weight': np.max(weights.cpu().numpy())
+                'per/max_weight': np.max(weights.cpu().numpy()),
             })
+        log_data.update({
+            'buffer/length': self.memory.mem_cntr
+        })
 
         log_data.update({
             'Losses/actor_loss': actor_loss.item(),

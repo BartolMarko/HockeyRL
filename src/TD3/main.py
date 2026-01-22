@@ -11,6 +11,7 @@ from hockey.hockey_env import HockeyEnv
 from src.TD3.td3 import TD3
 from src.TD3.schedule import SchedulerFactory
 from src.TD3.opponent_scheduler import OpponentSchedulerFactory
+from src.TD3.enivornment_scheduler import EnviornmentSchedulerFactory
 from src.TD3.noise import NosieFactory
 from src.TD3.config_reader import Config
 
@@ -62,6 +63,8 @@ def main():
 
     opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=noise_scheduler.reset)
 
+    env_scheduler = EnviornmentSchedulerFactory.get_environment_scheduler(t_cfg)
+
     td3 = TD3(cfg['td3'])
 
     training_monitor = TrainingMonitor(
@@ -104,6 +107,7 @@ def main():
         i_episode = 0
         start_idx = 0
 
+    env = env_scheduler.get_env(0)
     ob, _info = env.reset()
     ob_agent2 = env.obs_agent_two()
     noise_sampler.reset()
@@ -130,7 +134,8 @@ def main():
         ob=ob_new
         ob_agent2 = env.obs_agent_two()
         episode.add(ob, a1, a2, reward, done)
-        if done or trunc or total_length == max_episode_length: 
+        if done or trunc or total_length == max_episode_length:
+            env = env_scheduler.get_env(t) 
             ob, _ = env.reset()
             ob_agent2 = env.obs_agent_two()
             win_info[i_episode % log_interval] = info['winner']
@@ -158,6 +163,8 @@ def main():
                         if opp_scheduler.trigger_phase_change():
                             save_ckpt(i_episode)
                             print(f"triggered phase change at episode: {i_episode}")
+                    if hasattr(env_scheduler, "trigger_phase_change"):
+                        env_scheduler.trigger_phase_change()
             
             if t_cfg.use_opp_scheduler:
                 agent2 = opp_scheduler.get_opponent(t)

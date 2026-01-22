@@ -33,6 +33,10 @@ class Config:
     
     def values(self):
         return self.cfg.values()
+    
+    def save(self, file_path):
+        with open(file_path, 'w') as f:
+            yaml.dump(self.cfg, f)
 
     def __str__(self):
         return str(self.cfg)

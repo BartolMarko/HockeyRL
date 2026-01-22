@@ -11,7 +11,6 @@ from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 from src.named_agent import NamedAgent
 
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 

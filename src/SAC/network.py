@@ -44,10 +44,18 @@ class ActorNet(nn.Module):
         else:
             actions = probabilities.sample()
 
-        # scale action and compute log probabilities
-        action = T.tanh(actions) * T.tensor(self.max_action).to(self.device)
+        tanh_actions = T.tanh(actions)
+        action = tanh_actions * T.tensor(self.max_action).to(self.device)
         log_probs = probabilities.log_prob(actions)
-        log_probs -= T.log(1 - action.pow(2) + self.reparam_noise)
+
+        # log_prob corrections for squashing and scaling (hopefully corrects, non-unity scaling)
+        # was working before, as max_action is 1, but should be better this way, lol, thanks M4ML
+        # y = a * tanh(x)
+        # dy/dx = a * (1 - tanh^2(x))
+        # log_p(y) = log_p(x) - log|det(dy/dx)|
+        # log_p(y) = log_p(x) - (log(a) + log(1 - tanh^2(x)))
+        log_probs -= T.log(1 - tanh_actions.pow(2) + self.reparam_noise)
+        log_probs -= T.log(T.tensor(self.max_action).to(self.device))
         log_probs = log_probs.sum(1, keepdim=True)
 
         return action, log_probs

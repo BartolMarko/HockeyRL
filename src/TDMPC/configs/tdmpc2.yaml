@@ -31,7 +31,7 @@ std_schedule: linear(0.5, 0.05, 25000)
 per_alpha: 0.6
 per_beta: 0.4
 grad_clip_norm: 20
-seed_steps: 1000
+seed_steps: 5000
 update_freq: 2
 tau: 0.01
 

@@ -178,6 +178,23 @@ class PrioritizedSelfPlaySampler(SamplingStrategy):
     def get_weights(self):
         return self.weights.tolist()
 
+class TDWithRecencySampler(SamplingStrategy):
+    """
+    OK, Maybe this will work good:
+    run one episode with each arm, get the abs-sum of TD-errors
+    assign sampling prob proportional to TD-errors
+    in addition, add recency bonus to the most recent arms
+    priority = sum[|TD-error|] * (age)^-beta
+    """
+    # TODO: since i don't have the agents in memory, i will have to load all of them one by one
+    #       and compute the TD-errors, which is very inefficient
+    #       maybe i will work on it later
+    def __init__(self, cfg, num_arms=0, name="td_recency_sampler"):
+        super().__init__(cfg, num_arms, name)
+        self.beta = cfg.get("recency_beta", 0.5) if cfg else 0.5
+        raise NotImplementedError
+
+
 def get_sampler_by_name(name, cfg=None, num_arms=0):
     name = name.lower()
     if name == "uniform":
@@ -190,6 +207,8 @@ def get_sampler_by_name(name, cfg=None, num_arms=0):
         return ModifiedDeltaUniformSampler(cfg, num_arms)
     elif name == "pfsp":
         return PrioritizedSelfPlaySampler(cfg, num_arms)
+    elif name == "td_recency":
+        return TDWithRecencySampler(cfg, num_arms)
     else:
         raise ValueError(f"Unknown sampler name: {name}")
 

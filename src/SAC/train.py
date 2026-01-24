@@ -23,7 +23,7 @@ def run_episode(cfg, agent, opponent, env, logger=None, episode_index=None):
     episode_metrics = {}
     steps = 0
 
-    while not done:
+    while True:
         if logger is not None:
             logger.add_state(obs)
         opponent_action = opponent.get_step(obs_opponent)
@@ -32,13 +32,15 @@ def run_episode(cfg, agent, opponent, env, logger=None, episode_index=None):
         obs_, reward, done, truncated, info = env.step(np.hstack([agent_action, opponent_action]))
         reward = reward_shaper.transform(reward, info, done or truncated, obs)
 
-        done = done or truncated
         score += reward
         steps += 1
 
         agent.store(obs, agent_action, reward, obs_, done)
         obs = obs_
         obs_opponent = env.obs_agent_two()
+        if done or truncated:
+            break
+
     agent.end_episode()
     episode_metrics['episode_score'] = score
     episode_metrics['episode_length'] = steps

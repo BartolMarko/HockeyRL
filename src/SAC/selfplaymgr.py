@@ -102,6 +102,8 @@ class SelfPlayManager(opponents.OpponentInPool):
             removed_episode = self.pool.pop(0)
             del self.pool_meta[removed_episode]
             self.sampler.remove_arm(0)
+            for ep in self.pool:
+                self.pool_meta[ep]['index_in_pool'] -= 1
         self.pool.append(episode_number)
         self.pool_meta[episode_number] = {
                 'added_time': time.time(),
@@ -127,7 +129,10 @@ class SelfPlayManager(opponents.OpponentInPool):
         sampled_idx = self.sampler.sample(count)
         sampled_episode = self.pool[sampled_idx[0]]
         self.current_episode = sampled_episode
-        self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode)
+        if self.agent is not None:
+            self.agent.load_models(helper.get_Nth_checkpoint(self.cfg.exp_name, sampled_episode))
+        else:
+            self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode)
         self.agent.name = f"{self.name}_ep{sampled_episode}"
         return self.agent
 

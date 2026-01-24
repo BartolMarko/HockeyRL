@@ -51,6 +51,8 @@ class WeightedSampler(SamplingStrategy):
         self.weights = np.ones(self.num_arms)
 
     def add_arm(self, weight=1.0) -> int:
+        if weight < 0:
+            weight = self.weights.sum() if self.weights.size > 0 else 1.0
         self.weights = np.append(self.weights, weight)
         self.num_arms += 1
         return self.num_arms - 1

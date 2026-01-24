@@ -15,9 +15,11 @@ class Agent:
         self.gamma = cfg.gamma
         self.buffer_type = cfg.get('buffer_type', 'replay')
         if self.buffer_type == 'per':
-            self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size)
+            alpha = cfg.get('per_alpha', 0.6)
+            self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
         elif self.buffer_type == 'n-step-per':
-            base_buffer = PrioritizedReplayBuffer(cfg.buffer_max_size)
+            alpha = cfg.get('per_alpha', 0.6)
+            base_buffer = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
             self.memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
         else:
             self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)

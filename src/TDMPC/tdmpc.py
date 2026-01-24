@@ -133,91 +133,131 @@ class TDMPC:
     def plan(self, obs, eval_mode=False, step=None, t0=True):
         """
         Plan next action using TD-MPC inference.
-        obs: raw input observation.
+        obs: raw input observation. Shape (batch_size, obs_dim).
         eval_mode: uniform sampling and action noise is disabled during evaluation.
         step: current time step. determines e.g. planning horizon.
         t0: whether current step is the first step of an episode.
         """
-        # Seed steps
+        obs = torch.as_tensor(obs, dtype=torch.float32, device=self.device)
+
+        batch_size = obs.shape[0]
+
         if step < self.cfg.seed_steps and not eval_mode:
             return torch.empty(
-                self.cfg.action_dim, dtype=torch.float32, device=self.device
+                batch_size, self.cfg.action_dim, dtype=torch.float32, device=self.device
             ).uniform_(-1, 1)
 
-        # Sample policy trajectories
-        obs = torch.tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(0)
+        z_batch = self.model.h(obs)
+
         horizon = int(
             min(self.cfg.horizon, h.linear_schedule(self.cfg.horizon_schedule, step))
         )
         num_pi_trajs = int(self.cfg.mixture_coef * self.cfg.num_samples)
-        if num_pi_trajs > 0:
-            pi_actions = torch.empty(
-                horizon, num_pi_trajs, self.cfg.action_dim, device=self.device
-            )
-            z = self.model.h(obs).repeat(num_pi_trajs, 1)
-            for t in range(horizon):
-                pi_actions[t] = self.model.pi(z, self.cfg.min_std)
-                z, _ = self.model.next(z, pi_actions[t])
 
-        # Initialize state and parameters
-        z = self.model.h(obs).repeat(self.cfg.num_samples + num_pi_trajs, 1)
-        mean = torch.zeros(horizon, self.cfg.action_dim, device=self.device)
-        std = 2 * torch.ones(horizon, self.cfg.action_dim, device=self.device)
-        if not t0 and hasattr(self, "_prev_mean"):
+        if num_pi_trajs > 0:
+            z_pi = (
+                z_batch.unsqueeze(0)
+                .repeat(num_pi_trajs, 1, 1)
+                .reshape(num_pi_trajs * batch_size, -1)
+            )
+            pi_actions = torch.empty(
+                horizon,
+                num_pi_trajs * batch_size,
+                self.cfg.action_dim,
+                device=self.device,
+            )
+
+            for t in range(horizon):
+                pi_actions[t] = self.model.pi(z_pi, self.cfg.min_std)
+                z_pi, _ = self.model.next(z_pi, pi_actions[t])
+
+            # Reshape back
+            pi_actions = pi_actions.view(
+                horizon, num_pi_trajs, batch_size, self.cfg.action_dim
+            )
+
+        mean = torch.zeros(horizon, batch_size, self.cfg.action_dim, device=self.device)
+        std = 2 * torch.ones(
+            horizon, batch_size, self.cfg.action_dim, device=self.device
+        )
+
+        if (
+            not t0
+            and hasattr(self, "_prev_mean")
+            and self._prev_mean.shape[1] == batch_size
+        ):
             prev_mean_shifted = self._prev_mean[1:]
             valid_len = min(prev_mean_shifted.shape[0], mean.shape[0] - 1)
             if valid_len > 0:
                 mean[:valid_len] = prev_mean_shifted[:valid_len]
 
-        # Iterate CEM
         for i in range(self.cfg.iterations):
-            actions = torch.clamp(
-                mean.unsqueeze(1)
-                + std.unsqueeze(1)
-                * torch.randn(
-                    horizon,
-                    self.cfg.num_samples,
-                    self.cfg.action_dim,
-                    device=std.device,
-                ),
-                -1,
-                1,
+            noise = torch.randn(
+                horizon,
+                self.cfg.num_samples,
+                batch_size,
+                self.cfg.action_dim,
+                device=self.device,
             )
+
+            actions = torch.clamp(mean.unsqueeze(1) + std.unsqueeze(1) * noise, -1, 1)
+
             if num_pi_trajs > 0:
                 actions = torch.cat([actions, pi_actions], dim=1)
 
-            # Compute elite actions
-            value = self.estimate_value(z, actions, horizon).nan_to_num_(0)
-            elite_idxs = torch.topk(
-                value.squeeze(1), self.cfg.num_elites, dim=0
-            ).indices
-            elite_value, elite_actions = value[elite_idxs], actions[:, elite_idxs]
+            P = actions.shape[1]
+            actions_flat = actions.reshape(horizon, P * batch_size, self.cfg.action_dim)
 
-            # Update parameters
+            z_flat = z_batch.unsqueeze(0).repeat(P, 1, 1).reshape(P * batch_size, -1)
+
+            value = self.estimate_value(z_flat, actions_flat, horizon).nan_to_num_(0)
+            value = value.view(P, batch_size)
+
+            elite_idxs = torch.topk(value, self.cfg.num_elites, dim=0).indices
+            elite_value = torch.gather(value, 0, elite_idxs)
+
+            elite_idxs_expanded = elite_idxs.view(
+                1, self.cfg.num_elites, batch_size, 1
+            ).expand(horizon, -1, -1, self.cfg.action_dim)
+            elite_actions = torch.gather(actions, 1, elite_idxs_expanded)
+
             max_value = elite_value.max(0)[0]
             score = torch.exp(self.cfg.temperature * (elite_value - max_value))
             score /= score.sum(0)
-            _mean = torch.sum(score.unsqueeze(0) * elite_actions, dim=1) / (
-                score.sum(0) + 1e-9
-            )
+
+            _mean = torch.sum(
+                score.view(1, self.cfg.num_elites, batch_size, 1) * elite_actions, dim=1
+            ) / (score.sum(0).view(1, batch_size, 1) + 1e-9)
+
             _std = torch.sqrt(
                 torch.sum(
-                    score.unsqueeze(0) * (elite_actions - _mean.unsqueeze(1)) ** 2,
+                    score.view(1, self.cfg.num_elites, batch_size, 1)
+                    * (elite_actions - _mean.unsqueeze(1)) ** 2,
                     dim=1,
                 )
-                / (score.sum(0) + 1e-9)
+                / (score.sum(0).view(1, batch_size, 1) + 1e-9)
             )
             _std = _std.clamp_(self.std, 2)
+
             mean, std = self.cfg.momentum * mean + (1 - self.cfg.momentum) * _mean, _std
 
-        # Outputs
-        score = score.squeeze(1).cpu().numpy()
-        actions = elite_actions[:, np.random.choice(np.arange(score.shape[0]), p=score)]
+        score = score / score.sum(0, keepdim=True)
+        sampled_idxs = torch.multinomial(score.T, 1).squeeze(1)
+        sampled_idxs_expanded = sampled_idxs.view(1, 1, batch_size, 1).expand(
+            horizon, -1, -1, self.cfg.action_dim
+        )
+        chosen_actions = torch.gather(elite_actions, 1, sampled_idxs_expanded).squeeze(
+            1
+        )
+
         self._prev_mean = mean
-        mean, std = actions[0], _std[0]
-        a = mean
+        a = chosen_actions[0]
+
         if not eval_mode:
-            a += std * torch.randn(self.cfg.action_dim, device=std.device)
+            a += _std[0] * torch.randn(
+                batch_size, self.cfg.action_dim, device=self.device
+            )
+
         return a
 
     def update_pi(self, zs):

@@ -4,6 +4,10 @@ import json
 import torch
 import wandb
 import matplotlib.pyplot as plt
+import time
+import pufferlib.vector
+import multiprocessing
+import os
 from omegaconf import OmegaConf
 from typing import Optional
 from hockey import hockey_env as h_env
@@ -13,8 +17,11 @@ from gymnasium import spaces
 from src.named_agent import StrongBot, WeakBot
 from src.episode import Episode, Outcome, Possession
 from src.named_agent import NamedAgent
-from src.environments import SparseRewardHockeyEnv
-
+from src.environments import (
+    SparseRewardHockeyEnv,
+    create_vectorized_pufferlib_env,
+    get_per_player_observations,
+)
 from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
@@ -295,6 +302,84 @@ class Evaluator:
         episode_video = np.stack(episode_video) if episode_video is not None else None
         return episode, episode_video
 
+    def run_episodes_parallel(
+        self,
+        vectorized_env,
+        agent: NamedAgent,
+        opponent: NamedAgent,
+    ) -> list[Episode]:
+        num_envs = (
+            vectorized_env.num_envs
+            if hasattr(vectorized_env, "num_envs")
+            else vectorized_env.num_workers
+        )
+        obs, _ = vectorized_env.reset()
+        obs_agent, obs_opponent = get_per_player_observations(obs)
+
+        episodes = [Episode(obs_agent[i], device=self.device) for i in range(num_envs)]
+        agent.on_start_game(game_id=None)
+        opponent.on_start_game(game_id=None)
+
+        num_done = 0
+        while num_done < num_envs:
+            actions = agent.get_step_parallel(obs_agent).astype(np.float32)
+            opponent_actions = opponent.get_step_parallel(obs_opponent).astype(
+                np.float32
+            )
+
+            obs, reward, done, _, _ = vectorized_env.step(
+                np.hstack([actions, opponent_actions])
+            )
+            obs_agent, obs_opponent = get_per_player_observations(obs)
+
+            for i in range(num_envs):
+                if not episodes[i].done:
+                    episodes[i].add(
+                        obs=obs_agent[i],
+                        action=actions[i],
+                        opponent_action=opponent_actions[i],
+                        reward=reward[i],
+                        done=done[i],
+                    )
+                    num_done += int(done[i])
+
+        agent.on_end_game(result=None, stats=None)
+        opponent.on_end_game(result=None, stats=None)
+        return episodes
+
+    def collect_episodes(
+        self,
+        env: h_env.HockeyEnv,
+        agent: NamedAgent,
+        opponent: NamedAgent,
+        num_episodes: int,
+        render_mode: Optional[str],
+        parallelize: bool,
+    ) -> tuple[list[Episode], list[Optional[np.ndarray]]]:
+        """
+        Collect a specified number of episodes between the agent and opponent in the given environment.
+        Returns a list of Episode objects and optionally the video frames if render_mode is 'rgb_array'.
+        """
+        if parallelize:
+            num_envs = env.num_envs if hasattr(env, "num_envs") else env.num_workers
+            assert num_episodes % num_envs == 0, (
+                "Number of episodes must be a multiple of the number of parallel environments."
+            )
+            episodes = []
+            episode_videos = [None] * num_episodes
+            for _ in range(num_episodes // num_envs):
+                episodes.extend(self.run_episodes_parallel(env, agent, opponent))
+            return episodes, episode_videos
+
+        episodes, episode_videos = [], []
+        for _ in range(num_episodes):
+            episode, episode_video = self.run_episode(
+                env, agent, opponent, render_mode=render_mode
+            )
+            episodes.append(episode)
+            episode_videos.append(episode_video)
+        return episodes, episode_videos
+
     def evaluate_agent_and_save_metrics(
         self,
         env: h_env.HockeyEnv,
@@ -311,6 +396,7 @@ class Evaluator:
             Outcome.DRAW: 0,
         },
         train_step: Optional[int] = None,
+        parallelize: bool = False,
     ) -> dict[str, dict[str, int]]:
         """
         Evaluate the given agent against a list of opponents in the specified environment.
@@ -322,7 +408,7 @@ class Evaluator:
         If render_mode is 'human', renders the episodes to the screen.
 
         Args:
-            env: HockeyEnv or wrapped HockeyEnv.
+            env: HockeyEnv or wrapped HockeyEnv or PufferLibVectorizedEnv.
             agent: NamedAgent to evaluate.
             opponents: List of NamedAgents to evaluate against.
             num_episodes: Number of episodes to run per opponent.
@@ -333,6 +419,8 @@ class Evaluator:
             save_episodes_per_outcome: Number of episodes to save per outcome. If int, same number for all outcomes.
                 Defaults to { Outcome.WIN: 0, Outcome.LOSS: 0, Outcome.DRAW: 0}.
             train_step: Current training step for logging purposes. Defaults to None.
+            parallelize: Whether to run episodes in parallel using a vectorized environment.
+                If True, expects env to be a PufferLibVectorizedEnv. Defaults to False.
 
         Returns:
             A dictionary mapping opponent names to their evaluation results (win/loss/draw counts and rates).
@@ -356,11 +444,11 @@ class Evaluator:
             outcome_video_builders = {outcome: VideoBuilder() for outcome in Outcome}
             heatmap = Heatmap(device=self.device) if save_heatmaps else None
 
-            for _ in range(num_episodes):
-                episode, episode_video = self.run_episode(
-                    env, agent, opponent, render_mode=render_mode
-                )
+            episodes, episode_videos = self.collect_episodes(
+                env, agent, opponent, num_episodes, render_mode, parallelize
+            )
 
+            for episode, episode_video in zip(episodes, episode_videos):
                 results_opponent[self.OVERALL_NAME][episode.outcome] += 1
                 results_opponent[episode.first_puck_possession.value][
                     episode.outcome
@@ -370,6 +458,7 @@ class Evaluator:
 
                 if (
                     render_mode == "rgb_array"
+                    and not parallelize
                     and results_opponent[episode.outcome]
                     <= save_episodes_per_outcome[episode.outcome]
                 ):
@@ -512,7 +601,18 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "tdmpc_self_play"
+    # multiprocessing.set_start_method("spawn", force=True)
+    # cv2.setNumThreads(0)
+    # os.environ["OMP_NUM_THREADS"] = "1"
+
+    vectorized_env = create_vectorized_pufferlib_env(
+        env_name="SparseRewardHockeyEnv",
+        num_envs=4,
+        seed=0,
+        backend=pufferlib.vector.Ray,
+    )
+
+    MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "tdmpc_mirroring"
     OLD_MODEL_PATH = (
         Path(__file__).resolve().parent.parent
         / "models"
@@ -563,17 +663,43 @@ if __name__ == "__main__":
     #     name="test_run_eval",
     #     config=OmegaConf.to_container(tdmpc_agent.tdmpc.cfg),
     # )
+    # results = evaluator.evaluate_agent_and_save_metrics(
+    #     env=env,
+    #     agent=tdmpc_agent,
+    #     opponents=[td3_agent],
+    #     num_episodes=30,
+    #     render_mode="human",
+    #     save_path=None,
+    #     wandb_run=None,
+    #     save_heatmaps=True,
+    #     save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
+    #     train_step=22,
+    # )
+    # print(results)
+    # episodes, _ = evaluator.run_episodes_parallel(
+    #     vectorized_env=create_vectorized_pufferlib_env(
+    #         env_name="SparseRewardHockeyEnv",
+    #         num_envs=4,
+    #         seed=0,
+    #     ),
+    #     agent=strong_bot,
+    #     opponent=weak_bot,
+    # )
+    parallelize = False
+    start_time = time.time()
     results = evaluator.evaluate_agent_and_save_metrics(
-        env=env,
+        env=vectorized_env if parallelize else env,
         agent=tdmpc_agent,
-        opponents=[td3_agent],
-        num_episodes=30,
-        render_mode="human",
+        opponents=[strong_bot, weak_bot],
+        num_episodes=60,
+        render_mode=None,
         save_path=None,
         wandb_run=None,
-        save_heatmaps=True,
-        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
-        train_step=22,
+        save_heatmaps=False,
+        save_episodes_per_outcome=10,
+        train_step=123456,
+        parallelize=parallelize,
     )
-    print(results)
+    end_time = time.time()
+    print(f"Evaluation took {end_time - start_time:.2f} seconds.")
     # wandb_run.finish()

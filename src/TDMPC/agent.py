@@ -34,6 +34,9 @@ class TDMPCAgent(NamedAgent):
     def get_step(self, obs: np.ndarray) -> np.ndarray:
         # TODO: Implement action repeat
         # TODO: Save step to config and use it here??
+        return self.get_step_parallel(obs[np.newaxis, :])[0]
+
+    def get_step_parallel(self, obs: np.ndarray):
         action = (
             self.tdmpc.plan(obs, eval_mode=self.eval_mode, step=self.step, t0=self.t0)
             .cpu()

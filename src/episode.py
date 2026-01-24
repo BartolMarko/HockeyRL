@@ -127,7 +127,7 @@ class Episode(object):
             dtype=self.opponent_action.dtype,
             device=self.opponent_action.device,
         )
-        self.reward[self.length] = reward
+        self.reward[self.length] = float(reward)
         self.done = done
         self.length += 1
 

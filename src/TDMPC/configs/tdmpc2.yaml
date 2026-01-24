@@ -1,4 +1,4 @@
-run_name: tdmpc2_test_no_compile
+run_name: tdmpc2_test_compile
 
 # environment
 env_name: SparseRewardHockeyEnv
@@ -18,7 +18,7 @@ temperature: 0.5
 momentum: 0.1
 
 # learning
-compile: False
+compile: True
 batch_size: 512
 max_buffer_size: 1000000
 horizon: 5

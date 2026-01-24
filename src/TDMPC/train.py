@@ -209,6 +209,11 @@ def train(cfg):
 
 
 if __name__ == "__main__":
+    major_cc, minor_cc = torch.cuda.get_device_capability()
+    if major_cc >= 8:
+        torch.set_float32_matmul_precision("high")
+        print(f"Set float32 matmul precision to high. CUDA: {major_cc}.{minor_cc}")
+
     with open(CONFIG_PATH, "r") as f:
         cfg = OmegaConf.load(f)
         train(cfg)

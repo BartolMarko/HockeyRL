@@ -1,4 +1,4 @@
-run_name: tdmpc2_local_test
+run_name: tdmpc2_test_compile
 
 # environment
 env_name: SparseRewardHockeyEnv

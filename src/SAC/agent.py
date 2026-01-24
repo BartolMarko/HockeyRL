@@ -296,11 +296,22 @@ class Agent:
             'buffer/length': self.memory.mem_cntr
         })
 
+        critic1_grad_norm = sum(p.grad.norm().item() for p in self.critic_1.parameters() if p.grad is not None)
+        critic2_grad_norm = sum(p.grad.norm().item() for p in self.critic_2.parameters() if p.grad is not None)
+        actor_grad_norm = sum(p.grad.norm().item() for p in self.actor.parameters() if p.grad is not None)
+
         log_data.update({
             'Losses/actor_loss': actor_loss.item(),
             'Losses/critic_1_loss': critic_1_loss.item(),
             'Losses/critic_2_loss': critic_2_loss.item(),
+            'HyperParam/alpha': self.get_alpha().item(),
             'Metrics/entropy': -log_probs.mean().item(),
-            'HyperParam/alpha': self.get_alpha().item()
+            'Metrics/q1_mean': q1_old.mean().item(),
+            'Metrics/q1_std': q1_old.std().item(),
+            'Metrics/q1_min': q1_old.min().item(),
+            'Metrics/q1_max': q1_old.max().item(),
+            'Metrics/critic1_grad_norm': critic1_grad_norm,
+            'Metrics/critic2_grad_norm': critic2_grad_norm,
+            'Metrics/actor_grad_norm': actor_grad_norm
         })
         return log_data

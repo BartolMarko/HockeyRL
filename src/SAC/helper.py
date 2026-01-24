@@ -206,6 +206,14 @@ class Logger:
         if self.wandb is not None and gif_path is not None:
             self.wandb.log({key: wandb.Video(gif_path, caption=caption, format="gif")})
 
+    def log_metrics(self, metrics: dict):
+        if self.tb_logger is not None:
+            for key, value in metrics.items():
+                self.tb_logger.add_scalar(key, value)
+        if self.wandb is not None:
+            self.wandb.log(metrics)
+        self.data.update(metrics)
+
     def add_historam(self, key, values, bins='auto'):
         if self.tb_logger is not None:
             self.tb_logger.add_histogram(key, values, bins=bins)

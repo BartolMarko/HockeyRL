@@ -94,11 +94,22 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             for _ in range(cfg.learn_steps_per_episode * metrics['episode_length']):
                 l_metrics = agent.learn(step=i)
                 if l_metrics is not None:
-                    for key, value in l_metrics.items():
-                        if 'hist:' in key:
-                            logger.add_historam(key.replace('hist:', ''), value)
-                        else:
-                            logger.add_scalar(key, value)
+                     # Filter histograms out of the main dict if log_metrics only handles scalars (helper impl separates them)
+                     # But our helper.log_metrics handles scalars. Histograms need separate call or robustification.
+                     # helper.py log_metrics iterates and calls add_scalar.
+                     # Agent returns 'hist:' keys for histograms.
+                     scalars = {}
+                     histograms = {}
+                     for key, value in l_metrics.items():
+                         if 'hist:' in key:
+                             histograms[key.replace('hist:', '')] = value
+                         else:
+                             scalars[key] = value
+
+                     if scalars:
+                        logger.log_metrics(scalars)
+                     for key, value in histograms.items():
+                        logger.add_historam(key, value)
 
         # save models
         if cfg.save_model and \

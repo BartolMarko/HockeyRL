@@ -40,7 +40,7 @@ buffer_max_size: 1000000
 n_step_buffer_n: 4
 
 # Training
-n_games: 50000
+n_games: 75000
 warmup_games: 200
 learn_steps_per_episode: 1
 batch_size: 2048
@@ -55,7 +55,7 @@ lr_alpha: 0.0005
 target_update_freq: 1
 # Explorer
 explorer:
-  type: random
+  # type: random
 
   # type: 'gaussian'
   # mu: 0.5
@@ -68,10 +68,10 @@ explorer:
   # type: optimistic
   # beta: 1.1
 
-  # type: curious
-  # beta: 0.3
-  # hidden_dim: 64
-  # lr_pred: 0.001
+  type: curious
+  beta: 0.3
+  hidden_dim: 64
+  lr_pred: 0.001
 
 # Network
 algorithm: "sac"
@@ -88,7 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "v2-random-4-step-per-self-play"
+exp_name: "sac-v2-curious-4-step-per-self-play"
 resume: False
 save_video: True
 log_gradients: False

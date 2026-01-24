@@ -17,7 +17,8 @@ from src.TDMPC.agent import TDMPCAgent
 
 torch.backends.cudnn.benchmark = True
 
-CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "selfplay.yaml"
+# TODO: MAJOR: add copy of TDMPC1 code for backward compatibility
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2.yaml"
 
 
 def set_seed(seed):
@@ -33,6 +34,7 @@ def add_env_variables_to_config(env, cfg):
     cfg.obs_shape = env.observation_space.shape
 
     cfg.action_dim = env.action_space.shape[0] // 2
+    cfg.bin_size = (cfg.vmax - cfg.vmin) / (cfg.num_bins - 1)
     return cfg
 
 

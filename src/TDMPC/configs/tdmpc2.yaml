@@ -1,4 +1,4 @@
-run_name: tdmpc_uniform_self_play_150k_start_100k_freq_2M_steps_window_100
+run_name: tdmpc2_local_test
 
 # environment
 env_name: SparseRewardHockeyEnv
@@ -18,28 +18,37 @@ temperature: 0.5
 momentum: 0.1
 
 # learning
+compile: True
 batch_size: 512
 max_buffer_size: 1000000
 horizon: 5
-reward_coef: 0.5
+reward_coef: 0.1
 value_coef: 0.1
-consistency_coef: 2
+consistency_coef: 20
 rho: 0.5
-kappa: 0.1
-lr: 1e-3
+lr: 3e-4
 std_schedule: linear(0.5, 0.05, 25000)
-horizon_schedule: linear(1, 5, 25000)
 per_alpha: 0.6
 per_beta: 0.4
-grad_clip_norm: 10
-seed_steps: 5000
+grad_clip_norm: 20
+seed_steps: 1000
 update_freq: 2
 tau: 0.01
 
 # architecture
 enc_dim: 256
+num_enc_layers: 2
 mlp_dim: 512
-latent_dim: 50
+dropout: 0  # Q network dropout, TDMPCv2 uses 0.01, TDMPCv1 uses 0
+latent_dim: 64 
+## used 50 before in TDMPCv1, switch to 64
+## in TDMPCv2 they have 512 (probably overkill + better suited for multitask)
+simnorm_dim: 8
+
+# reward and Q value distributional settings
+vmin: -2.5
+vmax: 2.5  # ln(10) with some leeway
+num_bins: 51
 
 # misc
 seed: 1

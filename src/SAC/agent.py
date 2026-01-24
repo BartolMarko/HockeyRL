@@ -257,6 +257,13 @@ class Agent:
             critic_2_loss = 0.5 * F.mse_loss(q2_old, q_target)
         critic_loss = critic_1_loss + critic_2_loss
         critic_loss.backward()
+
+        critic1_grad_norm = sum(p.grad.norm().item() for p in self.critic_1.parameters() if p.grad is not None)
+        critic2_grad_norm = sum(p.grad.norm().item() for p in self.critic_2.parameters() if p.grad is not None)
+
+        critic1_clipped_grad_norm = T.nn.utils.clip_grad_norm_(self.critic_1.parameters(), max_norm=1.0)
+        critic2_clipped_grad_norm = T.nn.utils.clip_grad_norm_(self.critic_2.parameters(), max_norm=1.0)
+
         self.critic_1.optimizer.step()
         self.critic_2.optimizer.step()
 
@@ -268,6 +275,10 @@ class Agent:
         actor_loss = (self.get_alpha().detach() * log_probs.view(-1) - critic_value).mean()
         self.actor.optimizer.zero_grad()
         actor_loss.backward()
+
+        actor_grad_norm = sum(p.grad.norm().item() for p in self.actor.parameters() if p.grad is not None)
+
+        actor_clipped_grad_norm = T.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0)
         self.actor.optimizer.step()
 
         # Update alpha
@@ -295,10 +306,6 @@ class Agent:
         log_data.update({
             'buffer/length': self.memory.mem_cntr
         })
-
-        critic1_grad_norm = sum(p.grad.norm().item() for p in self.critic_1.parameters() if p.grad is not None)
-        critic2_grad_norm = sum(p.grad.norm().item() for p in self.critic_2.parameters() if p.grad is not None)
-        actor_grad_norm = sum(p.grad.norm().item() for p in self.actor.parameters() if p.grad is not None)
 
         log_data.update({
             'Losses/actor_loss': actor_loss.item(),

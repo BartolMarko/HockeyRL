@@ -23,7 +23,7 @@ self_play:
       pfsp_p: 0.5
 
 # rewards
-reward_transform: "v2"
+reward_transform: "v0"
 # rewards: v1
 reward_scale: 2.1
 closeness_to_puck_reward_weight: 1.2
@@ -35,9 +35,8 @@ draw_penalty: 5 # also reward v1
 still_puck_penalty: 0.25
 
 # Buffers
-buffer_type: "n-step-per"
+buffer_type: "replay"
 buffer_max_size: 1000000
-n_step_buffer_n: 4
 
 # Training
 n_games: 75000
@@ -55,7 +54,7 @@ lr_alpha: 0.0005
 target_update_freq: 1
 # Explorer
 explorer:
-  # type: random
+  type: random
 
   # type: 'gaussian'
   # mu: 0.5
@@ -68,14 +67,14 @@ explorer:
   # type: optimistic
   # beta: 1.1
 
-  type: curious
-  beta: 0.3
-  hidden_dim: 64
-  lr_pred: 0.001
+  # type: curious
+  # beta: 0.3
+  # hidden_dim: 64
+  # lr_pred: 0.001
 
 # Network
 algorithm: "sac"
-hidden_size: 1024
+hidden_size: 512
 
 # Evaluation
 eval_freq: 400
@@ -88,7 +87,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v2-curious-4-step-per-self-play"
+exp_name: "sac-v0-random-replay-self-play"
 resume: False
 save_video: True
 log_gradients: False

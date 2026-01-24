@@ -6,6 +6,10 @@ import torch.optim as optim
 from torch.distributions.normal import Normal
 import numpy as np
 
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+        nn.init.constant_(m.bias, 0)
 
 class ActorNet(nn.Module):
     def __init__(self, lr_actor, input_dims, max_action, hidden_size=256, n_actions=2):
@@ -19,11 +23,16 @@ class ActorNet(nn.Module):
         self.fc1 = nn.Linear(*self.input_dims, self.hidden_size)
         self.fc2 = nn.Linear(self.hidden_size, self.hidden_size)
         self.mu = nn.Linear(self.hidden_size, self.n_actions)
+        # TODO: Revisit, do i want to use log_sigma instead?
         self.sigma = nn.Linear(self.hidden_size, self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=lr_actor)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
+        self._init_weights()
+
+    def _init_weights(self):
+        self.apply(init_weights)
 
     def forward(self, state):
         x = self.fc1(state)
@@ -81,6 +90,10 @@ class CriticNet(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=lr_critic)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
+        self._init_weights()
+
+    def _init_weights(self):
+        self.apply(init_weights)
 
     def forward(self, state, action):
         x = self.fc1(T.cat([state, action], dim=1))

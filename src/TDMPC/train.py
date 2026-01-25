@@ -206,7 +206,7 @@ def train(cfg):
                 evaluation_opponents,
                 num_episodes=cfg.eval_episodes_per_opponent,
                 render_mode="rgb_array" if final_evaluation else None,
-                save_heatmaps=cfg.get("save_heatmaps", False) or final_evaluation,
+                save_heatmaps=final_evaluation,
                 wandb_run=training_monitor.run,
                 train_step=env_step,
                 save_episodes_per_outcome=save_episodes_per_outcome,

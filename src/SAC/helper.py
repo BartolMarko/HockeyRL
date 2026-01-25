@@ -42,11 +42,12 @@ def linear_schedule(schdl, step):
     raise NotImplementedError(schdl)
 
 class HeatmapTracker:
-    def __init__(self, x_range=(-4, 4), y_range=(-2.5, 2.5), bins=(48, 32)):
+    def __init__(self, num_envs, x_range=(-4, 4), y_range=(-2.5, 2.5), bins=(48, 32)):
         """
         Tracks agent positioning and generates a heatmap.
 
         Args:
+            num_envs: Number of parallel environments.
             x_range: Bounds of the hockey rink on the x-axis.
             y_range: Bounds of the hockey rink on the y-axis.
             bins: Resolution of the heatmap.
@@ -54,6 +55,7 @@ class HeatmapTracker:
         self.x_range = x_range
         self.y_range = y_range
         self.bins = bins
+        self.num_envs = num_envs
 
         self.heatmap = np.zeros(bins)
         self.x_data = np.linspace(x_range[0], x_range[1], bins[0] + 1)
@@ -65,15 +67,16 @@ class HeatmapTracker:
         self.heatmap = np.zeros(self.bins)
         self.total_steps = 0
 
-    def record_step(self, obs):
-        x, y = obs[0], obs[1]
-        ix = np.clip(np.digitize(x, self.x_data) - 1, 0, self.bins[0] - 1)
-        iy = np.clip(np.digitize(y, self.y_data) - 1, 0, self.bins[1] - 1)
+    def increment_total_steps(self, n=None):
+        self.total_steps += n if n is not None else self.num_envs
 
-        self.heatmap[ix, iy] += 1
-        self.total_steps += 1
+    def record(self, obs, idx, idy):
+        assert self.num_envs == obs.shape[0], "Observation batch size does not match number of environments."
+        ix = np.clip(np.digitize(obs[:, idx], self.x_data) - 1, 0, self.bins[0] - 1)
+        iy = np.clip(np.digitize(obs[:, idy], self.y_data) - 1, 0, self.bins[1] - 1)
+        np.add.at(self.heatmap, (ix, iy), 1)
 
-    def save_heatmap(self, filename="agent_heatmap.png", title="Agent Position Density"):
+    def save_heatmap(self, filename="agent_heatmap.png", title="Agent Position Density", cmap="seismic"):
         """
         Visualizes the accumulated histogram.
         """
@@ -87,7 +90,7 @@ class HeatmapTracker:
             self.heatmap.T,
             extent=extent,
             origin='lower',
-            cmap='viridis',
+            cmap=cmap,
             interpolation='gaussian'
         )
 
@@ -135,7 +138,8 @@ class Logger:
         self.wandb = self._init_wandb()
         assert self.tb_logger is not None or self.wandb is not None, "No logging method specified."
         self.data = {}
-        self.agent_pos_heatmap = HeatmapTracker()
+        self.agent_pos_heatmap = HeatmapTracker(cfg.num_envs)
+        self.puck_pos_heatmap = HeatmapTracker(cfg.num_envs)
         self.log_config()
 
     def _init_wandb(self):
@@ -167,18 +171,32 @@ class Logger:
         """
         Saves the state for later visualization.
         """
-        self.agent_pos_heatmap.record_step(obs)
+        self.agent_pos_heatmap.record(obs, idx=0, idy=1)
+        self.agent_pos_heatmap.record(obs, idx=6, idy=7)  # opponent
+        self.puck_pos_heatmap.record(obs, idx=12, idy=13)
+        self.agent_pos_heatmap.increment_total_steps()
+        self.puck_pos_heatmap.increment_total_steps()
 
     def log_state(self, step: int = 0):
         """
         Logs the saved states for an episode.
         """
-        heatmap_title = "Agent Position"
+        heatmap_title = "Player Positions"
         heatmap_folder = self.get_project_dir() / "heatmaps"
         heatmap_folder.mkdir(parents=True, exist_ok=True)
-        heatmap_filename = heatmap_folder / f"agent_position_episode_{step}.png"
+        heatmap_filename = heatmap_folder / f"player_positions_episode_{step}.png"
         self.agent_pos_heatmap.save_heatmap(filename=heatmap_filename,
                                            title=f"{heatmap_title} - Step {step}")
+        if self.tb_logger is not None:
+            self.tb_logger.add_image(f"heatmap/" + heatmap_title,
+                                     plt.imread(heatmap_filename), dataformats='HWC')
+        if self.wandb is not None:
+            self.wandb.log({"heatmap/" + heatmap_title: wandb.Image(str(heatmap_filename))})
+
+        heatmap_title = "Puck Positions"
+        heatmap_filename = heatmap_folder / f"puck_positions_episode_{step}.png"
+        self.puck_pos_heatmap.save_heatmap(filename=heatmap_filename,
+                                          title=f"{heatmap_title} - Step {step}", cmap="Greens")
         if self.tb_logger is not None:
             self.tb_logger.add_image(f"heatmap/" + heatmap_title,
                                      plt.imread(heatmap_filename), dataformats='HWC')
@@ -253,7 +271,7 @@ class Logger:
             self.wandb.config.update({
                 'git-commit-hash': commit_info['git-commit-hash'],
                 'git-commit-log': commit_info['git-commit-log']
-            })
+            }, allow_val_change=True)
 
     def close(self):
         if self.tb_logger is not None:
@@ -338,7 +356,9 @@ if __name__ == '__main__':
         agent_action = env.action_space.sample() if i % 10 == 0 else agent_action
         opponent_action = env.action_space.sample()
         obs, reward, done, truncated, info = env.step(np.hstack([agent_action, opponent_action]))
-        heatmap_logger.record_step(obs)
+        heatmap_logger.record(obs, idx=0, idy=1)
+        heatmap_logger.record(obs, idx=12, idy=13)
+        heatmap_logger.increment_total_steps()
         if done:
             obs = env.reset()
     heatmap_logger.save_heatmap(filename='heatmap_test.png')

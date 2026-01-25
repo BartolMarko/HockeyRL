@@ -1,4 +1,5 @@
 import gymnasium as gym
+import numpy as np
 
 class RewardShaper:
     """
@@ -25,6 +26,7 @@ class RewardShaper:
     """
     def __init__(self, cfg):
         self.cfg = cfg
+        self.is_vec_env = cfg.get('num_envs', 1) > 1
 
     def transform_v1(self, reward, info, done_or_truncated):
         new_reward = 0.0
@@ -73,7 +75,6 @@ class RewardShaper:
         return info['reward_closeness_to_puck'] + \
                 self.transform_v3(reward, info, done_or_truncated, obs)
 
-
     def transform(self, reward, info, done_or_truncated, obs=None):
         if self.cfg.reward_transform == 'v1':
             return self.transform_v1(reward, info, done_or_truncated)
@@ -86,3 +87,17 @@ class RewardShaper:
         else:
             # using v0 as default
             return reward
+
+    def transform_batch(self, reward_batch, info_batch, done_or_truncated_batch, obs_batch=None):
+        shaped_rewards = np.zeros_like(reward_batch, dtype=np.float32)
+        for i in range(len(reward_batch)):
+            obs = None
+            if obs_batch is not None:
+                obs = obs_batch[i]
+            shaped_rewards[i] = self.transform(
+                reward_batch[i],
+                info_batch[i],
+                done_or_truncated_batch[i],
+                obs
+            )
+        return shaped_rewards

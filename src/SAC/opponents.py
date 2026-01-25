@@ -3,6 +3,7 @@ import numpy as np
 from sampler import get_sampler_using_config
 from comprl.client.agent import Agent
 from hockey import hockey_env as h_env
+import puffer_wrapper as pfw
 
 class NamedAgent(Agent):
     """
@@ -100,8 +101,8 @@ class OpponentInPool(NamedAgent):
             return 0.0
         return (self.win_count + 0.5 * self.draw_count) / games_played
 
-    def show_info(self):
-        print(f"Opponent Name: {self.name}")
+    def show_info(self, level=1):
+        print(" "*(2 * level) + f"Opponent Name: {self.name}")
 
     def log_stats(self, logger, episode_index):
         if logger is None: return
@@ -126,6 +127,8 @@ class OpponentPool:
         self.cfg = cfg
         self.self_play_active = False
         self.pending_activations = []
+        self.num_envs = cfg.get('num_envs', 1) if cfg is not None else 1
+        self.is_vec_env = self.num_envs > 1
 
     def add_opponent(self, opponent, priority: float = 1.0):
         if isinstance(opponent, OpponentInPool):
@@ -133,7 +136,6 @@ class OpponentPool:
                 new_opponent = opponent
                 new_opponent.index = len(self.opponents)
                 priority = 0.0  # SelfPlayManager starts with 0 priority
-                print("DEBUG: Adding a SelfPlayManager to OpponentPool with 0 priority. (priority={})".format(opponent.priority))
             else:
                 print("WARNING: Adding an OpponentInPool that is not a manager. Creating a new OpponentInPool instead.")
                 new_opponent = OpponentInPool(opponent.agent, index=len(self.opponents))
@@ -279,7 +281,7 @@ class OpponentPool:
         for idx, opponent in enumerate(self.opponents):
             print(f"- Opponent {idx}:")
             print(f"--- Weight: {weights[idx]:.3f}")
-            print(opponent.show_info())
+            print(opponent.show_info(level=2))
 
 
     def add_to_self_play(self, agent: Agent, episode_number: int) -> None:
@@ -323,9 +325,15 @@ def get_opponent_pool(cfg, env=None) -> OpponentPool:
         opp_type = opp_cfg.get('type', 'WeakBot')
         priority = opp_cfg.get('priority', 1.0)
         if opp_type == 'WeakBot':
-            opponent = WeakBot()
+            if pool.is_vec_env:
+                opponent = pfw.VecWeakBot(cfg.num_envs)
+            else:
+                opponent = WeakBot()
         elif opp_type == 'StrongBot':
-            opponent = StrongBot()
+            if pool.is_vec_env:
+                opponent = pfw.VecStrongBot(cfg.num_envs)
+            else:
+                opponent = StrongBot()
         elif opp_type == 'CustomAgent':
             experiment_name = opp_cfg.get('experiment_name')
             from helper import load_agent_from_config

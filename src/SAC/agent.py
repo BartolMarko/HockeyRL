@@ -3,7 +3,7 @@ from pathlib import Path
 import torch as T
 import torch.nn.functional as F
 import numpy as np
-from memory import ReplayBuffer, PrioritizedReplayBuffer, NStepCollector
+from memory import get_memory_buffer
 from exploration import RandomExplorer, GaussianExplorer, OrnsteinUhlenbeckExplorer, CuriousExplorer, OptimisticExplorer
 from network import ActorNet, CriticNet
 import pickle
@@ -14,15 +14,7 @@ class Agent:
         self.name = cfg.exp_name
         self.gamma = cfg.gamma
         self.buffer_type = cfg.get('buffer_type', 'replay')
-        if self.buffer_type == 'per':
-            alpha = cfg.get('per_alpha', 0.6)
-            self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
-        elif self.buffer_type == 'n-step-per':
-            alpha = cfg.get('per_alpha', 0.6)
-            base_buffer = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
-            self.memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
-        else:
-            self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
+        self.memory = get_memory_buffer(cfg)
 
         self.batch_size = cfg.batch_size
         self.n_actions = cfg.n_actions
@@ -85,22 +77,34 @@ class Agent:
                 print("Warning: No alpha value specified in config for fixed alpha. Using default alpha=0.2")
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
+        # TODO
+        # vectorized env support flag
+        num_envs = cfg.get('num_envs', 1)
+        self.is_vectorized = num_envs > 1
+        self.explorer.support_vec_env(num_envs)
+
     def show_info(self):
         print("Agent Configuration:")
         print(f"  Algorithm: Soft Actor-Critic (SAC)")
         print(f"  Replay Buffer Type: {self.buffer_type}")
+        if self.buffer_type in ['per', 'n-step-per']:
+            print(f"    Prioritized Experience Replay: Enabled")
         print(f"  Batch Size: {self.batch_size}")
         print(f"  Discount Factor (Gamma): {self.gamma}")
         print(f"  Target Network Update Frequency: {self.target_update_freq}")
         print(f"  Tau (Soft Update Coefficient): {self.tau}")
         if hasattr(self, 'log_alpha'):
             print(f"  Automatic Entropy Tuning: Enabled")
-            print(f"  Initial Alpha (Entropy Coefficient): {self.get_alpha().item()}")
-            print(f"  Target Entropy: {self.target_entropy}")
+            print(f"    Initial Alpha (Entropy Coefficient): {self.get_alpha().item()}")
+            print(f"    Target Entropy: {self.target_entropy}")
         else:
             print(f"  Automatic Entropy Tuning: Disabled")
-            print(f"  Fixed Alpha (Entropy Coefficient): {self.alpha.item()}")
+            print(f"    Fixed Alpha (Entropy Coefficient): {self.alpha.item()}")
         print(f"  Explorer Type: {self.explorer.id()}")
+        print(f"  Vectorized Environment Support: {'Enabled' if self.is_vectorized else 'Disabled'}")
+        if self.is_vectorized:
+            print(f"    Number of Environments: {self.cfg.get('num_envs', 1)}")
+
 
     def end_episode(self):
         self.explorer.end_episode()
@@ -156,9 +160,22 @@ class Agent:
         warmup = (step is not None) and (step < self.cfg.warmup_games)
         return self.explorer.choose_action(observation, agent=self, step=step, warmup=warmup)
 
+    def choose_action_batch(self, observation, step=None, eval_mode=False):
+        """Batched observation version of choose_action for vectorized envs"""
+        # TODO:
+        if eval_mode:
+             return self.choose_action_from_policy_batch(observation)
+        warmup = (step is not None) and (step < self.cfg.warmup_games)
+        return self.explorer.choose_action_batch(observation, agent=self, step=step, warmup=warmup)
+
     def plan(self, observation, eval_mode=True, step=None):
         """Alias for choose_action with eval_mode defaulting to True"""
         return self.choose_action(observation, step=step, eval_mode=eval_mode)
+
+    def plan_batch(self, observation, eval_mode=True, step=None):
+        """Batched observation version of plan / choose_action for vectorized envs"""
+        # TODO
+        return self.choose_action_batch(observation, step=step, eval_mode=eval_mode)
 
     def act(self, x):
         """Alias for choose_action with eval_mode set to True"""
@@ -169,6 +186,13 @@ class Agent:
         state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()[0]
+
+    def choose_action_from_policy_batch(self, observation):
+        """Batched observation version of choose_action_from_policy for vectorized envs"""
+        # TODO
+        state = T.from_numpy(observation).float().to(self.actor.device)
+        actions, _ = self.actor.sample_normal(state, reparameterize=False)
+        return actions.cpu().detach().numpy()
 
     def store(self, state, action, reward, new_state, done):
         """Stores a transition in the replay buffer, adding intrinsic reward (curious)."""
@@ -228,8 +252,7 @@ class Agent:
         done = T.tensor(done).to(self.actor.device)
         state_ = T.tensor(new_state, dtype=T.float).to(self.actor.device)
         state = T.tensor(state, dtype=T.float).to(self.actor.device)
-        action = T.as_tensor(np.asarray(action), dtype=T.float, device=self.actor.device)
-
+        action = T.tensor(action, dtype=T.float, device=self.actor.device)
 
         # Compute target Q-values
         with T.no_grad():

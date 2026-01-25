@@ -21,6 +21,7 @@ self_play:
     sampler:
       name: 'pfsp'
       pfsp_p: 0.5
+num_envs: 16
 
 # rewards
 reward_transform: "v0"
@@ -42,7 +43,7 @@ buffer_max_size: 1000000
 n_games: 75000
 warmup_games: 200
 learn_steps_per_episode: 1
-batch_size: 2048
+batch_size: 1024
 lr_actor: 0.0004
 lr_critic: 0.0003
 gamma: 0.99
@@ -87,8 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-random-replay-self-play"
-wandb_run_id: qlog380x
-resume: True
+exp_name: "sac-v0-random-replay-self-play-puffer"
+resume: False
 save_video: True
 log_gradients: False

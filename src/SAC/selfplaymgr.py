@@ -130,7 +130,8 @@ class SelfPlayManager(opponents.OpponentInPool):
         sampled_episode = self.pool[sampled_idx[0]]
         self.current_episode = sampled_episode
         if self.agent is not None:
-            self.agent.load_models(helper.get_Nth_checkpoint(self.cfg.exp_name, sampled_episode))
+            nth_checkpoint_dir = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', sampled_episode)
+            self.agent.load_models(nth_checkpoint_dir)
         else:
             self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode)
         self.agent.name = f"{self.name}_ep{sampled_episode}"
@@ -158,17 +159,19 @@ class SelfPlayManager(opponents.OpponentInPool):
         executed at the end of evaluation, for now activates self if the condition is met
         """
         activation_type = self.subcfg.get('activation_type', 'always_on')
+        if self.is_active_flag == True:
+            return
         if activation_type == 'always_on':
             self.is_active_flag = True
+            print(f"[SPLY] Self-Play Manager '{self.name}' set to be active ( always_on )!")
         elif activation_type == 'botwin':
             win_rate = pool.get_last_eval_win_rate()
             epsilon = self.subcfg.get('activation_epsilon', 0.9)
             if win_rate >= epsilon:
                 self.is_active_flag = True
+                print(f"[SPLY] Self-Play Manager '{self.name}' set to be active win_rate {win_rate} >= {epsilon}!")
         else:
             raise ValueError(f"Unknown activation type: {activation_type}")
-        if self.is_active_flag:
-            print(f"[SPLY] Self-Play Manager '{self.name}' set to be active!")
 
     def __len__(self):
         return len(self.pool)
@@ -222,13 +225,15 @@ class SelfPlayManager(opponents.OpponentInPool):
         logger.add_scalar(f"SelfPlay/{self.name}_mean_pool_duration", mean_duration)
 
 
-    def show_info(self):
-        print(f"Self-Play Manager: {self.name}")
-        print(f"Pool Size: {len(self.pool)}")
+    def show_info(self, level=1):
+        prefix_space = " " * (level * 2 - 1)
+        print(prefix_space + f"Self-Play Manager: {self.name}")
+        print(prefix_space + f"Pool Size: {len(self.pool)}")
         if len(self.pool) > 0:
-            print(f"Episodes in Pool: {self.pool}")
-        print(f"Sampler: {self.sampler.name}")
-        print(f"Pooling Strategies: {[str(s) for s in self.pooling_strategies]}")
+            print(prefix_space + f"Episodes in Pool: {self.pool}")
+        print(prefix_space + f"Sampler: {self.sampler.name}")
+        poolers = ", ".join([str(s) for s in self.pooling_strategies])
+        print(prefix_space + f"Pooling Strategies: {poolers}")
 
     def show_scoreboard(self):
         print(f"Self-Play Manager: {self.name}")

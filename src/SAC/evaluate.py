@@ -22,7 +22,7 @@ def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=N
                 hm.record_step(obs)
             if render or save is not None:
                 mode = 'human' if render else 'rgb_array'
-                frames.append(env.render(mode=mode))
+                # frames.append(env.render(mode=mode))
             action = agent.plan(obs, eval_mode=True)
             if not isinstance(action, np.ndarray):
                 action = action.cpu().numpy()
@@ -38,7 +38,7 @@ def evaluate(env, agent, opponent, num_episodes, step=None, render=False, save=N
             draw_count += 1
     opponent.record_play_scores(lose_count, win_count, draw_count)
     if save is not None:
-        imageio.mimsave(save, frames, fps=30)
+        # imageio.mimsave(save, frames, fps=30)
         print(f"Saved evaluation video to {save}.")
     if heatmap:
         hm.save_heatmap(f"heatmap_{agent.name}_vs_{opponent.name}_step{step}.png")

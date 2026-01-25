@@ -20,6 +20,8 @@ class MemoryBuffer:
     def __len__(self):
         raise NotImplementedError
 
+    def stats(self):
+        print("Memory Buffer Size:", len(self))
 
 class ReplayBuffer(MemoryBuffer):
     """
@@ -88,6 +90,8 @@ class ReplayBuffer(MemoryBuffer):
 
         return states, actions, rewards, states_, dones
 
+    def __len__(self):
+        return min(self.mem_cntr, self.mem_size)
 
 class PrioritizedReplayBuffer(MemoryBuffer):
     """
@@ -213,3 +217,333 @@ class NStepCollector(MemoryBuffer):
 
     def __len__(self):
         return len(self.replay_buffer)
+
+class VecReplayBuffer(MemoryBuffer):
+    """
+    A vectorized replay buffer that manages multiple replay buffers for parallel environments.
+    """
+    def __init__(self, num_envs, max_size, input_shape, n_actions, device = 'cpu'):
+        self.num_envs = num_envs
+        self.mem_size = max_size
+
+        self.mem_cntr = 0
+        self.occupancy = 0
+
+        self.state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
+        self.new_state_memory = np.zeros((self.mem_size, *input_shape), dtype=np.float32)
+        self.action_memory = np.zeros((self.mem_size, n_actions), dtype=np.float32)
+        self.reward_memory = np.zeros((self.mem_size,), dtype=np.float32)
+        self.terminal_memory = np.zeros((self.mem_size,), dtype=bool)
+
+    def store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch):
+        if state_batch.shape[0] != self.num_envs:
+            raise ValueError("Batch size must match number of environments, got {} and {}".format(state_batch.shape[0], self.num_envs))
+        indices = np.arange(self.mem_cntr, self.mem_cntr + self.num_envs) % self.mem_size
+
+        self.state_memory[indices] = state_batch
+        self.new_state_memory[indices] = next_state_batch
+        self.action_memory[indices] = action_batch
+        self.reward_memory[indices] = reward_batch
+        self.terminal_memory[indices] = done_batch
+
+        self.mem_cntr = (self.mem_cntr + self.num_envs) % self.mem_size
+        self.occupancy = min(self.occupancy + self.num_envs, self.mem_size)
+
+    def sample_buffer(self, batch_size):
+        indices = np.random.randint(0, self.mem_cntr, size=batch_size)
+        states = self.state_memory[indices]
+        states_ = self.new_state_memory[indices]
+        actions = self.action_memory[indices]
+        rewards = self.reward_memory[indices]
+        dones = self.terminal_memory[indices]
+        return states, actions, rewards, states_, dones
+
+    def __len__(self):
+        return self.occupancy
+
+class VecPrioritizedReplayBuffer(VecReplayBuffer):
+    """
+    A vectorized prioritized replay buffer for parallel environments.
+    Lol, reimplementing all of this again, but guess what? i can use sum trees now
+    """
+    def __init__(self, num_envs, capacity, input_shape, n_actions, alpha=0.6, beta_start = 0.4, beta_frames=100000):
+        super().__init__(num_envs, capacity, input_shape, n_actions)
+        self.alpha = alpha
+        self.alpha = alpha
+        self.beta_start = beta_start
+        self.beta_frames = beta_frames
+        self.frame = 1 #for beta calculation
+
+        # sum-tree for priorities
+        self.tree_capacity = 1
+        while self.tree_capacity < capacity:
+            self.tree_capacity *= 2
+
+        self.sum_tree = np.zeros(2 * self.tree_capacity - 1, dtype=np.float32)
+        self.min_tree = np.full(2 * self.tree_capacity - 1, float('inf'), dtype=np.float32)
+        self.max_priority = 1.0
+
+    def beta_by_frame(self, frame_idx):
+        """
+        Linearly increases beta from beta_start to 1 over time from 1 to beta_frames.
+        """
+        return min(1.0, self.beta_start + frame_idx * (1.0 - self.beta_start) / self.beta_frames)
+
+    def store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch):
+        indices = np.arange(self.mem_cntr, self.mem_cntr + self.num_envs) % self.mem_size
+        super().store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        priorities = np.full(self.num_envs, self.max_priority, dtype=np.float32)
+        self.update_priorities(indices, priorities)
+
+    def update_priorities(self, batch_indices, batch_priorities):
+        self.max_priority = max(self.max_priority, np.max(batch_priorities))
+        tree_indices = batch_indices + self.tree_capacity - 1
+        batch_priorities = batch_priorities ** self.alpha
+
+        for i, tree_idx in enumerate(tree_indices):
+            self.sum_tree[tree_idx] = batch_priorities[i]
+            self.min_tree[tree_idx] = batch_priorities[i]
+            idx = tree_idx
+            while idx != 0:
+                idx = (idx - 1) // 2
+                left = 2 * idx + 1
+                right = left + 1
+                self.sum_tree[idx] = self.sum_tree[left] + self.sum_tree[right]
+                self.min_tree[idx] = min(self.min_tree[left], self.min_tree[right])
+
+    def sample_buffer(self, batch_size):
+        total_priority = self.sum_tree[0]
+        segment = total_priority / batch_size
+
+        targets = np.random.uniform(
+                np.arange(batch_size) * segment,
+                np.arange(1, batch_size + 1) * segment
+        )
+        tree_indices = np.zeros(batch_size, dtype=np.int64)
+        current_indices = np.zeros(batch_size, dtype=np.int64)
+
+        for _ in range(int(np.log2(self.tree_capacity))):
+            left = 2 * current_indices + 1
+            right = left + 1
+            left_values = self.sum_tree[left]
+            mask = targets > left_values
+            targets[mask] -= left_values[mask]
+            current_indices = np.where(mask, right, left)
+
+        tree_indices = current_indices
+
+        batch_indices = tree_indices - self.tree_capacity + 1
+        batch_indices = np.clip(batch_indices, 0, self.tree_capacity - 1)
+
+        states = self.state_memory[batch_indices]
+        states_ = self.new_state_memory[batch_indices]
+        actions = self.action_memory[batch_indices]
+        rewards = self.reward_memory[batch_indices]
+        dones = self.terminal_memory[batch_indices]
+
+        # P(i) = p_i / total_priority
+        # w = (N * P) ^ -beta; N = len(buffer)
+        priorities = self.sum_tree[tree_indices]
+        sampling_probabilities = priorities / total_priority
+        N = len(self)
+        beta = self.beta_by_frame(self.frame)
+        self.frame += 1
+        weights = (N * sampling_probabilities) ** (-beta)
+        weights /= weights.max()
+        return states, actions, rewards, states_, dones, batch_indices, weights
+
+class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
+    """
+    A vectorized n-step prioritized experience replay buffer for parallel environments.
+    well, lets stick to just PER for now
+    """
+    def __init__(self, num_envs, n_step, gamma, capacity, input_shape, n_actions, alpha=0.6, beta_start = 0.4, beta_frames=100000):
+        super().__init__(num_envs, capacity, input_shape, n_actions, alpha, beta_start, beta_frames)
+        self.n_step = n_step
+        self.gamma = gamma
+        self.num_envs = num_envs
+        self.n_step_history = deque(maxlen=n_step)
+
+    def store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch):
+        self.n_step_history.append((state_batch, action_batch, reward_batch, next_state_batch, done_batch))
+
+        if len(self.n_step_history) < self.n_step:
+            return
+
+        reward_batch, next_state_batch, done_batch = self._get_n_step_info()
+        state_batch, action_batch = self.n_step_history[0][:2]
+
+        super().store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+
+    def _get_n_step_info(self):
+        reward_batch, next_state_batch, done_batch = self.n_step_history[-1][-3:]
+
+        for transition in reversed(list(self.n_step_history)[:-1]):
+            r_batch, n_s_batch, d_batch = transition[2], transition[3], transition[4]
+            reward_batch = r_batch + self.gamma * reward_batch * (1 - d_batch)
+            next_state_batch, done_batch = np.where(d_batch[:, None], n_s_batch, next_state_batch), np.where(d_batch, d_batch, done_batch)
+
+        return reward_batch, next_state_batch, done_batch
+
+    def flush(self):
+        while len(self.n_step_history) > 0:
+            reward_batch, next_state_batch, done_batch = self._get_n_step_info()
+            state_batch, action_batch = self.n_step_history[0][:2]
+            super().store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+            self.n_step_history.popleft()
+
+
+def get_memory_buffer(cfg):
+    num_envs = cfg.get('num_envs', 1)
+    buffer_type = cfg.get('buffer_type', 'replay')
+    if num_envs > 1:
+        if buffer_type == 'replay':
+            return VecReplayBuffer(
+                num_envs,
+                cfg.buffer_max_size,
+                cfg.input_dims,
+                cfg.n_actions
+            )
+        elif buffer_type == 'per':
+            return VecPrioritizedReplayBuffer(
+                num_envs,
+                cfg.buffer_max_size,
+                cfg.input_dims,
+                cfg.n_actions,
+                alpha=cfg.get('per_alpha', 0.6)
+            )
+        elif buffer_type == 'n-step-per':
+            return VecNStepPERBuffer(
+                num_envs,
+                cfg.n_step_buffer_n,
+                cfg.gamma,
+                cfg.buffer_max_size,
+                cfg.input_dims,
+                cfg.n_actions,
+                alpha=cfg.get('per_alpha', 0.6)
+            )
+        else:
+            raise NotImplementedError("Only 'replay' buffer type is implemented for vectorized environments.")
+    else:
+        if buffer_type == 'per':
+            alpha = cfg.get('per_alpha', 0.6)
+            self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
+        elif buffer_type == 'n-step-per':
+            alpha = cfg.get('per_alpha', 0.6)
+            base_buffer = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
+            self.memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
+        else:
+            self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
+
+        return self.memory
+
+#### TESTS ####
+
+def test_vec_per():
+    # Ugh, this takes time
+    print("VecPrioritizedReplayBuffer...")
+    num_envs=2
+    mem_size=4
+    memory = VecPrioritizedReplayBuffer(num_envs=num_envs, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0)
+    dummy_obs = np.zeros((num_envs, 4))
+    for _ in range(mem_size):
+        memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    assert len(memory) == mem_size
+    print("  Initial fill test passed.")
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    assert len(memory) == mem_size
+    print("  Wrapping test passed.")
+    batch, actions, rewards, next_batch, dones, indices, weights = memory.sample_buffer(batch_size=4)
+    assert batch.shape == (4, 4)
+    print("  Sampling test passed.")
+
+    num_envs = 2
+    mem_size = 8
+    memory = VecPrioritizedReplayBuffer(num_envs=num_envs, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0)
+    dummy_obs = np.zeros((num_envs, 4))
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    assert memory.sum_tree[7] == 1.0
+    assert memory.sum_tree[8] == 1.0
+    assert memory.sum_tree[0] == 2.0
+    print("  Priority assignment test passed.")
+
+    indices = np.array([0, 1])
+    new_priorities = np.array([0.5, 0.2], dtype=np.float32)
+    memory.update_priorities(indices, new_priorities)
+    assert np.isclose(memory.sum_tree[7], 0.5)
+    assert np.isclose(memory.sum_tree[8], 0.2)
+    assert np.isclose(memory.sum_tree[0], 0.7)
+    print("  Priority update test passed.")
+
+    num_envs = 1
+    mem_size = 16
+    memory = VecPrioritizedReplayBuffer(num_envs=num_envs, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0, beta_start=1)
+    dummy_obs = np.zeros((num_envs, 4))
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    batch, actions, rewards, next_batch, dones, indices, weights = memory.sample_buffer(batch_size=10)
+    idx_0 = np.array([0], dtype=np.int64)
+    idx_1 = np.array([1], dtype=np.int64)
+    prio_10 = np.array([10.0], dtype=np.float32)
+    prio_20 = np.array([20.0], dtype=np.float32)
+    memory.update_priorities(idx_0, prio_10)
+    memory.update_priorities(idx_1, prio_10)
+    assert np.isclose(weights, np.ones_like(weights)).all()
+    memory.update_priorities(idx_0, prio_10)
+    memory.update_priorities(idx_1, prio_20)
+    batch, actions, rewards, next_batch, dones, indices, weights = memory.sample_buffer(batch_size=10)
+    for i, idx in enumerate(indices):
+        if idx == 0:
+            assert np.isclose(weights[i], 1.0)
+        elif idx == 1:
+            assert np.isclose(weights[i], 0.5)
+    # All the math I had to do for this, lol
+    print("  Importance-sampling weights test passed.")
+
+    print("PASS")
+
+def test_vec_nstep():
+    print("VecNStepPERBuffer...")
+    num_envs=2
+    mem_size=4
+    n_step=3
+    gamma=0.9
+    memory = VecNStepPERBuffer(num_envs=num_envs, n_step=n_step, gamma=gamma, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0)
+    dummy_obs = np.zeros((num_envs, 4))
+    for _ in range(mem_size):
+        memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.ones((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    assert len(memory) == mem_size
+    print("  Initial fill test passed.")
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.ones((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
+    assert len(memory) == mem_size
+    print("  Wrapping test passed.")
+    batch, actions, rewards, next_batch, dones, indices, weights = memory.sample_buffer(batch_size=4)
+    assert batch.shape == (4, 4)
+    print("  Sampling test passed.")
+
+    # 3-step reward test
+    n_step = 3
+    num_envs = 1
+    mem_size = 10
+    gamma = 0.9
+    memory = VecNStepPERBuffer(num_envs=num_envs, n_step=n_step, gamma=gamma, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0)
+    dummy_obs = np.zeros((num_envs, 4))
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.array([1.0]), dummy_obs, np.array([0], dtype=bool))
+    assert len(memory) == 0
+    dummy_obs = np.random.rand(*(dummy_obs.shape))
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.array([1.0]), dummy_obs, np.array([0], dtype=bool))
+    assert len(memory) == 0
+    dummy_obs = np.random.rand(*(dummy_obs.shape))
+    memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.array([1.0]), dummy_obs, np.array([0], dtype=bool))
+    assert len(memory) == 1
+    batch, actions, rewards, next_batch, dones, indices, weights = memory.sample_buffer(batch_size=1)
+    assert all(batch[0] == 0.0)
+    print("  N-step sample test passed.")
+    expected_reward = 1.0 + 0.9 * 1.0 + 0.9**2 * 1.0
+    assert np.isclose(rewards[0], expected_reward)
+    print("  N-step reward calculation test passed.")
+    print("PASS")
+
+if __name__ == "__main__":
+    test_vec_per()
+    test_vec_nstep()

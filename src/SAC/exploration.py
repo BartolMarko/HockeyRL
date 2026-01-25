@@ -14,6 +14,8 @@ class ExplorerStrategy:
         self.low = low
         self.high = high
         self.name = name
+        self.num_envs = 1
+        self.supports_vec_env = False
 
     def choose_action(self, observation, agent=None, step=None, warmup=False):
         raise NotImplementedError
@@ -36,6 +38,10 @@ class ExplorerStrategy:
     def __str__(self):
         return self.name
 
+    def support_vec_env(self, num_envs: int):
+        self.num_envs = num_envs
+        self.supports_vec_env = True
+
 
 class RandomExplorer(ExplorerStrategy):
     """
@@ -50,6 +56,12 @@ class RandomExplorer(ExplorerStrategy):
 
         # use agent's policy, the alpha-scaled entropy should be good enough
         return agent.choose_action_from_policy(observation)
+
+    def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
+        if warmup:
+            return np.random.uniform(low=self.low, high=self.high, size=(self.num_envs, self.n_actions))
+
+        return agent.choose_action_from_policy_batch(observations)
 
     def id(self):
         return "uniform_explorer"
@@ -73,12 +85,23 @@ class GaussianExplorer(ExplorerStrategy):
         noise = np.where(np.random.rand(self.n_actions) < 0.5, out_l, out_r)
         return noise
 
+    def get_noise_batch(self):
+        out_l = np.random.normal(loc=-1 * self.mu, scale=self.sigma, size=(self.num_envs, self.n_actions))
+        out_r = np.random.normal(loc=self.mu, scale=self.sigma, size=(self.num_envs, self.n_actions))
+        rand_vals = np.random.rand(self.num_envs, self.n_actions)
+        noise = np.where(rand_vals < 0.5, out_l, out_r)
+        return noise
+
     def choose_action(self, observation, agent=None, step=None, warmup=False):
         if warmup:
             return np.clip(self.get_noise(), self.low, self.high)
 
         return agent.choose_action_from_policy(observation)
 
+    def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
+        if warmup:
+            return np.clip(self.get_noise_batch(), self.low, self.high)
+        return agent.choose_action_from_policy_batch(observations)
 
     def id(self):
         return f"gaussian_explorer_sigma_{self.sigma:.2f}"
@@ -114,6 +137,13 @@ class OrnsteinUhlenbeckExplorer(ExplorerStrategy):
         self.x_prev = x
         return x
 
+    def noise_batch(self):
+        x = (self.x_prev +
+             self.theta * (self.mu - self.x_prev) * self.dt +
+             self.sigma * np.sqrt(self.dt) * np.random.normal(size=(self.num_envs, self.n_actions)))
+        self.x_prev = x
+        return x
+
     def choose_action(self, observation, agent=None, step=None, warmup=False):
         ou_noise = self.noise()
 
@@ -124,6 +154,20 @@ class OrnsteinUhlenbeckExplorer(ExplorerStrategy):
         with T.no_grad():
             mu, _ = agent.actor.sample_normal(state_tensor, reparameterize=False)
             action_mean = mu.cpu().detach().numpy()[0]
+
+        action = action_mean + ou_noise
+        return np.clip(action, self.low, self.high)
+
+    def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
+        ou_noise = self.noise_batch()
+
+        if warmup:
+            return np.clip(ou_noise, self.low, self.high)
+
+        state_tensor = T.from_numpy(observations).float().to(agent.actor.device)
+        with T.no_grad():
+            mu, _ = agent.actor.sample_normal(state_tensor, reparameterize=False)
+            action_mean = mu.cpu().detach().numpy()
 
         action = action_mean + ou_noise
         return np.clip(action, self.low, self.high)
@@ -177,6 +221,35 @@ class OptimisticExplorer(ExplorerStrategy):
         action = action.squeeze(0).cpu().detach().numpy()
         return np.clip(action, self.low, self.high)
 
+    def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
+        if warmup:
+             return np.random.uniform(low=self.low, high=self.high, size=(self.num_envs, self.n_actions))
+
+        state_tensor = T.from_numpy(observations).float().to(agent.actor.device)
+        with T.no_grad():
+            mux, stdx = agent.actor.forward(state_tensor)
+        mux.requires_grad_(True)
+        q1 = agent.critic_1.forward(state_tensor, mux)
+        q2 = agent.critic_2.forward(state_tensor, mux)
+        mean_q = (q1 + q2) / 2.0
+        std_q = T.abs(q1 - q2) / 2.0
+        q_ub = mean_q + self.beta * std_q
+
+        q_ub.backward(T.ones_like(q_ub))
+        grad_mu = mux.grad
+
+        # mu_opt = mux + k_UB * Sigma_pi * grad_Q (approx)
+        if grad_mu is not None:
+             mu_opt = mux + self.beta * stdx * grad_mu
+        else:
+             mu_opt = mu
+        mu_opt = mu_opt.detach()
+
+        action = T.normal(mu_opt, stdx)
+        action = T.tanh(action)
+        action = action.cpu().detach().numpy()
+        return np.clip(action, self.low, self.high)
+
     def id(self):
         return f"optimistic_explorer_beta_{self.beta:.2f}"
 
@@ -224,6 +297,12 @@ class CuriousExplorer(ExplorerStrategy):
              return np.random.uniform(low=self.low, high=self.high, size=self.n_actions)
 
         return agent.choose_action_from_policy(observation)
+
+    def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
+        if warmup:
+             return np.random.uniform(low=self.low, high=self.high, size=(self.num_envs, self.n_actions))
+
+        return agent.choose_action_from_policy_batch(observations)
 
     def get_intrinsic_reward(self, state, action, next_state):
         next_state_t = T.tensor(next_state, dtype=T.float32, device=self.device).unsqueeze(0)

@@ -183,7 +183,11 @@ def train(cfg):
         training_monitor.run.log(train_metrics, step=step)
 
         print(
-            f"Step {step}. Episode {episode_idx} finished in {time.time() - episode_start_time:.2f}s."
+            f"Step {step}.",
+            f"Episode {episode_idx} finished in {time.time() - episode_start_time:.2f}s.",
+            f"Opponent: {opponent.name}.",
+            f"Episode outcome: {episode.outcome.name}.",
+            sep=" ",
         )
 
         # Evaluate agent periodically

@@ -5,7 +5,7 @@ env_name: SparseRewardHockeyEnv
 action_repeat: 1
 discount: 0.99
 max_episode_length: 251
-train_steps: 2000000
+train_steps: 1500000
 mirror_episodes: False
 
 # planning

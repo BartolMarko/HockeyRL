@@ -1,4 +1,4 @@
-run_name: tdmpc2_test_compile_high_precision
+run_name: tdmpc2_thompson_selfplay_100k_start_100k_freq_window_100
 
 # environment
 env_name: SparseRewardHockeyEnv
@@ -58,38 +58,47 @@ save_model: True
 save_model_freq: 50000
 device: cuda
 
-# Opponent Pool
-# TODO: move somehow to kwargs
-opponent_pool_window_size: 100
-opponent_pool_draw_weight: 0.5
-
 # Evaluation
 eval_episodes_per_opponent: 50
-final_eval_episodes_per_opponent: 100
+final_eval_episodes_per_opponent: 50
 video_episodes_per_outcome: 30
+save_heatmaps: True
 
-# Additional opponents for evaluation
-evaluation_opponents:
+# Opponent pool settings
+opponent_pool: ThompsonSampling
+opponent_pool_window_size: 100
+opponent_pool_draw_weight: 0.5
+max_num_opponents_in_pool: 10
+
+# Opponents:
+opponents:
   TD3_119k_faker:
     type: TD3
     weights_path: ./models/td3_benchmarks/td3_HockeyEnv_119.pt
     config_path: ./models/td3_benchmarks/td3_config.yaml
+    evaluate_against: True
+    train_start_step: 1250000
+    removable: False
   TD3_118k_bank_shot:
     type: TD3
     weights_path: ./models/td3_benchmarks/td3_HockeyEnv_118.pth
     config_path: ./models/td3_benchmarks/td3_config.yaml
-
-# Training opponents
-opponent_pool: Uniform
-training_opponents:
+    evaluate_against: True
+    train_start_step: 1250000
+    removable: False
   StrongBot:
     type: StrongBot
-    start_step: 0
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
   WeakBot:
     type: WeakBot
-    start_step: 0
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
 
 # Self play
 selfplay: true
-selfplay_start_step: 150000
+self_removable: True
+selfplay_start_step: 100000
 selfplay_freq: 100000

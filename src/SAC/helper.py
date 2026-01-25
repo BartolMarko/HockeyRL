@@ -155,9 +155,7 @@ class Logger:
             print(" - Project:", self.cfg.get('wandb_project'))
             wandb_logger = wandb.init(project=self.cfg.get('wandb_project'),
                               name=self.cfg.get('exp_name'), config=dict(self.cfg),
-                              monitor_gym=True)
-            if self.cfg.resume:
-                wandb.config.update(dict(self.cfg), allow_val_change=True)
+                              monitor_gym=True, allow_val_change=True)
             return wandb
         return None
 

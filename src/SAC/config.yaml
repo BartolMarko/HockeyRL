@@ -88,6 +88,7 @@ save_model_freq: 400
 use_wandb: True
 wandb_project: "hockey-rl"
 exp_name: "sac-v0-random-replay-self-play"
-resume: False
+wandb_run_id: qlog380x
+resume: True
 save_video: True
 log_gradients: False

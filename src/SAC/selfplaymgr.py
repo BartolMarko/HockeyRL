@@ -163,10 +163,12 @@ class SelfPlayManager(opponents.OpponentInPool):
         elif activation_type == 'botwin':
             win_rate = pool.get_last_eval_win_rate()
             epsilon = self.subcfg.get('activation_epsilon', 0.9)
-            if win_rate > epsilon:
+            if win_rate >= epsilon:
                 self.is_active_flag = True
         else:
             raise ValueError(f"Unknown activation type: {activation_type}")
+        if self.is_active_flag:
+            print(f"[SPLY] Self-Play Manager '{self.name}' set to be active!")
 
     def __len__(self):
         return len(self.pool)
@@ -260,12 +262,14 @@ def test_selfplay_manager():
         cfg = OmegaConf.load(f)
     subcfg = cfg.self_play[0]
     spm = create_selfplay_manager(cfg, subcfg)
+    spm.is_active_flag = True
     for ep in [10, 20, 30, 40, 50]:
-        spm.add_episode_number_to_pool(ep)
+        spm.add_episode_number_to_pool(None, episode_number=ep)
     print("Pool after additions:", spm.pool)
     spm.update_priorities({10: 0.5, 20: 0.8, 30: 0.2})
-    sampled_agent = spm.sample_opponent()
-    print("Sampled agent for episode:", sampled_agent.current_episode)
+    # Disabled for now, as it requires actual agent checkpoints
+    # sampled_agent = spm.sample_opponent()
+    # print("Sampled agent for episode:", sampled_agent.current_episode)
 
 if __name__ == "__main__":
     test_selfplay_manager()

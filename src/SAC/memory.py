@@ -63,7 +63,7 @@ class ReplayBuffer(MemoryBuffer):
         self.reward_memory[index] = reward
         self.terminal_memory[index] = done
 
-        self.mem_cntr += 1
+        self.mem_cntr = min(self.mem_cntr + 1, self.mem_size)
 
 
     def sample_buffer(self, batch_size):

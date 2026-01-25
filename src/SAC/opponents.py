@@ -187,7 +187,7 @@ class OpponentPool:
             total_wins += opponent.win_count
         if total_games == 0:
             return 0.0
-        return total_wins / total_games
+        return 1 - total_wins / total_games
 
     def is_self_play_active(self):
         return self.self_play_active

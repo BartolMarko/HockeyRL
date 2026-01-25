@@ -11,7 +11,7 @@ class OpponentPool:
     def __init__():
         pass
 
-    def add_opponent(self, opponent: NamedAgent):
+    def add_opponent(self, opponent: NamedAgent, removable: bool) -> None:
         raise NotImplementedError("Should be implemented in child classes!")
 
     def add_episode_outcome(self, opponent: NamedAgent, outcome: Outcome):
@@ -30,14 +30,16 @@ class OpponentPoolThompsonSampling(OpponentPool):
     For each opponent estimates the (P_win, P_draw, P_loss) by sampling from dirichlet distribution
     and chooses opponent with highest sampled P_loss + draw_weight * P_draw.
     Probabilities are estimated with respect to only the last window_size_episodes episodes.
+    When the total number of opponents exceeds max_num_opponents, removes the oldest removable opponent.
     """
 
     def __init__(
         self,
-        opponents: list[NamedAgent] = [],
+        opponents: list[(NamedAgent, bool)] = [],
         window_size_episodes: int = 200,
         prior: dict[Outcome, int] = DEFAULT_PRIOR,
         draw_weight=0.5,
+        max_num_opponents: int = 10,
     ) -> None:
         """Initialize the opponent pool with given opponents, window size, and same prior for each opponent."""
         self.opponents = []
@@ -45,16 +47,26 @@ class OpponentPoolThompsonSampling(OpponentPool):
         self.window_size_episodes = window_size_episodes
         self.outcome_queue = Queue(maxsize=window_size_episodes)
         self.draw_weight = draw_weight
-
-        for opponent in opponents:
-            self.add_opponent(opponent, prior)
+        self.max_num_opponents = max_num_opponents
+        self.is_removable = {}
+        for opponent, removable in opponents:
+            self.add_opponent(opponent, removable, prior)
 
     def add_opponent(
-        self, opponent: NamedAgent, prior: dict[Outcome, int] = DEFAULT_PRIOR
+        self,
+        opponent: NamedAgent,
+        removable: bool,
+        prior: dict[Outcome, int] = DEFAULT_PRIOR,
     ) -> None:
-        """Add a new opponent to the pool with given prior outcome counts."""
+        """Add a new opponent to the pool with given prior outcome counts. If the pool exceeds max size, removes oldest removable opponent."""
         self.opponents.append(opponent)
         self.outcome_counts[opponent.name] = prior.copy()
+        self.is_removable[opponent.name] = removable
+        if len(self.opponents) > self.max_num_opponents:
+            for i, opp in enumerate(self.opponents):
+                if self.is_removable[opp.name]:
+                    self.opponents.pop(i)
+                    break
 
     def add_episode_outcome(self, opponent: NamedAgent, outcome: Outcome) -> None:
         """Add the outcome of an episode against the given opponent to the pool statistics."""
@@ -97,13 +109,13 @@ class OpponentPoolUniform(OpponentPool):
 
     def __init__(
         self,
-        opponents: list[NamedAgent] = [],
+        opponents: list[(NamedAgent, bool)] = [],
     ) -> None:
         self.opponents = []
-        for opponent in opponents:
-            self.add_opponent(opponent)
+        for opponent, removable in opponents:
+            self.add_opponent(opponent, removable)
 
-    def add_opponent(self, opponent: NamedAgent) -> None:
+    def add_opponent(self, opponent: NamedAgent, removable: bool) -> None:
         self.opponents.append(opponent)
 
     def add_episode_outcome(self, opponent: NamedAgent, outcome: Outcome) -> None:

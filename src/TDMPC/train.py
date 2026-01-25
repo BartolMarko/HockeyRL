@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 from src.agent_factory import agent_factory
 from src.environments import environment_factory
 from src.evaluation import Evaluator
-from src.opponent_pool import opponent_pool_factory, OpponentPool
+from src.opponent_pool import opponent_pool_factory
 from src.training_monitor import TrainingMonitor
 
 from src.TDMPC.tdmpc import TDMPC
@@ -38,18 +38,8 @@ def add_env_variables_to_config(env, cfg):
     return cfg
 
 
-def load_opponents_from_config(opponents_cfg: OmegaConf) -> list:
-    """Load opponents from the configuration."""
-    opponents = []
-    for opp_name, opp_cfg in opponents_cfg.items():
-        opponent = agent_factory(opp_name, opp_cfg)
-        opponents.append(opponent)
-    return opponents
-
-
-def add_self_to_opponent_pool(
+def get_copy_of_self(
     tdmpc: TDMPC,
-    opponent_pool: OpponentPool,
     step: int,
     cfg: OmegaConf,
 ):
@@ -64,7 +54,7 @@ def add_self_to_opponent_pool(
         eval_mode=True,
         name_suffix=f"_selfplay_step_{step}",
     )
-    opponent_pool.add_opponent(self_opponent)
+    return self_opponent
 
 
 def train(cfg):
@@ -75,19 +65,34 @@ def train(cfg):
     env = environment_factory(cfg.env_name)
     cfg = add_env_variables_to_config(env, cfg)
 
-    additional_evaluation_opponents = load_opponents_from_config(
-        cfg.evaluation_opponents
-    )
-    training_opponents = [
-        (opp_cfg["start_step"], agent_factory(opp_name, opp_cfg))
-        for opp_name, opp_cfg in cfg.training_opponents.items()
+    training_opponents_configs = {
+        opp_name: opp_cfg
+        for opp_name, opp_cfg in cfg.opponents.items()
+        if opp_cfg.get("train_start_step", None) is not None
+    }
+    training_opponents_configs = sorted(
+        training_opponents_configs.items(),
+        key=lambda item: item[1]["train_start_step"],
+    )  # List of (name, config) tuples
+
+    evaluation_opponent_configs = {
+        opp_name: opp_cfg
+        for opp_name, opp_cfg in cfg.opponents.items()
+        if opp_cfg.get("evaluate_against", False)
+    }
+    evaluation_opponents = [
+        agent_factory(opp_name, opp_cfg)
+        for opp_name, opp_cfg in evaluation_opponent_configs.items()
     ]
-    training_opponents.sort(key=lambda x: x[0])
+    # Different copies of opponents for evaluation and training
+    # TODO: Use different copies to parallelize evaluation and training?
+
     opponent_pool = opponent_pool_factory(
         cfg.get("opponent_pool", "ThompsonSampling"),
         opponents=[],
         window_size_episodes=cfg.get("opponent_pool_window_size", 100),
         draw_weight=cfg.get("opponent_pool_draw_weight", 0.5),
+        max_num_opponents=cfg.get("max_num_opponents_in_pool", 10),
     )
 
     tdmpc, buffer = TDMPC(cfg), ReplayBuffer(cfg)
@@ -102,11 +107,17 @@ def train(cfg):
     episode_idx, step = 0, 0
     last_update_step, last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0, 0
     while step < cfg.train_steps:
-        while len(training_opponents) and step >= training_opponents[0][0]:
-            _, new_opponent = training_opponents.pop(0)
-            opponent_pool.add_opponent(new_opponent)
+        while (
+            len(training_opponents_configs)
+            and step >= training_opponents_configs[0][1]["train_start_step"]
+        ):
+            opponent_name, opponent_cfg = training_opponents_configs.pop(0)
+            opponent_pool.add_opponent(
+                agent_factory(opponent_name, opponent_cfg),
+                removable=opponent_cfg.get("removable", False),
+            )
             print(
-                f"Added new opponent '{new_opponent.name}' to opponent pool at step {step}."
+                f"Added new opponent '{opponent_name}' to opponent pool at step {step}."
             )
 
         if (
@@ -114,7 +125,11 @@ def train(cfg):
             and step >= cfg.selfplay_start_step
             and (step - last_selfplay_step) >= cfg.selfplay_freq
         ):
-            add_self_to_opponent_pool(tdmpc, opponent_pool, step, cfg)
+            opponent_pool.add_opponent(
+                get_copy_of_self(tdmpc, step, cfg),
+                removable=cfg.get("self_removable", True),
+            )
+            evaluation_opponents.append(get_copy_of_self(tdmpc, step, cfg))
             last_selfplay_step = step
             print(f"Added self-play agent to opponent pool at step {step}.")
 
@@ -184,10 +199,10 @@ def train(cfg):
             evaluator.evaluate_agent_and_save_metrics(
                 env,
                 agent,
-                opponent_pool.get_opponents() + additional_evaluation_opponents,
+                evaluation_opponents,
                 num_episodes=cfg.eval_episodes_per_opponent,
                 render_mode="rgb_array" if final_evaluation else None,
-                save_heatmaps=final_evaluation,
+                save_heatmaps=cfg.get("save_heatmaps", False) or final_evaluation,
                 wandb_run=training_monitor.run,
                 train_step=env_step,
                 save_episodes_per_outcome=save_episodes_per_outcome,

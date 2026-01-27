@@ -81,7 +81,7 @@ class HeatmapTracker:
         Visualizes the accumulated histogram.
         """
         if np.sum(self.heatmap) == 0:
-            print("No data recorded yet.")
+            print("[WARN] No data recorded yet for heatmap.")
             return
 
         plt.figure(figsize=(12, 7))
@@ -155,8 +155,8 @@ class Logger:
                 if not os.getenv('WANDB_RUN_ID'):
                     raise ValueError("To resume a wandb run, set wandb_run_id in the config.")
 
-            print("wandb:")
-            print(" - Project:", self.cfg.get('wandb_project'))
+            print("[WNDB] wandb:")
+            print("[WNDB] - Project:", self.cfg.get('wandb_project'))
             wandb_logger = wandb.init(project=self.cfg.get('wandb_project'),
                               name=self.cfg.get('exp_name'), config=dict(self.cfg),
                               monitor_gym=True, allow_val_change=True)
@@ -176,6 +176,13 @@ class Logger:
         self.puck_pos_heatmap.record(obs, idx=12, idy=13)
         self.agent_pos_heatmap.increment_total_steps()
         self.puck_pos_heatmap.increment_total_steps()
+
+    def add_action(self, actions):
+        """
+        Saves historgram of actions.
+        """
+        for i in range(actions.shape[1]):
+            self.add_historam(f"agent/action_dim_{i}", actions[:, i], bins=20)
 
     def log_state(self, step: int = 0):
         """
@@ -237,9 +244,15 @@ class Logger:
             self.wandb.log({key: wandb.Histogram(values)})
         self.data[key] = values
 
+    def add_agent_artifacts(self, agent_state_folder: str, agent: Agent):
+        if self.wandb is not None:
+            artifact = self.wandb.Artifact(f'agent-{self.cfg.exp_name}', type='model')
+            artifact.add_dir(agent_state_folder)
+            self.wandb.log_artifact(artifact)
+
     def add_opponent_stats(self, opponent: OpponentInPool):
         stats = {
-            f"Opponent/{opponent.name}/win_rate": opponent.win_count / max(1, opponent.get_games_played()),
+            f"Opponent/{opponent.name}/win_rate": opponent.get_win_rate(),
             f"Opponent/{opponent.name}/priority": opponent.priority
         }
         for key, value in stats.items():

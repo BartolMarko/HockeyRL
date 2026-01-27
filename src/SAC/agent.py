@@ -74,14 +74,23 @@ class Agent:
             if hasattr(cfg, 'alpha') and cfg.alpha:
                 self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
             else:
-                print("Warning: No alpha value specified in config for fixed alpha. Using default alpha=0.2")
+                print("[WARN] No alpha value specified in config for fixed alpha. Using default alpha=0.2")
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
-        # TODO
         # vectorized env support flag
         num_envs = cfg.get('num_envs', 1)
         self.is_vectorized = num_envs > 1
         self.explorer.support_vec_env(num_envs)
+
+    def train(self):
+        self.actor.train()
+        self.critic_1.train()
+        self.critic_2.train()
+
+    def eval(self):
+        self.actor.eval()
+        self.critic_1.eval()
+        self.critic_2.eval()
 
     def show_info(self):
         print("Agent Configuration:")
@@ -118,11 +127,11 @@ class Agent:
         if best_model_dir is not None:
             # remove till the results part
             model_dir_striped = str(best_model_dir).split('results' + os.sep)[-1]
-            print("Resuming from checkpoint:", model_dir_striped)
+            print("[INFO] Resuming from checkpoint:", model_dir_striped)
             self.load_models(best_model_dir)
             return True
         else:
-            print(f"No checkpoint found from {results_dir} to resume from.")
+            print(f"[WARN] No checkpoint found from {results_dir} to resume from.")
             return False
 
     def get_alpha(self):
@@ -162,7 +171,6 @@ class Agent:
 
     def choose_action_batch(self, observation, step=None, eval_mode=False):
         """Batched observation version of choose_action for vectorized envs"""
-        # TODO:
         if eval_mode:
              return self.choose_action_from_policy_batch(observation)
         warmup = (step is not None) and (step < self.cfg.warmup_games)
@@ -174,7 +182,6 @@ class Agent:
 
     def plan_batch(self, observation, eval_mode=True, step=None):
         """Batched observation version of plan / choose_action for vectorized envs"""
-        # TODO
         return self.choose_action_batch(observation, step=step, eval_mode=eval_mode)
 
     def act(self, x):
@@ -189,8 +196,11 @@ class Agent:
 
     def choose_action_from_policy_batch(self, observation):
         """Batched observation version of choose_action_from_policy for vectorized envs"""
-        # TODO
-        state = T.from_numpy(observation).float().to(self.actor.device)
+        try:
+            state = T.from_numpy(observation).float().to(self.actor.device)
+        except TypeError:
+            observation = np.array([obs for obs in observation])
+            state = T.from_numpy(observation).float().to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()
 
@@ -202,7 +212,7 @@ class Agent:
 
     def save_models(self, folder_path):
         """Saves the parameters of the actor and critic networks."""
-        print('Saving models and optimizer states...')
+        print('[SAVE] Saving models and optimizer states...')
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
         file_path_actor = os.path.join(folder_path, 'actor.pth')
@@ -214,6 +224,8 @@ class Agent:
         if hasattr(self, 'log_alpha'):
             file_path_alpha = os.path.join(folder_path, 'log_alpha.pth')
             T.save(self.log_alpha, file_path_alpha)
+        memory_filename = os.path.join(folder_path, 'buffer')
+        self.memory.save(memory_filename)
 
     def load_models(self, folder_path):
         """Loads the parameters of the actor and critic networks."""
@@ -232,9 +244,12 @@ class Agent:
             elif hasattr(self.cfg, 'alpha') and self.cfg.alpha:
                 self.log_alpha = T.tensor(np.log(self.cfg.alpha), requires_grad=True).to(self.actor.device)
             else:
-                print(f"Warning: No alpha file / value found to load from at {file_path_alpha} / config yaml. Using default alpha=0.2")
+                print(f"[WARN] No alpha file / value found to load from at {file_path_alpha} / config yaml. Using default alpha=0.2")
                 self.log_alpha = T.tensor(np.log(0.2), requires_grad=True).to(self.actor.device)
             self.log_alpha = self.log_alpha.clone().detach().requires_grad_(True)
+        memory_filename = os.path.join(folder_path, 'buffer')
+        if os.path.exists(memory_filename):
+            self.memory.load(memory_filename)
 
     def learn(self, step=None):
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""
@@ -327,7 +342,7 @@ class Agent:
                 'per/max_weight': np.max(weights.cpu().numpy()),
             })
         log_data.update({
-            'buffer/length': self.memory.mem_cntr
+            'buffer/length': len(self.memory)
         })
 
         log_data.update({
@@ -342,6 +357,8 @@ class Agent:
             'Metrics/q1_max': q1_old.max().item(),
             'Metrics/critic1_grad_norm': critic1_grad_norm,
             'Metrics/critic2_grad_norm': critic2_grad_norm,
-            'Metrics/actor_grad_norm': actor_grad_norm
+            'Metrics/actor_grad_norm': actor_grad_norm,
+            'Metrics/q_target_mean': q_target.mean().item(),
+            'Metrics/q_target_std': q_target.std().item()
         })
         return log_data

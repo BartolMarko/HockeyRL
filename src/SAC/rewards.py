@@ -94,9 +94,10 @@ class RewardShaper:
             obs = None
             if obs_batch is not None:
                 obs = obs_batch[i]
+            info_ = {k: v[i] for k, v in info_batch.items()}
             shaped_rewards[i] = self.transform(
                 reward_batch[i],
-                info_batch[i],
+                info_,
                 done_or_truncated_batch[i],
                 obs
             )

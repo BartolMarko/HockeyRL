@@ -108,9 +108,16 @@ class SelfPlayManager(opponents.OpponentInPool):
         self.pool_meta[episode_number] = {
                 'added_time': time.time(),
                 'episode_number': episode_number,
-                'index_in_pool': len(self.pool) - 1
+                'index_in_pool': len(self.pool) - 1,
+                'sample_count': 0,
+                'win_count': 0,
+                'loss_count': 0,
+                'draw_count': 0,
+                'total_games': 0
         }
         self.sampler.add_arm(weight=-1)
+        save_path = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', episode_number)
+        agent.save_models(save_path)
         return True
 
     def update_priorities(self, episode_number_to_score: dict):
@@ -135,6 +142,11 @@ class SelfPlayManager(opponents.OpponentInPool):
         else:
             self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode)
         self.agent.name = f"{self.name}_ep{sampled_episode}"
+        self.agent.pool = self
+        self.agent.ep = sampled_episode
+        self.agent.eval()
+
+        self.pool_meta[sampled_episode]['sample_count'] += 1
         return self.agent
 
     def get_last_n_opponents(self, n: int):
@@ -143,16 +155,14 @@ class SelfPlayManager(opponents.OpponentInPool):
         for episode_number in self.pool[-n:]:
             agent = helper.load_agent_Nth_episode(self.cfg.exp_name, episode_number)
             agent.name = f"{self.name}_ep{episode_number}"
+            agent.pool = self
+            agent.ep = episode_number
+            agent.eval()
             pool.add_opponent(agent)
         return pool
 
     def record_last_n_scores(self, scores: list):
-        n = min(len(scores), len(self.pool))
-        for i in range(1, n + 1):
-            episode_number = self.pool[-i]
-            score = scores[-i]
-            index_in_pool = self.pool_meta[episode_number]['index_in_pool']
-            self.sampler.update_arm(index_in_pool, score)
+        raise Exception
 
     def end_evaluation(self, pool):
         """
@@ -166,7 +176,7 @@ class SelfPlayManager(opponents.OpponentInPool):
             print(f"[SPLY] Self-Play Manager '{self.name}' set to be active ( always_on )!")
         elif activation_type == 'botwin':
             win_rate = pool.get_last_eval_win_rate()
-            epsilon = self.subcfg.get('activation_epsilon', 0.9)
+            epsilon = self.subcfg.get('activation_epsilon', 1.0)
             if win_rate >= epsilon:
                 self.is_active_flag = True
                 print(f"[SPLY] Self-Play Manager '{self.name}' set to be active win_rate {win_rate} >= {epsilon}!")
@@ -183,21 +193,23 @@ class SelfPlayManager(opponents.OpponentInPool):
             'win_rates': self.sampler.get_weights()
         }
 
-    def record_play_scores(self, win_count, loss_count, draw_count):
+    def record_play_scores(self, win_count, loss_count, draw_count, episode_index=None):
+        if episode_index is None:
+            episode_index = self.current_episode
         self.win_count = win_count
         self.loss_count = loss_count
         self.draw_count = draw_count
         total_games = win_count + loss_count + draw_count
-        self.pool_meta[self.current_episode].update({
-            'win_count': win_count,
-            'loss_count': loss_count,
-            'draw_count': draw_count,
-            'total_games': total_games,
+        self.pool_meta[episode_index].update({
             'win_rate': (win_count / total_games) if total_games > 0 else 0.0
         })
+        self.pool_meta[episode_index]['total_games'] += total_games
+        self.pool_meta[episode_index]['win_count'] += win_count
+        self.pool_meta[episode_index]['loss_count'] += loss_count
+        self.pool_meta[episode_index]['draw_count'] += draw_count
         self.sampler.update_arm(
-            self.pool_meta[self.current_episode]['index_in_pool'],
-            self.pool_meta[self.current_episode]['win_rate']
+            self.pool_meta[episode_index]['index_in_pool'],
+            self.pool_meta[episode_index]['win_rate']
         )
 
     def log_stats(self, logger, episode_index):

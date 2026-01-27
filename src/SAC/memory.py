@@ -23,6 +23,12 @@ class MemoryBuffer:
     def stats(self):
         print("Memory Buffer Size:", len(self))
 
+    def save(self, filename):
+        pass
+
+    def load(self, filename):
+        pass
+
 class ReplayBuffer(MemoryBuffer):
     """
     A fixed-size buffer to store transitions, implemented with PyTorch tensors.
@@ -261,6 +267,28 @@ class VecReplayBuffer(MemoryBuffer):
     def __len__(self):
         return self.occupancy
 
+    def save(self, filename):
+        np.savez_compressed(
+            filename,
+            state_memory=self.state_memory,
+            new_state_memory=self.new_state_memory,
+            action_memory=self.action_memory,
+            reward_memory=self.reward_memory,
+            terminal_memory=self.terminal_memory,
+            mem_cntr=self.mem_cntr,
+            occupancy=self.occupancy
+        )
+
+    def load(self, filename):
+        data = np.load(filename)
+        self.state_memory = data['state_memory']
+        self.new_state_memory = data['new_state_memory']
+        self.action_memory = data['action_memory']
+        self.reward_memory = data['reward_memory']
+        self.terminal_memory = data['terminal_memory']
+        self.mem_cntr = data['mem_cntr'].item()
+        self.occupancy = data['occupancy'].item()
+
 class VecPrioritizedReplayBuffer(VecReplayBuffer):
     """
     A vectorized prioritized replay buffer for parallel environments.
@@ -352,6 +380,24 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
         weights /= weights.max()
         return states, actions, rewards, states_, dones, batch_indices, weights
 
+    def save(self, filename):
+        super().save(filename)
+        np.savez_compressed(
+            filename + '_priorities.npz',
+            sum_tree=self.sum_tree,
+            min_tree=self.min_tree,
+            max_priority=self.max_priority,
+            frame=self.frame
+        )
+
+    def load(self, filename):
+        super().load(filename)
+        data = np.load(filename + '_priorities.npz')
+        self.sum_tree = data['sum_tree']
+        self.min_tree = data['min_tree']
+        self.max_priority = data['max_priority'].item()
+        self.frame = data['frame'].item()
+
 class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
     """
     A vectorized n-step prioritized experience replay buffer for parallel environments.
@@ -392,6 +438,13 @@ class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
             super().store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
             self.n_step_history.popleft()
 
+    # needless to call, but whatever
+    def save(self, filename):
+        super().save(filename)
+
+    def load(self, filename):
+        super().load(filename)
+
 
 def get_memory_buffer(cfg):
     num_envs = cfg.get('num_envs', 1)
@@ -427,15 +480,15 @@ def get_memory_buffer(cfg):
     else:
         if buffer_type == 'per':
             alpha = cfg.get('per_alpha', 0.6)
-            self.memory = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
+            memory = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
         elif buffer_type == 'n-step-per':
             alpha = cfg.get('per_alpha', 0.6)
             base_buffer = PrioritizedReplayBuffer(cfg.buffer_max_size, alpha=alpha)
-            self.memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
+            memory = NStepCollector(cfg.n_step_buffer_n, cfg.gamma, base_buffer)
         else:
-            self.memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
+            memory = ReplayBuffer(cfg.buffer_max_size, cfg.input_dims, cfg.n_actions)
 
-        return self.memory
+        return memory
 
 #### TESTS ####
 

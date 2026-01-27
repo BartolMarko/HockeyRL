@@ -17,7 +17,7 @@ self_play:
     activation_epsilon: 1.0
     pooling:
       - type: 'episode'
-        freq: 5
+        freq: 10
     sampler:
       name: 'pfsp'
       pfsp_p: 0.5
@@ -37,7 +37,7 @@ still_puck_penalty: 0.25
 
 # Buffers
 buffer_type: "replay"
-buffer_max_size: 1000000
+buffer_max_size: 5000000
 
 # Training
 n_games: 75000
@@ -79,7 +79,7 @@ hidden_size: 512
 
 # Evaluation
 eval_freq: 400
-eval_episodes: 20
+eval_episodes: 32
 
 # Model saving
 save_model: True
@@ -88,7 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-random-replay-self-play-puffer"
+exp_name: "sac-v0-random-replay-self-play-gymVec"
 resume: False
 save_video: True
-log_gradients: False
+log_gradients: True

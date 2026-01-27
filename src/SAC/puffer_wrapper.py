@@ -1,28 +1,24 @@
 import time
 import gymnasium as gym
+from gymnasium.vector import SyncVectorEnv, AsyncVectorEnv
 import numpy as np
-import pufferlib.vector
-import pufferlib.emulation
 import hockey.hockey_env as h_env
 from multiprocessing import set_start_method
 
-class VecBasicOpponent(h_env.BasicOpponent):
+class VecBasicOpponent:
     def __init__(self, num_envs, weak=False, keep_mode=True):
-        super().__init__(weak=weak, keep_mode=keep_mode)
         self.num_envs = num_envs
+        self.opponents = [h_env.BasicOpponent(weak=weak, keep_mode=keep_mode) for _ in range(num_envs)]
 
-    def get_step(self, obs):
-        if len(obs.shape) == 1:
-            return super().act(obs)
-
+    def plan_batch(self, obs):
         actions = []
         for i in range(self.num_envs):
-            action = super().act(obs[i])
+            action = self.opponents[i].act(obs[i])
             actions.append(action)
         return np.array(actions)
 
     def act(self, obs):
-        return self.get_step(obs)
+        return self.plan_batch(obs)
 
 class VecStrongBot(VecBasicOpponent):
     def __init__(self, num_envs, name='StrongBot'):
@@ -58,12 +54,14 @@ def wrapped_creator(*args, **kwargs):
 
     env = h_env.HockeyEnv()
     env = Float32Wrapper(env)
-    return pufferlib.emulation.GymnasiumPufferEnv(env=env, buf=buf, seed=seed)
+    # return pufferlib.emulation.GymnasiumPufferEnv(env=env, buf=buf, seed=seed)
+    return env
 
 class HockeyVecEnv:
     def __init__(self, vec_env):
         self.vec_env = vec_env
         self._last_obs_agent_two = None
+        self.num_envs = vec_env.num_envs
 
     def __getattr__(self, name):
         return getattr(self.vec_env, name)
@@ -104,18 +102,21 @@ def create_vec_env(backend, num_envs=4):
     env_args = [[] for _ in range(num_envs)]
     env_kwargs = [{} for _ in range(num_envs)]
     if backend == 'multiprocessing':
-        backend_cls = pufferlib.vector.Multiprocessing
+        backend_cls = AsyncVectorEnv
     elif backend == 'serial':
-        backend_cls = pufferlib.vector.Serial
+        backend_cls = SyncVectorEnv
     else:
         raise ValueError(f"Unknown backend: {backend}")
 
     vec_env = backend_cls(
-        env_creators=env_creators,
-        env_args=env_args,
-        env_kwargs=env_kwargs,
-        num_envs=num_envs,
+        env_fns=env_creators
     )
+    # vec_env = backend_cls(
+    #     env_creators=env_creators,
+    #     env_args=env_args,
+    #     env_kwargs=env_kwargs,
+    #     num_envs=num_envs,
+    # )
     return HockeyVecEnv(vec_env)
 
 def test_env(backend):

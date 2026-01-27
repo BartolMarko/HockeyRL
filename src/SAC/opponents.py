@@ -42,10 +42,14 @@ class OpponentInPool(NamedAgent):
         self.index = index
         self.agent = agent
         self.sample_count = 0
+        self.win_rate = 0.0
         self.win_count = 0
         self.loss_count = 0
         self.draw_count = 0
+        self.games_played = 0
         self.is_playable = True
+        self.pool = getattr(agent, 'pool', None)                    # only for SelfPlayManager
+        self.ep = getattr(agent, 'ep', None)  # only for SelfPlayManager
 
     def get_agent_name(self):
         return self.name
@@ -73,43 +77,59 @@ class OpponentInPool(NamedAgent):
             raise NotImplementedError("The base agent does not have a method to get actions.")
 
     def get_win_rate(self):
-        games_played = self.get_games_played()
-        if games_played == 0:
+        return self.win_rate
+
+    def get_agent_win_rate(self):
+        """ Returns the win rate of the AGENT against this opponent.
+            Agent Win = Opponent Loss.
+        """
+        if self.games_played == 0:
             return 0.0
-        return self.win_count / games_played
+        return self.loss_count / (self.win_count + self.loss_count + self.draw_count)
 
     def record_play_scores(self, win_count, loss_count, draw_count):
         self.win_count = win_count
         self.loss_count = loss_count
         self.draw_count = draw_count
+        game_count = win_count + loss_count + draw_count
+        if game_count == 0:
+            self.win_rate = 0.0
+        else:
+            self.win_rate = win_count / game_count
+        self.games_played += game_count
 
     def get_games_played(self):
-        return self.win_count + self.loss_count + self.draw_count
+        return self.games_played
 
     def show_scoreboard(self):
         games_played = self.get_games_played()
         win_rate = self.get_win_rate()
         difficulty_score = self.compute_difficulty_score()
-        print(f"Opponent: {self.name}, Games Played: {games_played}, Wins: {self.win_count}, "
-              f"Losses: {self.loss_count}, Draws: {self.draw_count}, Win Rate: {win_rate:.2f}, "
+        print(f"[OPNT]: {self.name} | All Games Played: {games_played} | Latest Wins: {self.win_count}, "
+              f"Loses: {self.loss_count}, Draws: {self.draw_count}, Win Rate: {win_rate:.2f} | "
               f"Difficulty Score: {difficulty_score:.2f}")
 
     def compute_difficulty_score(self):
         # a higher score means this opponent is difficult to beat
-        games_played = self.get_games_played()
-        if games_played == 0:
+        if self.get_games_played() == 0:
             return 0.0
-        return (self.win_count + 0.5 * self.draw_count) / games_played
+        return (self.win_count + 0.5 * self.draw_count) / (self.loss_count + self.draw_count + self.win_count)
 
     def show_info(self, level=1):
         print(" "*(2 * level) + f"Opponent Name: {self.name}")
 
     def log_stats(self, logger, episode_index):
         if logger is None: return
-        games_played = self.get_games_played()
         win_rate = self.get_win_rate()
-        logger.add_scalar(f"Opponent/{self.name}/Win_Rate", win_rate)
-        logger.add_scalar(f"Opponent/{self.name}/Sample_Count", self.sample_count)
+        logger.add_scalar(f"Opponent/{self.name}/win_rate", win_rate)
+        logger.add_scalar(f"Opponent/{self.name}/sample_count", self.sample_count)
+
+    def plan_batch(self, obs_batch: np.ndarray) -> np.ndarray:
+        if hasattr(self.agent, "plan_batch"):
+            return self.agent.plan_batch(obs_batch)
+        else:
+            # Fallback to single step planning
+            return np.array([self.get_step(obs) for obs in obs_batch])
 
     def __str__(self):
         return self.name
@@ -181,15 +201,12 @@ class OpponentPool:
         """
         Used by the selfplaymgr to determine whether to activate itself
         """
-        total_games = 0
-        total_wins = 0
-        for opponent in self.get_last_opponents():
-            games_played = opponent.get_games_played()
-            total_games += games_played
-            total_wins += opponent.win_count
-        if total_games == 0:
+        win_rate = 0.0
+        if not self.get_last_opponents():
             return 0.0
-        return 1 - total_wins / total_games
+        for opponent in self.get_last_opponents():
+            win_rate += opponent.get_agent_win_rate()
+        return win_rate / len(self.get_last_opponents())
 
     def is_self_play_active(self):
         return self.self_play_active
@@ -199,14 +216,14 @@ class OpponentPool:
             opponent.log_stats(logger, episode_index)
             if opponent.is_mgr() and opponent.active():
                 opponent.add_episode_number_to_pool(agent, episode_index)
-        self.process_pending_activations()
+        self._process_pending_activations()
 
 
     def _postpone_self_play_activation(self, idx: int):
         print(f"[SPLY] Postponing activation of {self.opponents[idx].name} due to empty pool.")
         self.pending_activations.append(idx)
 
-    def process_pending_activations(self):
+    def _process_pending_activations(self):
         for idx, pidx in enumerate(self.pending_activations):
             if len(self.opponents[pidx]) > 0:
                 self._activate_self_play(pidx)

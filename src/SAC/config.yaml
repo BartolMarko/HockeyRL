@@ -36,7 +36,7 @@ draw_penalty: 5 # also reward v1
 still_puck_penalty: 0.25
 
 # Buffers
-buffer_type: "replay"
+buffer_type: "per"
 buffer_max_size: 5000000
 
 # Training
@@ -88,7 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-random-replay-self-play-gymVec"
+exp_name: "sac-v0-per-replay-self-play-gymVec"
 resume: False
 save_video: True
 log_gradients: True

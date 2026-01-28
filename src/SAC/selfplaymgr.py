@@ -214,6 +214,7 @@ class SelfPlayManager(opponents.OpponentInPool):
 
     def log_stats(self, logger, episode_index):
         if logger is None: return
+        if not self.active(): return
         logger.add_scalar(f"SelfPlay/{self.name}_pool_size", len(self.pool))
         for episode in self.pool:
             meta = self.pool_meta[episode]

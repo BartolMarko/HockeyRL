@@ -194,6 +194,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             print(f"[EVAL] Evaluation at Episode {i}: Win: {win_rate:.2f}, Lose: {lose_rate:.2f}, Draw: {draw_rate:.2f}")
 
         # every self play mgr handles the update by itself
+        logger.add_scalar("Rollout/Game Index", i)
         opponent_pool.update_pool(agent, episode_index=i, logger=logger)
         env_step = i + 1
 

@@ -7,6 +7,7 @@ import wandb
 from pathlib import Path
 
 from src.TD3.actor_critic import ActorCritic
+from src.TD3.config_reader import Config
 from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 from src.named_agent import NamedAgent
 
@@ -14,11 +15,17 @@ from src.named_agent import NamedAgent
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+MODEL_FILE      = "model.pt"
+CHECKPOINT_FILE = "checkpoint_step_%d"
+CONFIG_FILE     = "config.yaml"
+
 class TD3(NamedAgent):
     def __init__(self, config : dict):
         super().__init__('TD3')
-        self.obs_space = config['observation_space']
-        self.act_space = config['action_space']
+        # self.obs_space = config['observation_space']
+        self._obs_dim = config['obs_dim']
+        self._action_n = config['action_dim']
+        # self.act_space = config['action_space']
         self._config = {
             "gamma": .99,
             "buffer_size": int(1e6),
@@ -42,11 +49,13 @@ class TD3(NamedAgent):
         self.pr_replay = self._config['prioritized_replay']
         self.polyak = self._config['polyak']
 
-        self._action_n = self.act_space.shape[0]
-        self._obs_dim = self.obs_space.shape[0]
+        # self._action_n = self.act_space.shape[0]
+        # self._obs_dim = self.obs_space.shape[0]
 
-        self.high = torch.from_numpy(self.act_space.high).to(device)
-        self.low  = torch.from_numpy(self.act_space.low).to(device)
+        # self.high = torch.from_numpy(self.act_space.high).to(device)
+        # self.low  = torch.from_numpy(self.act_space.low).to(device)
+        self.high = torch.as_tensor(self._config['act_space_high']).to(device)
+        self.low  = torch.as_tensor(self._config['act_space_low']).to(device)
 
         self.output_activation = lambda x : self.low + (self.high - self.low) * (nn.Tanh()(x) + 1.)/2
 
@@ -181,16 +190,19 @@ class TD3(NamedAgent):
         self._hard_copy_nets()
 
     def save_to_wandb(self, wandb_run, step):
-        save_dir = Path(wandb_run.dir) / f"checkpoint_step_{step}"
+        save_dir = Path(wandb_run.dir) / (CHECKPOINT_FILE % step)
         save_dir.mkdir(parents=True, exist_ok=True)
-        torch.save(self.state(), save_dir / "model.pt")
+        torch.save(self.state(), save_dir / MODEL_FILE)
+        Config.save_as_yaml(self._config, str(save_dir / CONFIG_FILE))
 
-        wandb.save(str(save_dir / 'model.pt'))
+        wandb.save(str(save_dir / MODEL_FILE))
+        wandb.save(str(save_dir / CONFIG_FILE))
 
     def save_locally(self, directory, step):
-        save_dir = Path(directory) / f"checkpoint_step_{step}"
+        save_dir = Path(directory) / (CHECKPOINT_FILE % step)
         save_dir.mkdir(parents=True, exist_ok=True)
-        torch.save(self.state(), save_dir / "model.pt")
+        torch.save(self.state(), save_dir / MODEL_FILE)
+        Config.save_as_yaml(self._config, str(save_dir / CONFIG_FILE))
 
     def get_policy_config(self):
         return {
@@ -202,5 +214,12 @@ class TD3(NamedAgent):
             "use_layernorm": self._config.get('use_layernorm', False),
             "state_dict": self.model.actor.state_dict()
         }
+    
+    @staticmethod
+    def enhance_cfg(cfg, env):
+        cfg['obs_dim']        = env.observation_space.shape[0]
+        cfg['action_dim']     = env.action_space.shape[0] // 2
+        cfg['act_space_high'] = env.action_space.high[:cfg['action_dim']].tolist()
+        cfg['act_space_low']  = env.action_space.low[:cfg['action_dim']].tolist()
 
         

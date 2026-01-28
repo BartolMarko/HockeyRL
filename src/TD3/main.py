@@ -28,13 +28,11 @@ def set_seed(random_seed):
         torch.cuda.manual_seed(random_seed)
 
 
-def update_cfg(env, action_space, cfg):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    cfg['observation_space'] = env.observation_space
-    cfg['device'] = device
-    cfg['action_space'] = action_space
+def update_cfg(env, cfg):
+    TD3.enhance_cfg(cfg, env)
 
 def main():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', action='store', type=str,
                         default='config.yaml', help='Config file')
@@ -47,8 +45,8 @@ def main():
     action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
     env_name = env.__class__.__name__
 
-    update_cfg(env, action_space, cfg)
-    update_cfg(env, action_space, cfg['td3'])
+    update_cfg(env, cfg)
+    update_cfg(env, cfg['td3'])
 
     log_interval = 20
     total_timesteps = t_cfg['total_timesteps']
@@ -71,7 +69,7 @@ def main():
         run_name=t_cfg['run_name'],
         config=cfg
     )
-    evaluator = Evaluator(cfg['device'])
+    evaluator = Evaluator(device)
 
     print(next(td3.model.actor.parameters()).device)
     
@@ -142,7 +140,7 @@ def main():
             i_episode += 1
             total_length = 0
 
-            if i_episode % 1000 == 0:
+            if i_episode % 100 == 0:
                 save_ckpt(i_episode)
 
             training_monitor.log_training_episode(opponent_name=agent2.name,

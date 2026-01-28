@@ -36,13 +36,15 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_td3_cfg(cfg : Config):
+    return cfg.get('td3', cfg)
 
 def test():
 
     opts = parse_args()
 
-    cfg = Config(opts.config)['td3']
-    opp_cfg = Config(opts.opp_config)['td3']
+    cfg = get_td3_cfg(Config(opts.config))
+    opp_cfg = get_td3_cfg(Config(opts.opp_config))
     print(opp_cfg)
 
     save_gif = opts.gif
@@ -59,11 +61,8 @@ def test():
 
     opp_type = opts.opponent.lower()
     
-    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
-    cfg['observation_space'] = env.observation_space
-    cfg['action_space'] = action_space
-    opp_cfg['observation_space'] = env.observation_space
-    opp_cfg['action_space'] = action_space
+    TD3.enhance_cfg(cfg, env)
+    TD3.enhance_cfg(opp_cfg, env)
     
 
     match opp_type:

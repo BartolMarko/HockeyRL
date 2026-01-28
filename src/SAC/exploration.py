@@ -42,6 +42,12 @@ class ExplorerStrategy:
         self.num_envs = num_envs
         self.supports_vec_env = True
 
+    def eval(self):
+        pass
+
+    def train(self):
+        pass
+
 
 class RandomExplorer(ExplorerStrategy):
     """
@@ -320,7 +326,7 @@ class CuriousExplorer(ExplorerStrategy):
     def end_episode(self):
         if not self.obs_buffer:
             return
-
+        self.predictor.train()
         states = np.array(self.obs_buffer)
         states_t = T.tensor(states, dtype=T.float32, device=self.device)
 

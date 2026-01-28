@@ -53,12 +53,15 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
         done_batch = np.logical_and(done_batch, active_envs)
 
         if 'final_info' in info_batch:
-            for infos in info_batch['final_info']:
+            for idx, infos in enumerate(info_batch['final_info']):
                 if infos is None: continue
-                win_counts += infos.get('winner') == 1
-                lose_counts += infos.get('winner') == -1
-                draw_counts += infos.get('winner') == 0
-
+                winner = infos.get('winner')
+                if winner == 1:
+                    win_counts[idx] += 1
+                elif winner == -1:
+                    lose_counts[idx] += 1
+                elif winner == 0:
+                    draw_counts[idx] += 1
         else:
             # unlikely, but lets keep this
             win_counts += (done_batch & (reward_batch > 0)).astype(int)
@@ -78,14 +81,15 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     opponent.record_play_scores(
             np.sum(lose_counts), np.sum(win_counts), np.sum(draw_counts)
     )
+    total_episodes = np.sum(win_counts) + np.sum(lose_counts) + np.sum(draw_counts)
     episode_metrics = {}
-    episode_metrics['episode_score'] = episode_scores / num_episodes
-    episode_metrics['episode_length'] = episode_lengths / num_episodes
-    episode_metrics['win_rate'] = np.sum(win_counts) / num_episodes
-    episode_metrics['lose_rate'] = np.sum(lose_counts) / num_episodes
-    episode_metrics['draw_rate'] = np.sum(draw_counts) / num_episodes
+    episode_metrics['episode_score'] = episode_scores / total_episodes
+    episode_metrics['episode_length'] = episode_lengths / total_episodes
+    episode_metrics['win_rate'] = np.sum(win_counts) / total_episodes
+    episode_metrics['lose_rate'] = np.sum(lose_counts) / total_episodes
+    episode_metrics['draw_rate'] = np.sum(draw_counts) / total_episodes
     end_time = time.time()
-    episode_metrics['episode_time'] = ( end_time - start_time ) / num_episodes
+    episode_metrics['episode_time'] = ( end_time - start_time ) / total_episodes
     return episode_metrics
 
 def train_agent(cfg, agent, env, logger, start_episode=0):
@@ -105,9 +109,6 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
     agent.show_info()
     opponent_pool.show_info()
 
-    score_history = []
-    len_history = []
-
     for i in range(n_games):
         opponent = opponent_pool.sample_opponent()
         metrics = run_episode(
@@ -118,22 +119,19 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             logger=logger,
             episode_index=i + start_episode
         )
-        score_history.append(metrics['episode_score'])
-        average_score = np.mean(score_history[-AVG_WINDOW_SIZE:])
 
-        len_history.append(metrics['episode_length'])
-        average_length = np.mean(len_history[-AVG_WINDOW_SIZE:])
-
-        print(f"[TREN] Ep {i} vs {opponent.get_agent_name()}. Avg Score: {average_score:.2f}, Avg Episode Length: {average_length:.2f}")
         logger.add_scalar("Rollout/Episode Score", metrics['episode_score'])
         logger.add_scalar("Rollout/Episode Length", metrics['episode_length'])
         logger.add_scalar("Rollout/Episode Time", metrics['episode_time'])
+        logger.add_scalar("Rollout/Train Win Rate", metrics['win_rate'])
+        print(f"[ROUT] Ep {i} vs {opponent.get_agent_name()} | "
+              f"Score/Ep: {metrics['episode_score']:.2f}, Length/Ep: {metrics['episode_length']:.2f}, "
+              f"Time/Ep: {metrics['episode_time']:.2f}s, Win Rate: {metrics['win_rate']:.2f}")
         opponent.log_stats(logger, episode_index=i + start_episode)
-
 
         if i == cfg.warmup_games:
             print(f"[WARM] Warmup phase completed (step: {i}). Starting learning...")
-            logger.log_state(i)
+            logger.log_heatmaps(i)
 
         if i >= cfg.warmup_games:
             agent.train()
@@ -161,7 +159,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             project_dir = logger.get_project_dir()
             models_dir = os.path.join(project_dir, 'models', f'episode_{i}')
             os.makedirs(models_dir, exist_ok=True)
-            agent.save_models(models_dir)
+            agent.save_models(models_dir, memory=(i == n_games - 1))
             logger.add_agent_artifacts(models_dir, agent)
             last_save_step = env_step
             print(f"[SAVE] Saved models at Episode {i} to {models_dir}.")
@@ -188,7 +186,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             logger.add_scalar("Eval/Win Rate", win_rate)
             logger.add_scalar("Eval/Lose Rate", lose_rate)
             logger.add_scalar("Eval/Draw Rate", draw_rate)
-            logger.log_state(i)
+            logger.log_heatmaps(i)
             opponent_pool.show_scoreboard()
             opponent_pool.end_evaluation()
             print(f"[EVAL] Evaluation at Episode {i}: Win: {win_rate:.2f}, Lose: {lose_rate:.2f}, Draw: {draw_rate:.2f}")

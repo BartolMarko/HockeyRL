@@ -9,12 +9,17 @@ from network import ActorNet, CriticNet
 import pickle
 
 class Agent:
-    def __init__(self, cfg):
+    def __init__(self, cfg, inference_only=False):
         self.cfg = cfg
         self.name = cfg.exp_name
         self.gamma = cfg.gamma
-        self.buffer_type = cfg.get('buffer_type', 'replay')
-        self.memory = get_memory_buffer(cfg)
+        self.inference_only = inference_only
+        if inference_only:
+            self.buffer_type = 'none'
+            self.memory = None
+        else:
+            self.buffer_type = cfg.get('buffer_type', 'replay')
+            self.memory = get_memory_buffer(cfg)
 
         self.batch_size = cfg.batch_size
         self.n_actions = cfg.n_actions
@@ -86,11 +91,13 @@ class Agent:
         self.actor.train()
         self.critic_1.train()
         self.critic_2.train()
+        self.explorer.train()
 
     def eval(self):
         self.actor.eval()
         self.critic_1.eval()
         self.critic_2.eval()
+        self.explorer.eval()
 
     def show_info(self):
         print("Agent Configuration:")
@@ -117,7 +124,8 @@ class Agent:
 
     def end_episode(self):
         self.explorer.end_episode()
-        self.memory.flush()
+        if self.memory is not None:
+            self.memory.flush()
 
     def use_most_recent_models(self):
         """Loads the most recent models from the results directory."""
@@ -210,7 +218,7 @@ class Agent:
         total_reward = reward + intrinsic_reward
         self.memory.store_transition(state, action, total_reward, new_state, done)
 
-    def save_models(self, folder_path):
+    def save_models(self, folder_path, memory=False):
         """Saves the parameters of the actor and critic networks."""
         print('[SAVE] Saving models and optimizer states...')
         if not os.path.exists(folder_path):
@@ -224,10 +232,11 @@ class Agent:
         if hasattr(self, 'log_alpha'):
             file_path_alpha = os.path.join(folder_path, 'log_alpha.pth')
             T.save(self.log_alpha, file_path_alpha)
-        memory_filename = os.path.join(folder_path, 'buffer')
-        self.memory.save(memory_filename)
+        if memory:
+            memory_filename = os.path.join(folder_path, 'buffer')
+            self.memory.save(memory_filename)
 
-    def load_models(self, folder_path):
+    def load_models(self, folder_path, memory=False):
         """Loads the parameters of the actor and critic networks."""
         file_path_actor = os.path.join(folder_path, 'actor.pth')
         self.actor.load(file_path_actor)
@@ -247,9 +256,12 @@ class Agent:
                 print(f"[WARN] No alpha file / value found to load from at {file_path_alpha} / config yaml. Using default alpha=0.2")
                 self.log_alpha = T.tensor(np.log(0.2), requires_grad=True).to(self.actor.device)
             self.log_alpha = self.log_alpha.clone().detach().requires_grad_(True)
-        memory_filename = os.path.join(folder_path, 'buffer')
-        if os.path.exists(memory_filename):
-            self.memory.load(memory_filename)
+        if memory:
+            memory_filename = os.path.join(folder_path, 'buffer')
+            if os.path.exists(memory_filename):
+                self.memory.load(memory_filename)
+            else:
+                print(f"[WARN] No memory buffer file found to load from at {memory_filename}.")
 
     def learn(self, step=None):
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""
@@ -289,7 +301,8 @@ class Agent:
         if self.buffer_type in ['per', 'n-step-per']:
             critic_1_loss = (0.5 * F.mse_loss(q1_old, q_target, reduction='none') * weights).mean()
             critic_2_loss = (0.5 * F.mse_loss(q2_old, q_target, reduction='none') * weights).mean()
-            priorities = (0.5 * (T.abs(q1_old - q_target) + T.abs(q2_old - q_target))).cpu().detach().numpy() + 1e-6
+            priorities = (0.5 * (T.abs(q1_old - q_target) + T.abs(q2_old - q_target))).cpu().detach().numpy()
+            priorities = np.clip(priorities, 1e-6, 1000.0)
         else:
             critic_1_loss = 0.5 * F.mse_loss(q1_old, q_target)
             critic_2_loss = 0.5 * F.mse_loss(q2_old, q_target)

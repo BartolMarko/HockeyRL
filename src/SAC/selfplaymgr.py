@@ -138,9 +138,9 @@ class SelfPlayManager(opponents.OpponentInPool):
         self.current_episode = sampled_episode
         if self.agent is not None:
             nth_checkpoint_dir = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', sampled_episode)
-            self.agent.load_models(nth_checkpoint_dir)
+            self.agent.load_models(nth_checkpoint_dir, inference_only=True)
         else:
-            self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode)
+            self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode, inference_only=True)
         self.agent.name = f"{self.name}_ep{sampled_episode}"
         self.agent.pool = self
         self.agent.ep = sampled_episode
@@ -153,7 +153,7 @@ class SelfPlayManager(opponents.OpponentInPool):
         n = min(n, len(self.pool))
         pool = opponents.OpponentPool()
         for episode_number in self.pool[-n:]:
-            agent = helper.load_agent_Nth_episode(self.cfg.exp_name, episode_number)
+            agent = helper.load_agent_Nth_episode(self.cfg.exp_name, episode_number, inference_only=True)
             agent.name = f"{self.name}_ep{episode_number}"
             agent.pool = self
             agent.ep = episode_number
@@ -247,13 +247,15 @@ class SelfPlayManager(opponents.OpponentInPool):
         print(prefix_space + f"Sampler: {self.sampler.name}")
         poolers = ", ".join([str(s) for s in self.pooling_strategies])
         print(prefix_space + f"Pooling Strategies: {poolers}")
+        activation_type = self.subcfg.get('activation_type', 'always_on')
+        print(prefix_space + f"Activation Type: {activation_type}")
 
     def show_scoreboard(self):
         print(f"Self-Play Manager: {self.name}")
         if len(self.pool) == 0:
             print("--- Not a good past, no play from pool.")
             return
-        print(f"{'Episode':10} | {'Wins':5} | {'Losses':7} | {'Draws':5} | {'Win Rate':8} | {'Priority':8}")
+        print(f"{'Episode':10} | {'Wins':5} | {'Losses':7} | {'Draws':5} | {'Win Rate':8} | {'Priority':8} | {'Time in Pool':15}")
         print("-" * 50)
         for episode in self.pool:
             meta = self.pool_meta[episode]
@@ -263,7 +265,8 @@ class SelfPlayManager(opponents.OpponentInPool):
             total = wins + losses + draws
             win_rate = (wins / total) if total > 0 else 0.0
             priority = self.sampler.get_weights()[meta['index_in_pool']]
-            print(f"{episode:<10} | {wins:<5} | {losses:<7} | {draws:<5} | {win_rate:<8.2f} | {priority:<8.2f}")
+            time_in_pool = time.time() - meta['added_time']
+            print(f"{episode:<10} | {wins:<5} | {losses:<7} | {draws:<5} | {win_rate:<8.2f} | {priority:<8.2f} | {time_in_pool:<15.2f}s")
 
     def get_agent_name(self):
         return f"{self.name}_ep{self.current_episode}"

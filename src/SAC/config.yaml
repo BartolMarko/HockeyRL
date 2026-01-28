@@ -11,8 +11,8 @@ opponents:
     priority: 0.35
 self_play:
   - name: 'SelfPlayMgr'
-    priority: 0.8
-    max_pool_size: 1000
+    priority: 0.7
+    max_pool_size: 100
     activation_type: 'botwin'
     activation_epsilon: 1.0
     pooling:
@@ -36,8 +36,8 @@ draw_penalty: 5 # also reward v1
 still_puck_penalty: 0.25
 
 # Buffers
-buffer_type: "per"
-buffer_max_size: 5000000
+buffer_type: "replay"
+buffer_max_size: 1000000
 
 # Training
 n_games: 75000
@@ -55,7 +55,7 @@ lr_alpha: 0.0005
 target_update_freq: 1
 # Explorer
 explorer:
-  type: random
+  # type: random
 
   # type: 'gaussian'
   # mu: 0.5
@@ -65,8 +65,8 @@ explorer:
   # theta: 0.25
   # sigma: 0.3
 
-  # type: optimistic
-  # beta: 1.1
+  type: optimistic
+  beta: 1.1
 
   # type: curious
   # beta: 0.3
@@ -78,7 +78,7 @@ algorithm: "sac"
 hidden_size: 512
 
 # Evaluation
-eval_freq: 400
+eval_freq: 200
 eval_episodes: 32
 
 # Model saving
@@ -88,7 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-per-replay-self-play-gymVec"
+exp_name: "sac-v0-optimistic-replay-self-play"
 resume: False
 save_video: True
 log_gradients: True

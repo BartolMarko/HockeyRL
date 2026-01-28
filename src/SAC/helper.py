@@ -184,7 +184,7 @@ class Logger:
         for i in range(actions.shape[1]):
             self.add_historam(f"agent/action_dim_{i}", actions[:, i], bins=20)
 
-    def log_state(self, step: int = 0):
+    def log_heatmaps(self, step: int = 0):
         """
         Logs the saved states for an episode.
         """
@@ -332,33 +332,25 @@ def set_env_params(cfg, env):
     cfg.input_dims = env.observation_space.shape
     return cfg
 
-def load_agent_from_config(experiment_name: str, env) -> Agent:
+def load_agent_from_config(experiment_name: str, env, inference_only=False) -> Agent:
     """Load an agent from a configuration file."""
     config_path = Path('results') / experiment_name / 'config.yaml'
     cfg = OmegaConf.load(config_path)
     cfg = set_env_params(cfg, env)
     cfg.resume = True
-    agent = Agent(cfg)
+    agent = Agent(cfg, inference_only=inference_only)
     return agent
 
-def load_agent_Nth_episode(experiment_name: str, n: int, env=None, resume=False) -> Agent:
+def load_agent_Nth_episode(experiment_name: str, n: int, env=None, resume=False, inference_only=False) -> Agent:
     """Load an agent from the N-th episode checkpoint."""
     config_path = Path('results') / experiment_name / 'config.yaml'
     cfg = OmegaConf.load(config_path)
     cfg = set_env_params(cfg, env)
     cfg.resume = resume
-    agent = Agent(cfg)
+    agent = Agent(cfg, inference_only=inference_only)
     nth_checkpoint_dir = get_Nth_checkpoint(Path('results') / experiment_name / 'models', n)
-    agent.load_models(nth_checkpoint_dir)
+    agent.load_models(nth_checkpoint_dir, inference_only=inference_only)
     return agent
-
-def create_opponent_pool_from_config(cfg, env) -> OpponentPool:
-    """Create an opponent pool based on the configuration."""
-    opponent_pool = OpponentPool()
-    for experiment_name in cfg.keys():
-        opponent = load_agent_from_config(experiment_name, env=env)
-        opponent_pool.add_opponent(opponent)
-    return opponent_pool
 
 if __name__ == '__main__':
     # test heatmap

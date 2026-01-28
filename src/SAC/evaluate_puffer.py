@@ -46,14 +46,15 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
         real_done_batch = np.logical_or(done_batch, truncated_batch)
         finished_batch = np.logical_and(real_done_batch, active_envs)
         if 'final_info' in info_batch:
-            # final_info_mask = info_batch['_final_info']
-
-            for infos in info_batch['final_info']:
+            for idx, infos in enumerate(info_batch['final_info']):
                 if infos is None: continue
-                win_counts += infos.get('winner') == 1
-                lose_counts += infos.get('winner') == -1
-                draw_counts += infos.get('winner') == 0
-
+                winner = infos.get('winner')
+                if winner == 1:
+                    win_counts[idx] += 1
+                elif winner == -1:
+                    lose_counts[idx] += 1
+                elif winner == 0:
+                    draw_counts[idx] += 1
         else:
             # unlikely, but lets keep this
             win_counts += (finished_batch & (rewards_batch > 0)).astype(int)
@@ -76,14 +77,16 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
         total_losses = int(np.sum(lose_counts))
         total_draws = int(np.sum(draw_counts))
         opponent.record_play_scores(total_losses, total_wins, total_draws)
+    total_episodes = np.sum(win_counts) + np.sum(lose_counts) + np.sum(draw_counts)
     episode_metrics = {}
-    episode_metrics['episode_score'] = episode_scores / num_episodes
-    episode_metrics['episode_length'] = episode_lengths / num_episodes
+    episode_metrics['episode_score'] = episode_scores / total_episodes
+    episode_metrics['episode_length'] = episode_lengths / total_episodes
     episode_metrics['win'] = np.sum(win_counts)
     episode_metrics['lose'] = np.sum(lose_counts)
     episode_metrics['draw'] = np.sum(draw_counts)
+    episode_metrics['total_episodes'] = total_episodes
     end_time = time.time()
-    episode_metrics['episode_time'] = ( end_time - start_time ) / num_episodes
+    episode_metrics['episode_time'] = ( end_time - start_time ) / total_episodes
     return episode_metrics
 
 def puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, step: int | None = None, logger=None):

@@ -4,6 +4,7 @@ import numpy as np
 import torch
 
 from src.TD3.algos import SumSegmentTree, MinSegmentTree
+from src.TDMPC.helper import ReplayBuffer as PER
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -113,3 +114,8 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             self.min_tree[ind] = priority ** self.alpha
 
             self.max_priority = max(self.max_priority, priority)
+
+
+class PERTorch(PER):
+    def add_transition(self):
+        pass

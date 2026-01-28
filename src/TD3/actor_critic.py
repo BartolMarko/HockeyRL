@@ -4,6 +4,19 @@ from torch import nn
 from src.TD3.feedforward import FeedForward
 
 
+# need to do this for backward compatibility
+def remap_state_dict(old_sd):
+    new_sd = {}
+    new_keys = {
+        "layers.0.0.weight" : "layers.0.weight",
+        "layers.0.0.bias": "layers.0.bias",
+        "layers.1.0.weight": "layers.2.weight",
+        "layers.1.0.bias": "layers.2.bias"
+    }
+    for k, v in old_sd.items():
+        new_sd[new_keys.get(k, k)] = v
+    return new_sd
+
 class Actor(FeedForward):
     def __init__(self, input_size, hidden_sizes, output_size, **kwargs):
         super().__init__(input_size, hidden_sizes, output_size, **kwargs)
@@ -53,9 +66,9 @@ class ActorCritic(nn.Module):
         return (self.actor.state_dict(), self.critic1.state_dict(), self.critic2.state_dict())
     
     def restore_state(self, state):
-        self.actor.load_state_dict(state[0])
-        self.critic1.load_state_dict(state[1])
-        self.critic2.load_state_dict(state[2])
+        self.actor.load_state_dict(remap_state_dict(state[0]))
+        self.critic1.load_state_dict(remap_state_dict(state[1]))
+        self.critic2.load_state_dict(remap_state_dict(state[2]))
 
     def act(self, obs):
         with torch.no_grad():

@@ -14,10 +14,15 @@ class FeedForward(nn.Module):
         self.output_size    = output_size
         self.output_act     = output_activation
         layer_sizes         = [input_size] + self.hidden_sizes
-        # self.layers = nn.Sequential(
-        #     *[nn.Sequential(nn.Linear(i, o), activation_func)
-        #       for i, o in zip(layer_sizes[:-1], layer_sizes[1:])]
-        # )
+
+        # to maintain backward compatibiliy:
+
+        # if not use_layernorm:
+        #     self.layers = nn.Sequential(
+        #         *[nn.Sequential(nn.Linear(i, o), activation_func)
+        #           for i, o in zip(layer_sizes[:-1], layer_sizes[1:])]
+        #     )
+        # else:
         layers = []
 
         for i, o in zip(layer_sizes[:-1], layer_sizes[1:]):

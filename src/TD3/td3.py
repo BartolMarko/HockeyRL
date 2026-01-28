@@ -123,7 +123,7 @@ class TD3(NamedAgent):
         
         td_error1 = q1 - target
         td_error2 = q2 - target
-        td_errors = td_error1
+        td_errors = (td_error1 + td_error2) * .5
 
         loss_q1 = (weights * (td_error1)**2).mean()
         loss_q2 = (weights * (td_error2)**2).mean()

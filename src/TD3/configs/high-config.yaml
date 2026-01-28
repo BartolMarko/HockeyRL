@@ -5,7 +5,7 @@ td3:
   target_noise: 0.5
   buffer_size: 1000000
   polyak: 0.995
-  batch_size: 512
+  batch_size: 256
   prioritized_replay: False 
   pr_alpha: 0.6
   pr_beta: 0.4

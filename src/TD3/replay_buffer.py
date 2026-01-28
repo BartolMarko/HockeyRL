@@ -116,6 +116,63 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             self.max_priority = max(self.max_priority, priority)
 
 
-class PERTorch(PER):
-    def add_transition(self):
-        pass
+class PERNumpy:
+    def __init__(self, obs_dim, act_dim, size, alpha, beta, max_size = int(1e6)):
+        self.obs = np.zeros((max_size, obs_dim), dtype=np.float32)
+        self.act = np.zeros((max_size, act_dim), dtype=np.float32)
+        self.obs_new = np.zeros((max_size, obs_dim), dtype=np.float32)
+        self.rew = np.zeros(max_size, dtype=np.float32)
+        self.done = np.zeros(max_size, dtype=np.float32)
+        self.priorities = np.zeros(max_size, dtype=np.float32)
+        self.alpha = alpha
+        self.beta  = beta
+        self.idx, self.size, self.max_size = 0, 0, max_size
+        self.max_priority = 1.0
+
+    def add_transition(self, ob, act, rew, ob_new, done):
+        self.obs[self.idx] = ob
+        self.act[self.idx] = act 
+        self.rew[self.idx] = rew
+        self.obs_new[self.idx] = ob_new
+        self.done[self.idx] = done
+        
+        self.priorities[self.idx] = self.max_priority
+
+        self.idx = (self.idx + 1) % self.max_size
+        self.size = min(self.size + 1, self.max_size)
+
+
+    def sample(self, batch_size):
+        valid_priorities = self.priorities[:self.size] ** self.alpha
+        probs = valid_priorities / valid_priorities.sum()
+        
+        indices = np.random.choice(self.size, batch_size, p=probs)
+        # indices = torch.multinomial(probs, batch_size, replacement=True)
+
+        # p_min = valid_priorities.min() / valid_priorities.sum()
+        # max_weight = (p_min * self.size) ** (-self.beta)
+        
+        p_sample = probs[indices]
+        weights = (p_sample * self.size) ** (-self.beta)
+        weights = weights / weights.max()
+        
+        obs = self.obs[indices]
+        act = self.act[indices]
+        rew = self.rew[indices]
+        obs_new = self.obs_new[indices]
+        done = self.done[indices]
+        
+        return obs, act, rew, obs_new, done, weights, indices
+    
+    def sample_torch(self, batch_size):
+        batch = self.sample(batch_size)
+        ret = []
+        for i in range(len(batch) - 1):
+            ret.append(torch.tensor(batch[i], dtype=torch.float32).to(device))
+        ret.append(batch[-1])
+        return ret
+    
+    def update_priorities(self, indices, priorities):
+        self.priorities[indices] = priorities
+        self.max_priority = max(self.max_priority, priorities.max().item())
+    

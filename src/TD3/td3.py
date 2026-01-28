@@ -8,7 +8,7 @@ from pathlib import Path
 
 from src.TD3.actor_critic import ActorCritic
 from src.TD3.config_reader import Config
-from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
+from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer, PERNumpy
 from src.named_agent import NamedAgent
 
 
@@ -51,6 +51,7 @@ class TD3(NamedAgent):
 
         # self._action_n = self.act_space.shape[0]
         # self._obs_dim = self.obs_space.shape[0]
+        print(f"DEBUG grad clip norm: {self._config.get('grad_clip_norm')}")
 
         # self.high = torch.from_numpy(self.act_space.high).to(device)
         # self.low  = torch.from_numpy(self.act_space.low).to(device)
@@ -88,7 +89,7 @@ class TD3(NamedAgent):
                                                  lr = self._config['critic']['learning_rate'])
         
         if self.pr_replay:
-            self.buffer = PrioritizedReplayBuffer(self._obs_dim, self._action_n, self._config['buffer_size'], 
+            self.buffer = PERNumpy(self._obs_dim, self._action_n, self._config['buffer_size'], 
                                                   alpha = self._config['pr_alpha'], beta = self._config['pr_beta'])
         else:
             self.buffer = ReplayBuffer(self._obs_dim, self._action_n, self._config['buffer_size'])
@@ -132,10 +133,10 @@ class TD3(NamedAgent):
         
         td_error1 = q1 - target
         td_error2 = q2 - target
-        td_errors = (td_error1 + td_error2) * .5
+        td_errors = torch.abs(td_error1 + td_error2) * .5
 
-        loss_q1 = (weights * (td_error1)**2).mean()
-        loss_q2 = (weights * (td_error2)**2).mean()
+        loss_q1 = (weights * (td_error1*td_error1)).mean()
+        loss_q2 = (weights * (td_error2*td_error2)).mean()
         
         loss_q = loss_q1 + loss_q2
 
@@ -154,11 +155,16 @@ class TD3(NamedAgent):
         self.critic_optimizer.zero_grad()
         loss_q, td_errors = self.compute_q_loss(data)
         loss_q.backward()
+
+        if self._config.get('grad_clip_norm') is not None:
+            nn.utils.clip_grad_norm_(self.q_params, max_norm=self._config['grad_clip_norm'])
+
         self.critic_optimizer.step()
 
         if self.pr_replay:
-            td_errs_npy = td_errors.detach().cpu().numpy()
-            new_pr = np.abs(td_errs_npy) + self._config['pr_epsilon']
+            # td_errs_npy = td_errors.detach().cpu().numpy()
+            # new_pr = np.abs(td_errs_npy) + self._config['pr_epsilon']
+            new_pr = td_errors.detach().cpu().numpy() + self._config['pr_epsilon']
             inds = data[-1]
             self.buffer.update_priorities(inds, new_pr)
 
@@ -169,6 +175,8 @@ class TD3(NamedAgent):
             self.policy_optimizer.zero_grad()
             loss_pi = self.compute_actor_loss(data)
             loss_pi.backward()
+            if self._config.get('grad_clip_norm') is not None:
+                nn.utils.clip_grad_norm_(self.model.actor.parameters(), max_norm=self._config['grad_clip_norm'])
             self.policy_optimizer.step()
 
             self._copy_nets()

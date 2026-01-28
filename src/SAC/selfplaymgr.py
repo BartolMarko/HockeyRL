@@ -138,7 +138,7 @@ class SelfPlayManager(opponents.OpponentInPool):
         self.current_episode = sampled_episode
         if self.agent is not None:
             nth_checkpoint_dir = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', sampled_episode)
-            self.agent.load_models(nth_checkpoint_dir, inference_only=True)
+            self.agent.load_models(nth_checkpoint_dir)
         else:
             self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode, inference_only=True)
         self.agent.name = f"{self.name}_ep{sampled_episode}"
@@ -223,12 +223,12 @@ class SelfPlayManager(opponents.OpponentInPool):
             draws = meta.get('draw_count', 0)
             total = meta.get('total_games', 0)
             win_rate = meta.get('win_rate', 0.0)
-            logger.add_scalar(f"SelfPlay/{self.name}_ep{episode}_wins", wins)
-            logger.add_scalar(f"SelfPlay/{self.name}_ep{episode}_losses", losses)
-            logger.add_scalar(f"SelfPlay/{self.name}_ep{episode}_draws", draws)
-            logger.add_scalar(f"SelfPlay/{self.name}_ep{episode}_win_rate", win_rate)
+            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_wins", wins)
+            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_losses", losses)
+            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_draws", draws)
+            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_win_rate", win_rate)
             priority = self.sampler.get_weights()[meta['index_in_pool']]
-            logger.add_scalar(f"SelfPlay/{self.name}_ep{episode}_priority", priority)
+            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_priority", priority)
         # log duration in pool
         current_time = time.time()
         durations = [current_time - self.pool_meta[ep]['added_time'] for ep in self.pool]
@@ -257,6 +257,8 @@ class SelfPlayManager(opponents.OpponentInPool):
             return
         print(f"{'Episode':10} | {'Wins':5} | {'Losses':7} | {'Draws':5} | {'Win Rate':8} | {'Priority':8} | {'Time in Pool':15}")
         print("-" * 50)
+        win_rate_accum = 0.0
+        total_eps = 0
         for episode in self.pool:
             meta = self.pool_meta[episode]
             wins = meta.get('win_count', 0)
@@ -264,9 +266,27 @@ class SelfPlayManager(opponents.OpponentInPool):
             draws = meta.get('draw_count', 0)
             total = wins + losses + draws
             win_rate = (wins / total) if total > 0 else 0.0
+            win_rate_accum += win_rate
+            total_eps += total > 0
             priority = self.sampler.get_weights()[meta['index_in_pool']]
             time_in_pool = time.time() - meta['added_time']
             print(f"{episode:<10} | {wins:<5} | {losses:<7} | {draws:<5} | {win_rate:<8.2f} | {priority:<8.2f} | {time_in_pool:<15.2f}s")
+        win_rate_avg = win_rate_accum / total_eps
+        print("-" * 50)
+        print(f"Average Win Rate across pool: {win_rate_avg:.2f}")
+
+    def get_win_rate(self):
+        win_rate = 0.0
+        total_eps = 0
+        for episode in self.pool:
+            win_rate += self.pool_meta[episode].get('win_rate', 0.0)
+            total_eps += self.pool_meta[episode].get('total_games', 0) > 1
+        if total_eps > 0:
+            win_rate /= len(self.pool)
+            return win_rate
+        elif total_eps == 0 and win_rate != 0.0:
+            print(f"[SPLY] Warning: win_rate calculation inconsistency in SelfPlayManager '{self.name}'")
+        return 0.0
 
     def get_agent_name(self):
         return f"{self.name}_ep{self.current_episode}"

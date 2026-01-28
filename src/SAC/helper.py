@@ -1,20 +1,21 @@
 import os
 import re
-import numpy as np
-import matplotlib.pyplot as plt
 import gymnasium as gym
 import hockey.hockey_env as h_env
+import imageio
+import wandb
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import distributions as pyd
 from torch.distributions.utils import _standard_normal
 from torch.utils.tensorboard import SummaryWriter
-import wandb
 from omegaconf import OmegaConf
 from opponents import OpponentInPool, OpponentPool
-from agent import Agent
 from pathlib import Path
+from agent import Agent
 
 def get_tensor(x, device, dtype=torch.float32):
     """Converts input to a torch tensor on the specified device."""
@@ -349,7 +350,7 @@ def load_agent_Nth_episode(experiment_name: str, n: int, env=None, resume=False,
     cfg.resume = resume
     agent = Agent(cfg, inference_only=inference_only)
     nth_checkpoint_dir = get_Nth_checkpoint(Path('results') / experiment_name / 'models', n)
-    agent.load_models(nth_checkpoint_dir, inference_only=inference_only)
+    agent.load_models(nth_checkpoint_dir)
     return agent
 
 if __name__ == '__main__':

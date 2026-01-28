@@ -57,16 +57,16 @@ target_update_freq: 1
 explorer:
   # type: random
 
-  # type: 'gaussian'
-  # mu: 0.5
-  # std_dev: 0.85
+  type: 'gaussian'
+  mu: 0.5
+  std_dev: 0.85
 
   # type: ou
   # theta: 0.25
   # sigma: 0.3
 
-  type: optimistic
-  beta: 1.1
+  # type: optimistic
+  # beta: 1.1
 
   # type: curious
   # beta: 0.3
@@ -88,7 +88,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-optimistic-replay-self-play"
+exp_name: "sac-v0-gaussian-replay-self-play"
 resume: False
 save_video: True
 log_gradients: True

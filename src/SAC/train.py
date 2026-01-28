@@ -95,11 +95,6 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
 def train_agent(cfg, agent, env, logger, start_episode=0):
     n_games = cfg.n_games
 
-    gif_save_path = None
-    if cfg.get('save_video', False):
-        gif_save_dir = logger.get_project_dir() / 'videos'
-        gif_save_dir.mkdir(parents=True, exist_ok=True)
-
     last_save_step = 0
     last_eval_step = 0
     env_step = 0
@@ -167,11 +162,13 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         if env_step - last_eval_step >= cfg.eval_freq:
             agent.eval()
             last_eval_step = env_step
-            _ = epfw.evaluate(cfg, agent, opponent, env, episode_index=i+start_episode, logger=logger)
+            _ = epfw.evaluate(cfg, agent, opponent, env, episode_index=i+start_episode,
+                              logger=logger)
             win_rate = opponent.get_win_rate()
             print(f"[EVAL] Ep {i} vs {opponent.name}: win-rate: {win_rate:.2f}")
             print(f"[EVAL] Evaluating against opponent pool...")
-            final_eval = epfw.puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+            final_eval = epfw.puffer_evaluate_against_pool(
+                    env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
             logger.add_opponent_pool_stats(opponent_pool)
             win_rate, lose_rate, draw_rate = 0.0, 0.0, 0.0
             total_episodes = 0

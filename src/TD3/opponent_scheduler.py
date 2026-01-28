@@ -276,9 +276,6 @@ class LinearOpponentScheduler(OpponentScheduler):
             self.pool.append(wrapped)
 
 
-'''
-ACHTUNG! Not tested yet.
-'''
 class ThompsonScheduler(OpponentPoolThompsonSampling):
     def __init__(self):
         super().__init__(opponents=[WeakBot(), StrongBot(), CustomOpponent()])

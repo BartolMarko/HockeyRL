@@ -140,7 +140,7 @@ def main():
             i_episode += 1
             total_length = 0
 
-            if i_episode % 100 == 0:
+            if i_episode % 1000 == 0:
                 save_ckpt(i_episode)
 
             training_monitor.log_training_episode(opponent_name=agent2.name,

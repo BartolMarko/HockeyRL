@@ -95,7 +95,7 @@ class TD3(NamedAgent):
         
         if self.pr_replay:
             self.buffer = PERNumpy(self._obs_dim, self._action_n, self._config['buffer_size'], 
-                                                  alpha = self._config['pr_alpha'], beta = self._config['pr_beta'])
+                                   alpha = self._config['pr_alpha'], beta = self._config['pr_beta'])
         else:
             self.buffer = ReplayBuffer(self._obs_dim, self._action_n, self._config['buffer_size'])
 
@@ -114,7 +114,12 @@ class TD3(NamedAgent):
             self.buffer.add_transition(*self.rollout.pop())
 
     def store_episode(self, episode : Episode):
-        pass
+        for i in range(len(episode)):
+            ob, act, _, rew, done = episode[i]
+            ob_new = episode.obs[i + 1].detach().cpu().numpy()
+            self.store_transition((ob, act, rew, ob_new, done))
+        if done:
+            self.on_episode_end()
 
     def compute_q_loss(self, data):
         if self.pr_replay:

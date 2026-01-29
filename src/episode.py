@@ -93,6 +93,18 @@ class Episode(object):
         Number of observations is length + 1.
         """
         return self.length
+    
+    def __getitem__(self, idx):
+        if (not self.done) or (idx < self.length - 1):
+            done = np.array([0.], dtype=np.float32)
+        else:
+            done = np.array([1.], dtype=np.float32)
+
+        return (self.obs[idx].detach().cpu().numpy(), 
+                self.action[idx].detach().cpu().numpy(),
+                self.opponent_action[idx].detach().cpu().numpy(),
+                self.reward[idx].detach().cpu().numpy(),
+                done)
 
     @property
     def first(self):

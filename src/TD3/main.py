@@ -169,6 +169,9 @@ def main():
 
             noise_sampler.reset()
             td3.on_episode_end()
+            if t_cfg.get('episode_mirroring', False):
+                episode.mirror()
+                td3.store_episode(episode)
             episode = Episode(ob)
 
         if t % t_cfg.opp_update_freq == 0:

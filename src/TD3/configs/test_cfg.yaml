@@ -6,7 +6,7 @@ td3:
   buffer_size: 1000000
   polyak: 0.995
   batch_size: 128
-  prioritized_replay: True 
+  prioritized_replay: False 
   pr_alpha: 0.6
   pr_beta: 0.4
   pr_epsilon: 0.000001
@@ -21,8 +21,8 @@ td3:
     learning_rate: 0.001
 
 training:
-  run_name: td3_test_per_grad_clip_rollout_3
-  total_timesteps: 100000
+  run_name: td3_test_mirroring_grad_clip_rollout_3
+  total_timesteps: 50000
   max_ep_length: 251
   seed: 699
   # choices [gaussian, pink, ou]
@@ -37,6 +37,7 @@ training:
   save_ckpt_locally: True
   result_directory: "results_env_sched"
   eval_freq: 10000
+  episode_mirroring: True
   eval_episodes_per_opp: 20
   video_episodes_per_outcome: 20
 

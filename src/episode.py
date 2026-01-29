@@ -96,9 +96,9 @@ class Episode(object):
     
     def __getitem__(self, idx):
         if (not self.done) or (idx < self.length - 1):
-            done = np.array([0.], dtype=np.float32)
+            done = np.array(0., dtype=np.float32)
         else:
-            done = np.array([1.], dtype=np.float32)
+            done = np.array(1., dtype=np.float32)
 
         return (self.obs[idx].detach().cpu().numpy(), 
                 self.action[idx].detach().cpu().numpy(),

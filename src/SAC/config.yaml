@@ -25,24 +25,15 @@ num_envs: 16
 
 # rewards
 reward_transform: "v0"
-# rewards: v1
-reward_scale: 2.1
-closeness_to_puck_reward_weight: 1.2
-puck_direction_reward_weight: 1.2
-touch_puck_reward_weight: 1.2
-reward_step_penalty: 0.02
-# rewards: v3 / v4
-draw_penalty: 5 # also reward v1
-still_puck_penalty: 0.25
 
 # Buffers
-buffer_type: "replay"
-buffer_max_size: 1000000
+buffer_type: "per"
+buffer_max_size: 1500000
 upside_down: True
 
 # Training
-n_games: 75000
-warmup_games: 200
+n_games: 5000
+warmup_games: 300
 learn_steps_per_episode: 1
 batch_size: 1024
 lr_actor: 0.0004
@@ -58,9 +49,9 @@ target_update_freq: 1
 explorer:
   # type: random
 
-  type: 'gaussian'
-  mu: 0.5
-  std_dev: 0.85
+  # type: 'gaussian'
+  # mu: 0.5
+  # std_dev: 0.85
 
   # type: ou
   # theta: 0.25
@@ -73,6 +64,8 @@ explorer:
   # beta: 0.3
   # hidden_dim: 64
   # lr_pred: 0.001
+
+  type: pink
 
 # Network
 algorithm: "sac"
@@ -89,7 +82,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-gaussian-replay-self-play-mirror"
+exp_name: "sac-v0-pink-per"
 resume: False
 save_video: True
 log_gradients: True

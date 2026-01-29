@@ -367,7 +367,8 @@ class PinkExplorer(ExplorerStrategy):
         state_tensor = T.from_numpy(observation).float().unsqueeze(0).to(agent.actor.device)
         with T.no_grad():
             mu, std = agent.actor(state_tensor)
-        action, _ = self.noise_dist.log_prob_from_params(mu, std.log())
+        mu, std = mu.cpu().numpy(), std.cpu().numpy()
+        action, _ = self.noise_dist.log_prob_from_params(mu, np.log(std))
         return np.clip(action.cpu().detach().numpy()[0], self.low, self.high)
 
     def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
@@ -375,7 +376,8 @@ class PinkExplorer(ExplorerStrategy):
         state_tensor = T.from_numpy(observations).float().to(agent.actor.device)
         with T.no_grad():
             mu, std = agent.actor(state_tensor)
-        action, _ = self.noise_dist.log_prob_from_params(mu, std.log())
+        mu, std = mu.cpu(), std.cpu()
+        action, _ = self.noise_dist.log_prob_from_params(mu, np.log(std))
         return np.clip(action.cpu().detach().numpy(), self.low, self.high)
 
     def reset(self):

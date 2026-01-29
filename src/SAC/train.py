@@ -88,12 +88,15 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     episode_metrics['win_rate'] = np.sum(win_counts) / total_episodes
     episode_metrics['lose_rate'] = np.sum(lose_counts) / total_episodes
     episode_metrics['draw_rate'] = np.sum(draw_counts) / total_episodes
+    episode_metrics['total_episodes'] = total_episodes
     end_time = time.time()
     episode_metrics['episode_time'] = ( end_time - start_time ) / total_episodes
     return episode_metrics
 
 def train_agent(cfg, agent, env, logger, start_episode=0):
     n_games = cfg.n_games
+    eps_since_beg = start_episode
+    print(f"[Training started] Total Episodes to run: {n_games} + {start_episode} = {n_games + start_episode}")
 
     last_save_step = 0
     last_eval_step = 0
@@ -119,6 +122,9 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         logger.add_scalar("Rollout/Episode Length", metrics['episode_length'])
         logger.add_scalar("Rollout/Episode Time", metrics['episode_time'])
         logger.add_scalar("Rollout/Train Win Rate", metrics['win_rate'])
+        logger.add_scalar("Rollout/Episode Count", metrics['total_episodes'])
+        eps_since_beg += metrics['total_episodes']
+        logger.add_scalar("Rollout/Total Episodes", eps_since_beg)
         print(f"[ROUT] Ep {i} vs {opponent.get_agent_name()} | "
               f"Score/Ep: {metrics['episode_score']:.2f}, Length/Ep: {metrics['episode_length']:.2f}, "
               f"Time/Ep: {metrics['episode_time']:.2f}s, Win Rate: {metrics['win_rate']:.2f}")
@@ -196,7 +202,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
     logger.close()
     env.close()
     print("[Training completed] [episodes: {} + {} = {}]".format(start_episode, env_step, env_step + start_episode))
-    final_eval = epfw.evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+    final_eval = epfw.puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
     print("Opponents Stats:")
     opponent_pool.show_scoreboard()
     print("Agent Stats:")

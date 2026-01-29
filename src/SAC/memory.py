@@ -375,11 +375,23 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
         """
         return min(1.0, self.beta_start + frame_idx * (1.0 - self.beta_start) / self.beta_frames)
 
-    def store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch):
+    def _store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch, mirror=False):
         indices = np.arange(self.mem_cntr, self.mem_cntr + self.num_envs) % self.mem_size
-        super().store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        super()._store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch, mirror=mirror)
         priorities = np.full(self.num_envs, self.max_priority, dtype=np.float32)
         self.update_priorities(indices, priorities)
+
+    def store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch):
+        self._store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        if self.store_upside_down:
+            mirrored_states, mirrored_actions, mirrored_rewards, mirrored_next_states, mirrored_dones = mirror_buffer(
+                state_batch,
+                action_batch,
+                reward_batch,
+                next_state_batch,
+                done_batch
+            )
+            self._store_transition(mirrored_states, mirrored_actions, mirrored_rewards, mirrored_next_states, mirrored_dones)
 
     def update_priorities(self, batch_indices, batch_priorities):
         self.max_priority = max(self.max_priority, np.max(batch_priorities))
@@ -419,7 +431,9 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
         tree_indices = current_indices
 
         batch_indices = tree_indices - self.tree_capacity + 1
-        batch_indices = np.clip(batch_indices, 0, self.tree_capacity - 1)
+        # Clips ghost indices to the max valid index, hopefully this doesn't
+        # bias too much
+        batch_indices = np.clip(batch_indices, 0, len(self) - 1)
 
         states = self.state_memory[batch_indices]
         states_ = self.new_state_memory[batch_indices]
@@ -467,9 +481,19 @@ class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
         self.gamma = gamma
         self.num_envs = num_envs
         self.n_step_history = deque(maxlen=n_step)
+        self.mirror_n_step_history = deque(maxlen=n_step)
 
     def store_transition(self, state_batch, action_batch, reward_batch, next_state_batch, done_batch):
         self.n_step_history.append((state_batch, action_batch, reward_batch, next_state_batch, done_batch))
+        if self.store_upside_down:
+            mirrored_states, mirrored_actions, mirrored_rewards, mirrored_next_states, mirrored_dones = mirror_buffer(
+                state_batch,
+                action_batch,
+                reward_batch,
+                next_state_batch,
+                done_batch
+            )
+            self.mirror_n_step_history.append((mirrored_states, mirrored_actions, mirrored_rewards, mirrored_next_states, mirrored_dones))
 
         if len(self.n_step_history) < self.n_step:
             return
@@ -477,7 +501,22 @@ class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
         reward_batch, next_state_batch, done_batch = self._get_n_step_info()
         state_batch, action_batch = self.n_step_history[0][:2]
 
-        super().store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        super()._store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+
+        if self.store_upside_down:
+            reward_batch, next_state_batch, done_batch = self._get_mirror_n_step_info()
+            state_batch, action_batch = self.mirror_n_step_history[0][:2]
+            super()._store_transition(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+
+    def _get_mirror_n_step_info(self):
+        reward_batch, next_state_batch, done_batch = self.mirror_n_step_history[-1][-3:]
+
+        for transition in reversed(list(self.mirror_n_step_history)[:-1]):
+            r_batch, n_s_batch, d_batch = transition[2], transition[3], transition[4]
+            reward_batch = r_batch + self.gamma * reward_batch * (1 - d_batch)
+            next_state_batch, done_batch = np.where(d_batch[:, None], n_s_batch, next_state_batch), np.where(d_batch, d_batch, done_batch)
+
+        return reward_batch, next_state_batch, done_batch
 
     def _get_n_step_info(self):
         reward_batch, next_state_batch, done_batch = self.n_step_history[-1][-3:]
@@ -665,6 +704,39 @@ def test_vec_nstep():
     expected_reward = 1.0 + 0.9 * 1.0 + 0.9**2 * 1.0
     assert np.isclose(rewards[0], expected_reward)
     print("  N-step reward calculation test passed.")
+
+    # test when upside down is set, every transition stored increments by 2
+    num_envs=2
+    mem_size=4
+    n_step=3
+    gamma=0.9
+    memory = VecNStepPERBuffer(num_envs=num_envs, n_step=n_step, gamma=gamma, capacity=mem_size, input_shape=(16,), n_actions=4, alpha=1.0)
+    memory.set_store_upside_down(True)
+    dummy_obs = np.zeros((num_envs, 16))
+    for _ in range(n_step * mem_size // 2):
+        memory.store_transition(dummy_obs, np.zeros((num_envs, 4)), np.zeros((num_envs,)), dummy_obs+1, np.zeros((num_envs,), dtype=bool))
+    assert len(memory) == mem_size
+    print("  Upside-down storing test passed.")
+
+    # test mathematics of n-step mirroring
+    num_envs = 1
+    mem_size = 10
+    n_step = 3
+    gamma = 0.9
+    memory = VecNStepPERBuffer(num_envs=num_envs, n_step=n_step, gamma=gamma, capacity=mem_size, input_shape=(16,), n_actions=4, alpha=1.0)
+    memory.set_store_upside_down(True)
+    dummy_obs = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0]])
+    memory.store_transition(dummy_obs, np.array([[0.5, -1.0, 0.0, 1.0]]), np.array([1.0]), dummy_obs+1, np.array([0], dtype=bool))
+    dummy_obs = np.array([[2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0]])
+    memory.store_transition(dummy_obs, np.array([[0.0, 1.0, -0.5, -1.0]]), np.array([1.0]), dummy_obs+1, np.array([0], dtype=bool))
+    dummy_obs = np.array([[3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0]])
+    memory.store_transition(dummy_obs, np.array([[-0.5, 0.0, 1.0, 0.5]]), np.array([1.0]), dummy_obs+1, np.array([0], dtype=bool))
+    assert len(memory) == 2
+    batch, actions, rewards, next_batch, dones, indices, weights = memory.sample_buffer(batch_size=2)
+    expected_reward = 1.0 + 0.9 * 1.0 + 0.9**2 * 1.0
+    for i in range(2):
+        assert np.isclose(rewards[i], expected_reward)
+    print("  N-step mirroring reward calculation test passed.")
     print("PASS")
 
 def test_env_mirror():

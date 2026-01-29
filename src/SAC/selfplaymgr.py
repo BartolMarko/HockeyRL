@@ -46,7 +46,10 @@ class LastCloneWinPoolingStrategy(PoolingStrategy):
             # but its okay to have two ig?
             self.first_agent = False
             return True
-        return (1.0 - agent_win_rate) >= self.win_rate_threshold
+        allow = (1.0 - agent_win_rate) >= self.win_rate_threshold
+        print(f"[SPLY] LastCloneWinPoolingStrategy: Agent win rate = {agent_win_rate},"
+              f" Threshold = {self.win_rate_threshold} => Allow addition: {allow}")
+        return allow
 
     def __str__(self):
         return f"LastCloneWinPoolingStrategy(delta={self.win_rate_threshold})"
@@ -292,10 +295,10 @@ class SelfPlayManager(opponents.OpponentInPool):
     def show_scoreboard(self):
         print(f"Self-Play Manager: {self.name}")
         if len(self.pool) == 0:
-            print("--- Not a good past, no play from pool.")
+            print("--- no play from pool.")
             return
         print(f"{'Episode':10} | {'Wins':5} | {'Losses':7} | {'Draws':5} | {'Win Rate':8} | {'Priority':8} | {'Time in Pool':15}")
-        print("-" * 50)
+        print("-" * 75)
         win_rate_accum = 0.0
         total_eps = 0
         for episode in self.pool:
@@ -311,8 +314,9 @@ class SelfPlayManager(opponents.OpponentInPool):
             time_in_pool = time.time() - meta['added_time']
             print(f"{episode:<10} | {wins:<5} | {losses:<7} | {draws:<5} | {win_rate:<8.2f} | {priority:<8.2f} | {time_in_pool:<15.2f}s")
         win_rate_avg = win_rate_accum / total_eps
-        print("-" * 50)
+        print("-" * 75)
         print(f"Average Win Rate across pool: {win_rate_avg:.2f}")
+        print("-" * 75)
 
     def get_win_rate(self):
         win_rate = 0.0

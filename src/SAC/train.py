@@ -228,7 +228,7 @@ def set_dry_run_params(cfg):
         if not cfg.resume:
             cfg.exp_name = f"dry_run_{cfg.exp_name}"
         if hasattr(cfg, 'self_play'):
-            cfg.self_play[0].activation_epsilon = 0.2
+            cfg.self_play[0].activation_epsilon = 0.1
     return cfg
 
 if __name__ == '__main__':

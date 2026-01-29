@@ -12,7 +12,7 @@ class PoolingStrategy:
     def __init__(self, name="pooling_strategy"):
         self.name = name
 
-    def valid_addition(self, agent):
+    def valid_addition(self, *args, **kwargs):
         raise NotImplementedError("valid_addition method must be implemented by subclasses.")
 
 class EpisodePoolingStrategy(PoolingStrategy):
@@ -23,17 +23,42 @@ class EpisodePoolingStrategy(PoolingStrategy):
         super().__init__(name)
         self.freq = freq
 
-    def valid_addition(self, episode_number: int):
+    def valid_addition(self, *args, **kwargs):
+        episode_number = kwargs['episode_number']
         return episode_number % self.freq == 0
 
     def __str__(self):
         return f"EpisodePoolingStrategy(freq={self.freq})"
+
+class LastCloneWinPoolingStrategy(PoolingStrategy):
+    """
+    Pools based on last clone win rate.
+    """
+    def __init__(self, win_rate_threshold, name="last_clone_win_pooling_strategy"):
+        super().__init__(name)
+        self.win_rate_threshold = win_rate_threshold
+        self.first_agent = True
+
+    def valid_addition(self, *args, **kwargs):
+        agent_win_rate = kwargs['win_rate']
+        if self.first_agent:
+            # For now, the pool already has one agent when this is called
+            # but its okay to have two ig?
+            self.first_agent = False
+            return True
+        return (1.0 - agent_win_rate) >= self.win_rate_threshold
+
+    def __str__(self):
+        return f"LastCloneWinPoolingStrategy(delta={self.win_rate_threshold})"
 
 def get_pooling_strategy_by_name(name, cfg):
     name = name.lower()
     if name == 'episode':
         freq = cfg.get('freq', 20)
         return EpisodePoolingStrategy(freq)
+    elif name == 'all_clone_win':
+        win_rate_threshold = cfg.get('win_rate_threshold', 0.8)
+        return LastCloneWinPoolingStrategy(win_rate_threshold)
     else:
         raise ValueError(f"Unknown pooling strategy name: {name}")
 
@@ -85,13 +110,20 @@ class SelfPlayManager(opponents.OpponentInPool):
         if not self.active():
             return False
         if episode_number in self.pool_meta:
+            # no addition of an agent played against for now
+            # but might have to re-introduce them later for evals
             return False
         if len(self.pool) == 0:
             # TODO: First addition always allowed
             #   but maybe should be controlled by strategy as well
             return True
+        kwargs = {
+            'agent': agent,
+            'episode_number': episode_number,
+            'win_rate': self.get_win_rate()
+        }
         for strategy in self.pooling_strategies:
-            if strategy.valid_addition(episode_number):
+            if strategy.valid_addition(**kwargs):
                 return True
         return False
 
@@ -100,10 +132,10 @@ class SelfPlayManager(opponents.OpponentInPool):
             return False
         if len(self.pool) >= self.max_pool_size:
             removed_episode = self.pool.pop(0)
-            del self.pool_meta[removed_episode]
             self.sampler.remove_arm(0)
-            for ep in self.pool:
-                self.pool_meta[ep]['index_in_pool'] -= 1
+            del self.pool_meta[removed_episode]
+            for idx, ep in enumerate(self.pool):
+                self.pool_meta[ep]['index_in_pool'] = idx
         self.pool.append(episode_number)
         self.pool_meta[episode_number] = {
                 'added_time': time.time(),
@@ -194,11 +226,18 @@ class SelfPlayManager(opponents.OpponentInPool):
         }
 
     def record_play_scores(self, win_count, loss_count, draw_count, episode_index=None):
+        if not self.active():
+            return
         if episode_index is None:
             episode_index = self.current_episode
         self.win_count = win_count
         self.loss_count = loss_count
         self.draw_count = draw_count
+        if episode_index not in self.pool_meta:
+            print(f"[WARN] Warning: Tried to record play scores for episode {episode_index},"
+                  " but it's not in the self-play pool.")
+            return
+
         total_games = win_count + loss_count + draw_count
         self.pool_meta[episode_index].update({
             'win_rate': (win_count / total_games) if total_games > 0 else 0.0
@@ -296,21 +335,3 @@ def create_selfplay_manager(cfg, subcfg, name="selfplay_manager"):
     if 'name' in subcfg:
         name = subcfg.name
     return SelfPlayManager(name, cfg, subcfg)
-
-def test_selfplay_manager():
-    from omegaconf import OmegaConf
-    with open("config.yaml", 'r') as f:
-        cfg = OmegaConf.load(f)
-    subcfg = cfg.self_play[0]
-    spm = create_selfplay_manager(cfg, subcfg)
-    spm.is_active_flag = True
-    for ep in [10, 20, 30, 40, 50]:
-        spm.add_episode_number_to_pool(None, episode_number=ep)
-    print("Pool after additions:", spm.pool)
-    spm.update_priorities({10: 0.5, 20: 0.8, 30: 0.2})
-    # Disabled for now, as it requires actual agent checkpoints
-    # sampled_agent = spm.sample_opponent()
-    # print("Sampled agent for episode:", sampled_agent.current_episode)
-
-if __name__ == "__main__":
-    test_selfplay_manager()

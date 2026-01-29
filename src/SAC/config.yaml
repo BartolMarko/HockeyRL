@@ -12,12 +12,12 @@ opponents:
 self_play:
   - name: 'SelfPlayMgr'
     priority: 0.7
-    max_pool_size: 10
+    max_pool_size: 2
     activation_type: 'botwin'
-    activation_epsilon: 1.0
+    activation_epsilon: 0.9
     pooling:
-      - type: 'episode'
-        freq: 50
+      - type: 'all_clone_win'
+        win_rate_threshold: 0.85
     sampler:
       name: 'pfsp'
       pfsp_p: 0.5
@@ -38,6 +38,7 @@ still_puck_penalty: 0.25
 # Buffers
 buffer_type: "replay"
 buffer_max_size: 1000000
+upside_down: True
 
 # Training
 n_games: 75000
@@ -88,7 +89,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-gaussian-replay-self-play-smaller-pool"
+exp_name: "sac-v0-gaussian-replay-self-play-mirror"
 resume: False
 save_video: True
 log_gradients: True

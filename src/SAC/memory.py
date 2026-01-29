@@ -384,7 +384,7 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
     def update_priorities(self, batch_indices, batch_priorities):
         self.max_priority = max(self.max_priority, np.max(batch_priorities))
         tree_indices = batch_indices + self.tree_capacity - 1
-        batch_priorities = batch_priorities ** self.alpha
+        batch_priorities = (batch_priorities + 1e-6) ** self.alpha
 
         for i, tree_idx in enumerate(tree_indices):
             self.sum_tree[tree_idx] = batch_priorities[i]
@@ -574,9 +574,9 @@ def test_vec_per():
     memory = VecPrioritizedReplayBuffer(num_envs=num_envs, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0)
     dummy_obs = np.zeros((num_envs, 4))
     memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
-    assert memory.sum_tree[7] == 1.0
-    assert memory.sum_tree[8] == 1.0
-    assert memory.sum_tree[0] == 2.0
+    assert np.isclose(memory.sum_tree[7], 1.000001, atol=1e-5)
+    assert np.isclose(memory.sum_tree[8], 1.000001, atol=1e-5)
+    assert np.isclose(memory.sum_tree[0], 2.000002, atol=1e-5)
     print("  Priority assignment test passed.")
 
     indices = np.array([0, 1])

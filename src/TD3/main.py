@@ -168,6 +168,7 @@ def main():
                 agent2 = opp_scheduler.get_opponent(t)
 
             noise_sampler.reset()
+            td3.on_episode_end()
             episode = Episode(ob)
 
         if t % t_cfg.opp_update_freq == 0:

@@ -1,3 +1,4 @@
+from collections import deque
 import random
 
 import numpy as np
@@ -7,6 +8,8 @@ from src.TD3.algos import SumSegmentTree, MinSegmentTree
 from src.TDMPC.helper import ReplayBuffer as PER
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 
 class ReplayBuffer:
     def __init__(self, obs_dim, act_dim, max_size : int = int(1e6)):
@@ -176,3 +179,39 @@ class PERNumpy:
         self.priorities[indices] = priorities
         self.max_priority = max(self.max_priority, priorities.max().item())
     
+
+
+class NStepRollOut:
+    def __init__(self, max_steps, gamma):
+        self.max_steps = max_steps
+        self.buffer = deque(maxlen=max_steps)
+        self.gamma = gamma
+
+    def add_transition(self, ob, act, rew, ob_new, done):
+        trans = (ob, act, rew, ob_new, done)
+        self.buffer.append(trans)
+
+    def is_full(self):
+        return len(self.buffer) == self.max_steps
+    
+    def can_pop(self):
+        return len(self.buffer) > 0
+    
+    def pop(self):
+        total_reward = 0
+        discount = 1
+        for i in range(len(self.buffer)):
+            _, _, r, obN, d = self.buffer[i]
+            total_reward += r * discount
+            discount *= self.gamma
+            if d: break
+        
+        #At time t: at ob o0, took action a0
+        ob0, a0, _, _, _ = self.buffer[0]
+        # got reward: total_reward, reached state sn
+        # _, _, _, obN, doneN = self.buffer[-1]
+        self.buffer.popleft()
+        return (ob0, a0, total_reward, obN, d)
+    
+    def reset(self):
+        self.buffer.clear()

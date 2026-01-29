@@ -5,12 +5,13 @@ td3:
   target_noise: 0.5
   buffer_size: 1000000
   polyak: 0.995
-  batch_size: 512
+  batch_size: 128
   prioritized_replay: True 
   pr_alpha: 0.6
   pr_beta: 0.4
   pr_epsilon: 0.000001
   grad_clip_norm: 1.0
+  rollout: 3
 
   actor:
     hidden_sizes: [256, 256]
@@ -20,7 +21,7 @@ td3:
     learning_rate: 0.001
 
 training:
-  run_name: td3_test_per_grad_clip_high_bs
+  run_name: td3_test_per_grad_clip_rollout_3
   total_timesteps: 100000
   max_ep_length: 251
   seed: 699

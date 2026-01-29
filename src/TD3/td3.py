@@ -8,8 +8,9 @@ from pathlib import Path
 
 from src.TD3.actor_critic import ActorCritic
 from src.TD3.config_reader import Config
-from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer, PERNumpy
+from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer, PERNumpy, NStepRollOut
 from src.named_agent import NamedAgent
+from src.episode import Episode
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -88,6 +89,10 @@ class TD3(NamedAgent):
         self.critic_optimizer = torch.optim.Adam(self.q_params,
                                                  lr = self._config['critic']['learning_rate'])
         
+        self.N = self._config.get('rollout', 1)
+        print("DEBUG, using rollout: ", self.N)
+        self.rollout = NStepRollOut(self.N, self._config['gamma'])
+        
         if self.pr_replay:
             self.buffer = PERNumpy(self._obs_dim, self._action_n, self._config['buffer_size'], 
                                                   alpha = self._config['pr_alpha'], beta = self._config['pr_beta'])
@@ -104,8 +109,12 @@ class TD3(NamedAgent):
                 w_targ.data.add_((1-self.polyak)*w.data)
 
     def store_transition(self, transition):
-        self.buffer.add_transition(*transition)
+        self.rollout.add_transition(*transition)
+        if self.rollout.is_full():
+            self.buffer.add_transition(*self.rollout.pop())
 
+    def store_episode(self, episode : Episode):
+        pass
 
     def compute_q_loss(self, data):
         if self.pr_replay:
@@ -129,7 +138,7 @@ class TD3(NamedAgent):
             q2_pi_targ = self.model_target.q2(obs_new, a2)
 
             q_pi_targ  = torch.min(q1_pi_targ, q2_pi_targ)
-            target = rew + self._config['gamma']*(1-done)*q_pi_targ
+            target = rew + (self._config['gamma']**self.N)*(1-done)*q_pi_targ
         
         td_error1 = q1 - target
         td_error2 = q2 - target
@@ -211,6 +220,11 @@ class TD3(NamedAgent):
         save_dir.mkdir(parents=True, exist_ok=True)
         torch.save(self.state(), save_dir / MODEL_FILE)
         Config.save_as_yaml(self._config, str(save_dir / CONFIG_FILE))
+
+    def on_episode_end(self):
+        while self.rollout.can_pop():
+            self.buffer.add_transition(*self.rollout.pop())
+        #self.rollout.reset()
 
     def get_policy_config(self):
         return {

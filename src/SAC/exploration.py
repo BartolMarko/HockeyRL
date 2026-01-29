@@ -2,6 +2,7 @@ import numpy as np
 import torch as T
 import torch.nn as nn
 import torch.autograd
+import pink
 
 # Exploration Strategies for Continuous Action Spaces
 
@@ -350,3 +351,54 @@ class CuriousExplorer(ExplorerStrategy):
 
     def __str__(self):
         return f"{self.name} (beta={self.beta})"
+
+class PinkExplorer(ExplorerStrategy):
+    """
+    Pink Noise exploration strategy.
+    Ref: Pink Noise Is All You Need: Colored Noise Exploration in Deep Reinforcement Learning
+         Eberhard et al. ICML 2023
+    """
+    def __init__(self, n_actions: int, low=-1, high=1, name: str = "pink-explorer"):
+        super().__init__(n_actions, low, high, name)
+        self.noise_dist = pink.PinkNoiseDist(seq_len=250, action_dim=n_actions)
+
+    def choose_action(self, observation, agent=None, step=None, warmup=False):
+        assert agent is not None, "PinkExplorer requires an agent to provide policy actions."
+        state_tensor = T.from_numpy(observation).float().unsqueeze(0).to(agent.actor.device)
+        with T.no_grad():
+            mu, std = agent.actor(state_tensor)
+        action, _ = self.noise_dist.log_prob_from_params(mu, std.log())
+        return np.clip(action.cpu().detach().numpy()[0], self.low, self.high)
+
+    def choose_action_batch(self, observations, agent=None, step=None, warmup=False):
+        assert agent is not None, "PinkExplorer requires an agent to provide policy actions."
+        state_tensor = T.from_numpy(observations).float().to(agent.actor.device)
+        with T.no_grad():
+            mu, std = agent.actor(state_tensor)
+        action, _ = self.noise_dist.log_prob_from_params(mu, std.log())
+        return np.clip(action.cpu().detach().numpy(), self.low, self.high)
+
+    def reset(self):
+        self.noise_dist.reset()
+
+def get_explorer(sub_cfg, cfg, agent):
+    explorer_type = sub_cfg.type
+    if explorer_type == 'random':
+        return RandomExplorer(cfg.n_actions)
+    elif explorer_type == 'gaussian':
+        mu = sub_cfg.get('mu', 0)
+        std_dev = sub_cfg.get('std_dev', 0.8)
+        return GaussianExplorer(cfg.n_actions, mu=mu, sigma=std_dev)
+    elif explorer_type == 'ou':
+        theta = sub_cfg.get('theta', 0.15)
+        sigma = sub_cfg.get('sigma', 0.2)
+        dt = sub_cfg.get('dt', 1e-2)
+        return OrnsteinUhlenbeckExplorer(cfg.n_actions, theta=theta, sigma=sigma, dt=dt)
+    elif explorer_type == 'optimistic':
+        return OptimisticExplorer(agent, sub_cfg)
+    elif explorer_type == 'curious':
+        return CuriousExplorer(agent, sub_cfg)
+    elif explorer_type == 'pink':
+        return PinkExplorer(cfg.n_actions)
+    else:
+        raise ValueError(f"Unknown explorer type: {explorer_type}")

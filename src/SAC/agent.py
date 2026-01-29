@@ -4,7 +4,7 @@ import torch as T
 import torch.nn.functional as F
 import numpy as np
 from memory import get_memory_buffer
-from exploration import RandomExplorer, GaussianExplorer, OrnsteinUhlenbeckExplorer, CuriousExplorer, OptimisticExplorer
+from exploration import get_explorer
 from network import ActorNet, CriticNet
 import pickle
 
@@ -42,25 +42,7 @@ class Agent:
         self.target_update_freq = cfg.target_update_freq
 
         # exploration strategy
-        explorer_cfg = cfg.get('explorer', {'type': 'random'})
-        explorer_type = explorer_cfg.get('type', 'random')
-        if explorer_type == 'random':
-            self.explorer = RandomExplorer(cfg.n_actions)
-        elif explorer_type == 'gaussian':
-            mu = explorer_cfg.get('mu', 0)
-            std_dev = explorer_cfg.get('std_dev', 0.8)
-            self.explorer = GaussianExplorer(cfg.n_actions, mu=mu, sigma=std_dev)
-        elif explorer_type == 'ou':
-            theta = explorer_cfg.get('theta', 0.15)
-            sigma = explorer_cfg.get('sigma', 0.2)
-            dt = explorer_cfg.get('dt', 1e-2)
-            self.explorer = OrnsteinUhlenbeckExplorer(cfg.n_actions, theta=theta, sigma=sigma, dt=dt)
-        elif explorer_type == 'optimistic':
-            self.explorer = OptimisticExplorer(self, explorer_cfg)
-        elif explorer_type == 'curious':
-            self.explorer = CuriousExplorer(self, explorer_cfg)
-        else:
-            raise ValueError(f"Unknown explorer type: {explorer_type}")
+        self.explorer = get_explorer(cfg.explorer, cfg, self)
 
         if getattr(cfg, 'resume', False):
             if not self.use_most_recent_models():

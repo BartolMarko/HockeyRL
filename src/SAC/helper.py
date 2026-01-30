@@ -310,6 +310,8 @@ def read_commit_info(filename='git-commit-hash.txt'):
 
 def get_resume_episode_number(models_dir, prefix='episode_'):
     """Returns the latest episode number for resuming training."""
+    if not os.path.exists(models_dir):
+        return 0
     episode_dirs = [d for d in os.listdir(models_dir) if d.startswith(prefix)]
     if not episode_dirs:
         return 0
@@ -372,7 +374,12 @@ def check_failure(logger: Logger, agent: Agent) -> str:
     if failure_ckpt.exists():
         print(f"[INFO] Detected failure from previous run. Using failure ckpt")
         return failure_ckpt
-    latest_ckpt = get_latest_checkpoint(project_dir / 'models')
+    models_dir = project_dir / 'models'
+    if not models_dir.exists():
+        return ''
+    if len(os.listdir(models_dir)) == 0:
+        return ''
+    latest_ckpt = get_latest_checkpoint(models_dir)
     if not os.path.exists(latest_ckpt):
         print(f"[WARN] No checkpoint found to load on failure.")
         return ''

@@ -46,7 +46,7 @@ class LastCloneWinPoolingStrategy(PoolingStrategy):
             # but its okay to have two ig?
             self.first_agent = False
             return True
-        allow = (1.0 - agent_win_rate) >= self.win_rate_threshold
+        allow = agent_win_rate >= self.win_rate_threshold
         print(f"[SPLY] LastCloneWinPoolingStrategy: Agent win rate = {agent_win_rate},"
               f" Threshold = {self.win_rate_threshold} => Allow addition: {allow}")
         return allow

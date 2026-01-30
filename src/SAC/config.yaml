@@ -12,19 +12,19 @@ opponents:
 self_play:
   - name: 'SelfPlayMgr'
     priority: 0.7
-    max_pool_size: 2
+    max_pool_size: 20
     activation_type: 'botwin'
     activation_epsilon: 0.9
     pooling:
-      - type: 'all_clone_win'
-        win_rate_threshold: 0.85
+      - type: 'episode'
+        freq: 80
     sampler:
       name: 'pfsp'
       pfsp_p: 0.5
 num_envs: 16
 
 # rewards
-reward_transform: "v4"
+reward_transform: "v0"
 still_puck_penalty: 0.1
 draw_penalty: 3
 
@@ -74,7 +74,7 @@ algorithm: "sac"
 hidden_size: 512
 
 # Evaluation
-eval_freq: 200
+eval_freq: 241
 eval_episodes: 32
 
 # Model saving
@@ -84,7 +84,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-replay"
+exp_name: "sac-v0-pink-replay-episode"
 resume: False
 save_video: True
 log_gradients: True

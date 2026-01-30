@@ -24,10 +24,12 @@ self_play:
 num_envs: 16
 
 # rewards
-reward_transform: "v0"
+reward_transform: "v4"
+still_puck_penalty: 0.1
+draw_penalty: 3
 
 # Buffers
-buffer_type: "per"
+buffer_type: "replay"
 buffer_max_size: 1500000
 upside_down: True
 
@@ -82,7 +84,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-pink-per"
+exp_name: "sac-v4-pink-replay"
 resume: False
 save_video: True
 log_gradients: True

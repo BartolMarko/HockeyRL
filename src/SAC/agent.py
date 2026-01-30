@@ -240,7 +240,7 @@ class Agent:
             self.log_alpha = self.log_alpha.clone().detach().requires_grad_(True)
         if memory:
             memory_filename = os.path.join(folder_path, 'buffer')
-            if os.path.exists(memory_filename):
+            if os.path.exists(memory_filename + '.npz'):
                 self.memory.load(memory_filename)
             else:
                 print(f"[WARN] No memory buffer file found to load from at {memory_filename}.")

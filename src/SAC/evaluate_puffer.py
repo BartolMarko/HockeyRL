@@ -121,32 +121,79 @@ def puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 
         print(f"[EVAL] vs {opponent.name}: Wins: {overall_stats[opponent.name]['win']}, Losses: {overall_stats[opponent.name]['lose']}, Draws: {overall_stats[opponent.name]['draw']}.")
     return overall_stats
 
+def view_gameplay(env, agent, opponent, render: bool = True, save_folder: str|None = None, num_episodes: int = 5):
+    wins, lose, draw = 0, 0, 0
+    frames = []
+    render_mode = 'human' if render else 'rgb_array'
+    env = h_env.HockeyEnv()
+    for _ in range(num_episodes):
+        obs, _ = env.reset()
+        done = False
+        obs_opponent = env.obs_agent_two()
+        while not done:
+            if render or save_folder is not None:
+                frames.append(env.render(mode=render_mode))
+            if render:
+                time.sleep(0.03)
+            agent_action = agent.act(obs)
+            opponent_action = opponent.act(obs_opponent)
+            combined_action = np.hstack([agent_action, opponent_action])
+            combined_action = np.clip(combined_action, -1, 1).astype(np.float32)
+            obs, reward, done, truncated, info = env.step(combined_action)
+            obs_opponent = env.obs_agent_two()
+        winner = info.get('winner')
+        if winner == 1:
+            wins += 1
+        elif winner == -1:
+            lose += 1
+        elif winner == 0:
+            draw += 1
+    if save_folder is not None:
+        imageio.mimwrite(video_path, frames, fps=30, format='gif')
+    env.close()
+    return wins, lose, draw
+
+def save_gameplay_video(env, agent, opponent, video_path, num_episodes: int = 1):
+    return view_gameplay(env, agent, opponent, render=False, save_folder=video_path, num_episodes=num_episodes)
 
 def main(args):
-    # if len(args) < 1:
-    #     with open('config.yaml', 'r') as f:
-    #         cfg = OmegaConf.load(f)
-    #     experiment_name = cfg.exp_name
-    # else:
-    #     experiment_name = args[0]
-    experiment_name = 'v4-per-6_4-bot-pool'
+    left_agent = args[0]
+    right_agent = args[1]
+    # experiment_name = 'sac-v0-gaussian-replay-self-play-mirror'
+    # experiment_name = 'sac-v0-gaussian-replay-self-play-smaller-pool'
+
     env = h_env.HockeyEnv()
-    agent = helper.load_agent_from_config(experiment_name, env)
+    def get_agent_by_name(name):
+        if name.lower() == 'strongbot':
+            return h_env.BasicOpponent(weak=False)
+        elif name.lower() == 'weakbot':
+            return h_env.BasicOpponent(weak=True)
+        else:
+            return helper.load_agent_from_config(name, env)
+
+    agent = get_agent_by_name(left_agent)
+    opponent = get_agent_by_name(right_agent)
     env.close()
 
+    # view_gameplay(env, agent, opponent, render=False, save_folder='videos', num_episodes=10)
+    win, lose, draw = view_gameplay(env, agent, opponent, render=True, num_episodes=10)
+    print(f"L: {left_agent} wins {win}")
+    print(f"R: {right_agent} wins {lose}")
+    print(f"Draws = {draw}")
+    print(f"Total = {win + lose + draw}")
 
-    NUM_ENVS = 8
-    vec_env = pfw.create_vec_env(backend='serial', num_envs=NUM_ENVS)
-
-    opponent = pfw.VecBasicOpponent(NUM_ENVS, weak=True)
-
-    EP_PER_ENV = 5
-    EVAL_EPISODES = NUM_ENVS * EP_PER_ENV
-    print(f"Evaluation over {EVAL_EPISODES} episodes: ")
-
-    st_time = time.time()
-    metrics = evaluate(agent.cfg, agent, opponent, vec_env, episodes_per_env=EP_PER_ENV)
-    print(metrics)
+    # NUM_ENVS = 8
+    # vec_env = pfw.create_vec_env(backend='serial', num_envs=NUM_ENVS)
+    #
+    # opponent = pfw.VecBasicOpponent(NUM_ENVS, weak=True)
+    #
+    # EP_PER_ENV = 5
+    # EVAL_EPISODES = NUM_ENVS * EP_PER_ENV
+    # print(f"Evaluation over {EVAL_EPISODES} episodes: ")
+    #
+    # st_time = time.time()
+    # metrics = evaluate(agent.cfg, agent, opponent, vec_env, episodes_per_env=EP_PER_ENV)
+    # print(metrics)
 
 
 if __name__ == '__main__':

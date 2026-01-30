@@ -238,22 +238,34 @@ def set_dry_run_params(cfg):
     return cfg
 
 if __name__ == '__main__':
-    start_episode = 0
-    with open('config.yaml', 'r') as f:
-        cfg = OmegaConf.load(f)
-    cfg = set_dry_run_params(cfg)
-    env = h_env.HockeyEnv()
-    cfg = set_env_params(cfg, env)
-    agent = Agent(cfg)
-    results_dir = Path(__file__).resolve().parent / "results" / cfg.exp_name
-    logger = Logger(cfg, results_dir)
-    logger.log_git_info()
-    if cfg.log_gradients:
-        logger.add_model(agent)
-    if cfg.resume:
-        start_episode = get_resume_episode_number(results_dir / 'models')
-        print(f"Resume training from Episode {start_episode}.")
-    if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
-        vec_env = pfw.create_vec_env(backend='multiprocessing', num_envs=cfg.num_envs)
-        env = pfw.HockeyVecEnv(vec_env)
-    train_agent(cfg, agent, env, logger, start_episode=start_episode)
+    try:
+        start_episode = 0
+        with open('config.yaml', 'r') as f:
+            cfg = OmegaConf.load(f)
+        cfg = set_dry_run_params(cfg)
+        env = h_env.HockeyEnv()
+        cfg = set_env_params(cfg, env)
+        agent = Agent(cfg)
+        results_dir = Path(__file__).resolve().parent / "results" / cfg.exp_name
+        logger = Logger(cfg, results_dir)
+        logger.log_git_info()
+        if cfg.log_gradients:
+            logger.add_model(agent)
+        if cfg.resume:
+            start_episode = get_resume_episode_number(results_dir / 'models')
+            print(f"Resume training from Episode {start_episode}.")
+        if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
+            vec_env = pfw.create_vec_env(backend='multiprocessing', num_envs=cfg.num_envs)
+            env = pfw.HockeyVecEnv(vec_env)
+        on_failure_dir = h.check_failure(logger, agent)
+        if on_failure_dir != '':
+            h.load_checkpoint_on_failure(agent, on_failure_dir)
+        train_agent(cfg, agent, env, logger, start_episode=start_episode)
+    except Exception as e:
+        print(f"An error occurred during training: {e}")
+        h.save_modules_on_failure(agent, results_dir)
+        raise e
+    except KeyboardInterrupt:
+        print("Training interrupted by user. Saving models...")
+        h.save_modules_on_failure(agent, results_dir)
+        print("Models saved. Exiting...")

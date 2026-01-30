@@ -324,7 +324,7 @@ class VecReplayBuffer(MemoryBuffer):
 
     def save(self, filename):
         np.savez_compressed(
-            filename,
+            filename if filename.endswith('.npz') else filename + '.npz',
             state_memory=self.state_memory,
             new_state_memory=self.new_state_memory,
             action_memory=self.action_memory,
@@ -335,7 +335,9 @@ class VecReplayBuffer(MemoryBuffer):
         )
 
     def load(self, filename):
-        data = np.load(filename)
+        data = np.load(
+            filename if filename.endswith('.npz') else filename + '.npz'
+        )
         self.state_memory = data['state_memory']
         self.new_state_memory = data['new_state_memory']
         self.action_memory = data['action_memory']

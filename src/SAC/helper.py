@@ -353,6 +353,61 @@ def load_agent_Nth_episode(experiment_name: str, n: int, env=None, resume=False,
     agent.load_models(nth_checkpoint_dir)
     return agent
 
+def check_failure(logger: Logger, agent: Agent) -> str:
+    """Checks if the previous run of the expirement failed."""
+    project_dir = logger.get_project_dir()
+    if not project_dir.exists():
+        return ''
+    # check if the config file exists
+    config_path = project_dir / 'config.yaml'
+    if not config_path.exists():
+        return ''
+    # check if the config file content matches the current agent config
+    saved_cfg = OmegaConf.load(config_path)
+    if saved_cfg != agent.cfg:
+        print(f"[WARN] Config file mismatch with an older experiment. Assuming no failure.")
+        return ''
+    # check if failure folder exists in models
+    failure_ckpt = project_dir / 'failure'
+    if failure_ckpt.exists():
+        print(f"[INFO] Detected failure from previous run. Using failure ckpt")
+        return failure_ckpt
+    latest_ckpt = get_latest_checkpoint(project_dir / 'models')
+    if not os.path.exists(latest_ckpt):
+        print(f"[WARN] No checkpoint found to load on failure.")
+        return ''
+    return latest_ckpt
+
+def load_checkpoint_on_failure(agent: Agent, ckpt_dir: str):
+    """Loads the latest checkpoint if a failure is detected."""
+    if not os.path.exists(ckpt_dir):
+        print(f"[WARN] No checkpoint found to load on failure.")
+        return
+    print(f"[INFO] Loading latest checkpoint from {ckpt_dir} due to failure.")
+    agent.load_models(ckpt_dir, memory=True)
+    # move the failure folder to avoid repeated loading
+    failure_path = Path(ckpt_dir)
+    new_path = failure_path.parent / f"recovered_{failure_path.name}"
+    if new_path.exists():
+        # remove existing recovered folder
+        if new_path.is_dir():
+            for item in new_path.iterdir():
+                if item.is_dir():
+                    os.rmdir(item)
+                else:
+                    os.remove(item)
+            os.rmdir(new_path)
+        else:
+            os.remove(new_path)
+    failure_path.rename(new_path)
+
+def save_modules_on_failure(agent: Agent, save_dir: str):
+    """Saves agent modules on failure."""
+    save_path = Path(save_dir) / "failure"
+    save_path.mkdir(parents=True, exist_ok=True)
+    agent.save_models(save_path, memory=True)
+    print(f"[INFO] Saved agent modules to {save_path} due to failure.")
+
 if __name__ == '__main__':
     # test heatmap
     env = h_env.HockeyEnv()

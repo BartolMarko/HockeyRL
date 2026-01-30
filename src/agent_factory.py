@@ -13,10 +13,9 @@ def create_td3_agent(name: str, weights_path: str, config_path: str) -> TD3:
     """Creates a TD3 agent for self-play evaluation."""
     env = HockeyEnv()
 
-    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
-    td3_cfg = Config(config_path)["td3"]
-    td3_cfg["observation_space"] = env.observation_space
-    td3_cfg["action_space"] = action_space
+    td3_cfg = Config(config_path)
+    td3_cfg = td3_cfg.get('td3', td3_cfg)
+    TD3.enhance_cfg(td3_cfg, env)
 
     td3_agent = TD3(td3_cfg)
     td3_agent.restore_state(torch.load(weights_path))

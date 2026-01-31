@@ -35,7 +35,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', action='store', type=str,
-                        default='config.yaml', help='Config file')
+                        default='src/TD3/config.yaml', help='Config file')
 
     args= parser.parse_args()
     cfg = Config(args.config)
@@ -54,16 +54,20 @@ def main():
 
     set_seed(t_cfg.get('seed'))
 
+    td3 = TD3(cfg['td3'])
 
     noise_scheduler = SchedulerFactory.get_scheduler(t_cfg['noise_scheduler']) 
 
     noise_sampler = NosieFactory.get_noise(t_cfg['action_noise'], action_dim=action_space.shape[0])
 
-    opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=noise_scheduler.reset)
+    def on_phase_change():
+        td3.reset_priorities()
+        noise_sampler.reset()
+
+    opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=on_phase_change)
 
     env_scheduler = EnviornmentSchedulerFactory.get_environment_scheduler(t_cfg)
 
-    td3 = TD3(cfg['td3'])
 
     training_monitor = TrainingMonitor(
         run_name=t_cfg['run_name'],

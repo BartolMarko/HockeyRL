@@ -120,16 +120,19 @@ class PrioritizedReplayBuffer(ReplayBuffer):
 
 
 class PERNumpy:
-    def __init__(self, obs_dim, act_dim, size, alpha, beta, max_size = int(1e6)):
-        self.obs = np.zeros((max_size, obs_dim), dtype=np.float32)
-        self.act = np.zeros((max_size, act_dim), dtype=np.float32)
-        self.obs_new = np.zeros((max_size, obs_dim), dtype=np.float32)
-        self.rew = np.zeros(max_size, dtype=np.float32)
-        self.done = np.zeros(max_size, dtype=np.float32)
-        self.priorities = np.zeros(max_size, dtype=np.float32)
+    def __init__(self, obs_dim, act_dim, size, alpha, beta, max_beta_step = 300_000):
+        self.obs = np.zeros((size, obs_dim), dtype=np.float32)
+        self.act = np.zeros((size, act_dim), dtype=np.float32)
+        self.obs_new = np.zeros((size, obs_dim), dtype=np.float32)
+        self.rew = np.zeros(size, dtype=np.float32)
+        self.done = np.zeros(size, dtype=np.float32)
+        self.priorities = np.zeros(size, dtype=np.float32)
         self.alpha = alpha
-        self.beta  = beta
-        self.idx, self.size, self.max_size = 0, 0, max_size
+        self.beta = beta
+        self.beta_start  = beta
+        self.idx, self.size, self.max_size = 0, 0, size
+        self.max_beta_step = max_beta_step
+        self.beta_step = 0
         self.max_priority = 1.0
 
     def add_transition(self, ob, act, rew, ob_new, done):
@@ -164,6 +167,9 @@ class PERNumpy:
         rew = self.rew[indices]
         obs_new = self.obs_new[indices]
         done = self.done[indices]
+
+        self.beta = min(1.0, self.beta_start + self.beta_step * (1.0 - self.beta_start) / self.max_beta_step)
+        self.beta_step += 1
         
         return obs, act, rew, obs_new, done, weights, indices
     
@@ -178,8 +184,13 @@ class PERNumpy:
     def update_priorities(self, indices, priorities):
         self.priorities[indices] = priorities
         self.max_priority = max(self.max_priority, priorities.max().item())
-    
 
+    def reset_priorities(self):
+        self.priorities[:self.size] = 1.0
+        self.max_priority = 1.0
+        self.beta_step = 0
+        self.beta = self.beta_start
+    
 
 class NStepRollOut:
     def __init__(self, max_steps, gamma):

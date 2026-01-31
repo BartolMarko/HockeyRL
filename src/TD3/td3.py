@@ -178,7 +178,10 @@ class TD3(NamedAgent):
         if self.pr_replay:
             # td_errs_npy = td_errors.detach().cpu().numpy()
             # new_pr = np.abs(td_errs_npy) + self._config['pr_epsilon']
-            new_pr = td_errors.detach().cpu().numpy() + self._config['pr_epsilon']
+            # new_pr = td_errors.detach().cpu().numpy() + self._config['pr_epsilon']
+            new_pr = np.clip(td_errors.detach().cpu().numpy() + self._config['pr_epsilon'],
+                             self._config['pr_epsilon'],
+                             10.0)
             inds = data[-1]
             self.buffer.update_priorities(inds, new_pr)
 
@@ -225,6 +228,10 @@ class TD3(NamedAgent):
         save_dir.mkdir(parents=True, exist_ok=True)
         torch.save(self.state(), save_dir / MODEL_FILE)
         Config.save_as_yaml(self._config, str(save_dir / CONFIG_FILE))
+
+    def reset_priorities(self):
+        if self.pr_replay:
+            self.buffer.reset_priorities()
 
     def on_episode_end(self):
         while self.rollout.can_pop():

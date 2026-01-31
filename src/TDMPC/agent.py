@@ -32,8 +32,6 @@ class TDMPCAgent(NamedAgent):
         self.t0 = True
 
     def get_step(self, obs: np.ndarray) -> np.ndarray:
-        # TODO: Implement action repeat
-        # TODO: Save step to config and use it here??
         action = (
             self.tdmpc.plan(obs, eval_mode=self.eval_mode, step=self.step, t0=self.t0)
             .cpu()

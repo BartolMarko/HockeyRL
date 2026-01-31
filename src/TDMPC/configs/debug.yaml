@@ -1,4 +1,4 @@
-run_name: test_action_repeat
+run_name: debug_tdmpc
 
 # environment
 env_name: SparseRewardHockeyEnv
@@ -58,7 +58,7 @@ save_model_freq: 1500
 device: cuda
 
 # Evaluation
-eval_episodes_per_opponent: 50
+eval_episodes_per_opponent: 4
 final_eval_episodes_per_opponent: 50
 video_episodes_per_outcome: 30
 save_heatmaps: True

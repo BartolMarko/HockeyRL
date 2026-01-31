@@ -168,10 +168,16 @@ class Heatmap:
         suffix: str = "",
     ) -> None:
         """Save heatmaps to wandb."""
-        fake_suffix = "temp"
-        self.save(".", title=title, suffix=fake_suffix)
-        heatmap_image_path = f"heatmaps{fake_suffix}.png"
-        wandb_run.log({f"heatmaps{suffix}": wandb.Image(heatmap_image_path)}, step=step)
+        # TODO: Possible bug when saving heatmaps to wandb?
+        try:
+            fake_suffix = "temp"
+            self.save(wandb_run.dir, title=title, suffix=fake_suffix)
+            heatmap_image_path = Path(wandb_run.dir) / f"heatmaps{fake_suffix}.png"
+            wandb_run.log(
+                {f"heatmaps{suffix}": wandb.Image(heatmap_image_path)}, step=step
+            )
+        except:  # noqa: E722
+            print(f"Failed to save heatmaps {title} to wandb.")
 
     def save(self, path: str | Path, title: str, suffix: str = "") -> None:
         """
@@ -247,12 +253,15 @@ class Evaluator:
         agent: NamedAgent,
         opponent: NamedAgent,
         render_mode: Optional[str] = None,
+        every_n_steps: int = 1,
     ) -> tuple[Episode, Optional[np.ndarray]]:
         """
         Run a single episode between the agent and opponent in the given environment.
         Returns the episode object and optionally the video frames if render_mode is 'rgb_array'.
         If render_mode is 'human', the environment will be rendered to the screen.
         If render_mode is neither, no rendering is performed and video=None is returned.
+        When every_n_steps > 1, steps are saved in episode only every_n_steps steps.
+        (used for action repeat)
         """
         obs, _ = env.reset()
         obs_opponent = env.obs_agent_two()
@@ -268,15 +277,20 @@ class Evaluator:
             env.render(mode=render_mode)
 
         while not episode.done:
-            action = agent.get_step(obs)
-            opponent_action = opponent.get_step(obs_opponent)
-            obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
-            obs_opponent = env.obs_agent_two()
+            for i in range(every_n_steps):
+                action = agent.get_step(obs)
+                opponent_action = opponent.get_step(obs_opponent)
+                obs, reward, done, _, info = env.step(
+                    np.hstack([action, opponent_action])
+                )
+                obs_opponent = env.obs_agent_two()
 
-            if render_mode == "rgb_array":
-                episode_video.append(env.render(mode=render_mode))
-            elif render_mode == "human":
-                env.render(mode=render_mode)
+                if render_mode == "rgb_array":
+                    episode_video.append(env.render(mode=render_mode))
+                elif render_mode == "human":
+                    env.render(mode=render_mode)
+                if done:
+                    break
 
             episode.add(
                 obs=obs,
@@ -551,8 +565,8 @@ if __name__ == "__main__":
     )
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
-        agent=td3_improved,
-        opponents=[sac_last_year_agent],
+        agent=tdmpc_agent,
+        opponents=[td3_improved],
         num_episodes=30,
         render_mode="human",
         save_path=None,

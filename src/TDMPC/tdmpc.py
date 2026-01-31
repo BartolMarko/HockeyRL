@@ -94,7 +94,6 @@ class TOLD(nn.Module):
         Q_raw_1, Q_raw_2 = self.Q_raw(z, a)
         Q_1 = h.two_hot_inv(Q_raw_1, self.cfg)
         Q_2 = h.two_hot_inv(Q_raw_2, self.cfg)
-        # TODO: check if this is correct, does this min across last dim?
         return torch.min(Q_1, Q_2)
 
 
@@ -106,12 +105,16 @@ class TDMPC:
         if load_dir is not None:
             self.load_config(load_dir)
         self.device = torch.device("cuda")
-        # TODO: move to config
         self.std = h.linear_schedule(self.cfg.std_schedule, 0)
         self.model = TOLD(self.cfg).cuda()
         self.model_target = deepcopy(self.model)
         self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
         self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
+
+        self.action_repeat = cfg.get("action_repeat", 1)
+        self.previous_action = None
+        self.same_action_counter = 0
+        # For action repeat
 
         self.model.eval()
         self.model_target.eval()
@@ -181,10 +184,17 @@ class TDMPC:
 
     @torch.no_grad()
     def plan(self, obs: np.ndarray, eval_mode=False, step=None, t0=True):
+        if not t0 and self.same_action_counter < self.action_repeat:
+            self.same_action_counter += 1
+            return self.previous_action
+
         if step < self.cfg.seed_steps and not eval_mode:
-            return torch.empty(
+            self.same_action_counter = 1
+            self.previous_action = torch.empty(
                 self.cfg.action_dim, dtype=torch.float32, device=self.device
             ).uniform_(-1, 1)
+            return self.previous_action
+
         if t0:
             self._prev_mean = torch.zeros(
                 self.cfg.horizon, self.cfg.action_dim, device=self.device
@@ -195,6 +205,9 @@ class TDMPC:
         planned_action, std = self._plan(obs)
         if not eval_mode:
             planned_action += std * torch.randn(self.cfg.action_dim, device=std.device)
+
+        self.same_action_counter = 1
+        self.previous_action = planned_action
         return planned_action
 
     @torch.no_grad()

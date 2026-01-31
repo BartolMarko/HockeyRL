@@ -21,7 +21,11 @@ class OpponentPool:
         raise NotImplementedError("Should be implemented in child classes!")
 
     def get_opponents(self) -> list[NamedAgent]:
-        raise NotImplementedError("Should be implemented in child classes!")
+        return NotImplementedError("Should be implemented in child classes!")
+
+    def get_opponent_names(self) -> list[str]:
+        """Return the names of all opponents in the pool."""
+        return [opponent.name for opponent in self.get_opponents()]
 
 
 class OpponentPoolThompsonSampling(OpponentPool):

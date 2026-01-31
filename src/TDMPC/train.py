@@ -18,7 +18,7 @@ from src.TDMPC.agent import TDMPCAgent
 torch.backends.cudnn.benchmark = True
 
 # TODO: MAJOR: add copy of TDMPC1 code for backward compatibility
-CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "debug.yaml"
 
 
 def set_seed(seed):
@@ -85,7 +85,6 @@ def train(cfg):
         for opp_name, opp_cfg in evaluation_opponent_configs.items()
     ]
     # Different copies of opponents for evaluation and training
-    # TODO: Use different copies to parallelize evaluation and training?
 
     opponent_pool = opponent_pool_factory(
         cfg.get("opponent_pool", "ThompsonSampling"),
@@ -103,10 +102,23 @@ def train(cfg):
     )
 
     # Run training
+    action_repeat = cfg.get("action_repeat", 1)
+    selfplay = cfg.get("selfplay", False)
+    selfplay_start_step = cfg.get("selfplay_start_step", 0)
+    evaluate_against_self = cfg.get("evaluate_against_self", False)
     mirror_episodes = cfg.get("mirror_episodes", False)
+    soft_winrate_threshold = cfg.get("add_self_winrate_soft_threshold", 200.0)
+    episodes_per_loop_step = cfg.get("episodes_per_loop_step", 1)
+    # If no threshold given, only add self at fixed intervals
+
     episode_idx, step = 0, 0
     last_update_step, last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0, 0
     while step < cfg.train_steps:
+        current_winrate_against_pool = (
+            training_monitor.get_lowest_winrate_against_opponents(
+                opponent_pool.get_opponent_names()
+            )
+        )
         while (
             len(training_opponents_configs)
             and step >= training_opponents_configs[0][1]["train_start_step"]
@@ -121,20 +133,23 @@ def train(cfg):
             )
 
         if (
-            cfg.get("selfplay", False)
-            and step >= cfg.selfplay_start_step
-            and (step - last_selfplay_step) >= cfg.selfplay_freq
+            selfplay
+            and step >= selfplay_start_step
+            and (
+                (step - last_selfplay_step) >= cfg.selfplay_freq
+                or current_winrate_against_pool >= soft_winrate_threshold
+            )
         ):
             opponent_pool.add_opponent(
                 get_copy_of_self(tdmpc, step, cfg),
                 removable=cfg.get("self_removable", True),
             )
-            evaluation_opponents.append(get_copy_of_self(tdmpc, step, cfg))
+            if evaluate_against_self:
+                evaluation_opponents.append(get_copy_of_self(tdmpc, step, cfg))
             last_selfplay_step = step
             print(f"Added self-play agent to opponent pool at step {step}.")
 
-        episode_start_time = time.time()
-
+        train_episodes_playing_start_time = time.time()
         agent = TDMPCAgent(
             load_dir=None,
             tdmpc=tdmpc,
@@ -143,56 +158,75 @@ def train(cfg):
             name_suffix=f"_step_{step}",
         )
         opponent = opponent_pool.sample_opponent()
-        episode, _ = evaluator.run_episode(
-            env,
-            agent,
-            opponent,
-            render_mode=None,
-        )
-        buffer += episode
 
-        opponent_pool.add_episode_outcome(opponent, episode.outcome)
-        training_monitor.log_training_episode(opponent.name, episode, step, episode_idx)
-        step += len(episode)
-        episode_idx += 1
-
-        if mirror_episodes:
-            episode.mirror()
+        steps_played = 0
+        for _ in range(episodes_per_loop_step):
+            episode, _ = evaluator.run_episode(
+                env,
+                agent,
+                opponent,
+                render_mode=None,
+                every_n_steps=action_repeat,
+            )
             buffer += episode
-            step += len(episode)
-            episode_idx += 1
-            # TODO: log mirrored episode?
-            # TODO: add mirrored episode outcome to opponent pool?
-            # So far I don't do it, it would lead to doubling statistics
-            # This way, stuff is logged only once every 2 episodes
 
-        env_step = int(step * cfg.action_repeat)
-        # TODO: WATCH OUT FOR ENV STEP WHEN USING ACTION REPEAT
+            opponent_pool.add_episode_outcome(opponent, episode.outcome)
+            training_monitor.log_training_episode(
+                opponent.name, episode, step, episode_idx
+            )
+            step += len(episode)
+            steps_played += len(episode)
+            episode_idx += 1
+
+            print(
+                f"Step {step}.",
+                f"Episode {episode_idx}.",
+                f"Opponent: {opponent.name}.",
+                f"Episode outcome: {episode.outcome.name}.",
+                sep=" ",
+            )
+
+            if mirror_episodes:
+                episode.mirror()
+                buffer += episode
+                step += len(episode)
+                episode_idx += 1
+
+        train_episodes_playing_duration = (
+            time.time() - train_episodes_playing_start_time
+        )
 
         # Update model
-        # TODO: Average train metrics, not overwrite
+        update_start_time = time.time()
         train_metrics = {}
+        num_updates = 0
         if step >= cfg.seed_steps:
             num_updates = step - last_update_step
             last_update_step = step
             for i in range(num_updates):
-                train_metrics.update(tdmpc.update(buffer, step + i))
+                train_metrics.update(tdmpc.update(buffer, last_update_step + i))
+        update_duration = time.time() - update_start_time
 
         # Log training metrics
+        time_metrics = {
+            "Time/train_episodes_playing": train_episodes_playing_duration,
+            "Time/train_episodes_per_step": train_episodes_playing_duration
+            / max(steps_played, 1),
+            "Time/model_update": update_duration,
+            "Time/model_updates_per_episode_step": update_duration
+            / max(num_updates, 1),
+        }
         train_metrics = {f"Losses/{k}": v for k, v in train_metrics.items()}
-        training_monitor.run.log(train_metrics, step=step)
+        training_monitor.run.log({**train_metrics, **time_metrics}, step=step)
 
-        print(
-            f"Step {step}.",
-            f"Episode {episode_idx} finished in {time.time() - episode_start_time:.2f}s.",
-            f"Opponent: {opponent.name}.",
-            f"Episode outcome: {episode.outcome.name}.",
-            sep=" ",
-        )
+        if cfg.save_model and (
+            (step - last_save_step >= cfg.save_model_freq) or step >= cfg.train_steps
+        ):
+            tdmpc.save_to_wandb(training_monitor.run, step=step)
+            last_save_step = step
 
         # Evaluate agent periodically
-        # TODO: Measure eval time in Evaluator and log it
-        if env_step - last_eval_step >= cfg.eval_freq or step >= cfg.train_steps:
+        if step - last_eval_step >= cfg.eval_freq or step >= cfg.train_steps:
             eval_start_time = time.time()
             final_evaluation = step >= cfg.train_steps
             save_episodes_per_outcome = (
@@ -208,20 +242,13 @@ def train(cfg):
                 render_mode="rgb_array" if final_evaluation else None,
                 save_heatmaps=final_evaluation,
                 wandb_run=training_monitor.run,
-                train_step=env_step,
+                train_step=step,
                 save_episodes_per_outcome=save_episodes_per_outcome,
             )
-            last_eval_step = env_step
+            last_eval_step = step
             print(
-                f"Evaluation at step {step} (env step {env_step}) completed in {time.time() - eval_start_time:.2f}s."
+                f"Evaluation at step {step} completed in {time.time() - eval_start_time:.2f}s."
             )
-
-        if cfg.save_model and (
-            (env_step - last_save_step >= cfg.save_model_freq)
-            or step >= cfg.train_steps
-        ):
-            tdmpc.save_to_wandb(training_monitor.run, step=step)
-            last_save_step = env_step
 
     training_monitor.finish_training()
     print("Training completed successfully")

@@ -1,9 +1,7 @@
 import torch
-import numpy as np
-from gymnasium import spaces
 from hockey.hockey_env import HockeyEnv
 
-from src.named_agent import NamedAgent, WeakBot, StrongBot
+from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
 from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
@@ -14,7 +12,7 @@ def create_td3_agent(name: str, weights_path: str, config_path: str) -> TD3:
     env = HockeyEnv()
 
     td3_cfg = Config(config_path)
-    td3_cfg = td3_cfg.get('td3', td3_cfg)
+    td3_cfg = td3_cfg.get("td3", td3_cfg)
     TD3.enhance_cfg(td3_cfg, env)
 
     td3_agent = TD3(td3_cfg)
@@ -43,6 +41,8 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
             )
             tdmpc_agent.name = agent_name
             return tdmpc_agent
+        case "SACLastYear":
+            return SACLastYearAgent(env=HockeyEnv())
         case "WeakBot":
             return WeakBot()
         case "StrongBot":

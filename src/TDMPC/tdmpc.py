@@ -111,7 +111,7 @@ class TDMPC:
         self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
         self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
 
-        self.action_repeat = cfg.get("action_repeat", 1)
+        self.action_repeat = self.cfg.get("action_repeat", 1)
         self.previous_action = None
         self.same_action_counter = 0
         # For action repeat

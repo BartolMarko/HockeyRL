@@ -29,7 +29,7 @@ still_puck_penalty: 0.1
 draw_penalty: 3
 
 # Buffers
-buffer_type: "replay"
+buffer_type: "per"
 buffer_max_size: 1500000
 upside_down: True
 
@@ -84,7 +84,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-pink-replay-episode"
+exp_name: "sac-v0-pink-per"
 resume: False
 save_video: True
 log_gradients: True

@@ -508,6 +508,12 @@ class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
     def load(self, filename):
         super().load(filename)
 
+class VecHindsightExperienceReplayBuffer(MemoryBuffer):
+    """
+    A vectorized HER buffer for parallel environments.
+    """
+    def __init__(self, num_envs, max_size, input_shape, n_actions, her_k):
+        raise NotImplementedError("HER buffer not implemented yet.")
 
 def get_memory_buffer(cfg):
     num_envs = cfg.get('num_envs', 1)

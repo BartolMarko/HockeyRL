@@ -54,7 +54,7 @@ num_bins: 51
 seed: 1
 eval_freq: 500
 save_model: True
-save_model_freq: 50000
+save_model_freq: 1500
 device: cuda
 
 # Evaluation

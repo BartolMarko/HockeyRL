@@ -1,12 +1,12 @@
-run_name: tdmpc2_thompson_selfplay_100k_start_100k_freq_window_100
+run_name: tdmpc2_action_repeat2_100k_soft_selfplay_3M_steps_mirror
 
 # environment
 env_name: SparseRewardHockeyEnv
-action_repeat: 1
+action_repeat: 2
 discount: 0.99
 max_episode_length: 251
-train_steps: 2000000
-mirror_episodes: False
+train_steps: 3000000
+mirror_episodes: True
 
 # planning
 iterations: 6
@@ -52,7 +52,6 @@ num_bins: 51
 
 # misc
 seed: 1
-exp_name: default
 eval_freq: 20000
 save_model: True
 save_model_freq: 50000
@@ -70,21 +69,29 @@ opponent_pool_window_size: 100
 opponent_pool_draw_weight: 0.5
 max_num_opponents_in_pool: 10
 
+episodes_per_loop_step: 2
+# To ensure one time left player has first possession and one time right has first possession
+
 # Opponents:
 opponents:
-  TD3_119k_faker:
+  TD3_faker:
     type: TD3
-    weights_path: ./models/td3_benchmarks/td3_HockeyEnv_119.pt
-    config_path: ./models/td3_benchmarks/td3_config.yaml
+    weights_path: ./models/td3_benchmarks/td3_faker/model.pt
+    config_path: ./models/td3_benchmarks/td3_faker/config.yaml
     evaluate_against: True
-    train_start_step: 1250000
+    train_start_step: 2000000
     removable: False
-  TD3_118k_bank_shot:
+  TD3_improved:
     type: TD3
-    weights_path: ./models/td3_benchmarks/td3_HockeyEnv_118.pth
-    config_path: ./models/td3_benchmarks/td3_config.yaml
+    weights_path: ./models/td3_benchmarks/td3_improved/model.pt
+    config_path: ./models/td3_benchmarks/td3_improved/config.yaml
     evaluate_against: True
-    train_start_step: 1250000
+    train_start_step: 2000000
+    removable: False
+  SAC_last_year:
+    type: SACLastYear
+    train_start_step: 2000000
+    evaluate_against: True
     removable: False
   StrongBot:
     type: StrongBot
@@ -102,3 +109,7 @@ selfplay: true
 self_removable: True
 selfplay_start_step: 100000
 selfplay_freq: 100000
+add_self_winrate_soft_threshold: 0.8 
+# Add self if winrate against current opponents in pool is above this threshold
+# or if selfplay_freq steps have passed since last addition 
+evaluate_against_self: False

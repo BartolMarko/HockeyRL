@@ -4,20 +4,17 @@ import json
 import torch
 import wandb
 import matplotlib.pyplot as plt
-from omegaconf import OmegaConf
 from typing import Optional
 from hockey import hockey_env as h_env
 from pathlib import Path
-from gymnasium import spaces
 
 from src.named_agent import StrongBot, WeakBot
 from src.episode import Episode, Outcome, Possession
 from src.named_agent import NamedAgent, SACLastYearAgent
+from src.agent_factory import create_td3_agent
 from src.environments import SparseRewardHockeyEnv
 
 from src.TDMPC.agent import TDMPCAgent
-from src.TD3.td3 import TD3
-from src.TD3.config_reader import Config
 
 
 class VideoBuilder:
@@ -512,7 +509,12 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    TRAINING_PATH = Path(__file__).resolve().parent.parent / "models" / "tdmpc2_mirror"
+    MODELS_PATH = Path(__file__).resolve().parent.parent / "models"
+    TD3_FAKER_PATH = MODELS_PATH / "td3_benchmarks" / "td3_faker"
+    TD3_BANK_SHOT_PATH = MODELS_PATH / "td3_benchmarks" / "td3_bank_shot"
+    TD3_IMPROVED_PATH = MODELS_PATH / "td3_benchmarks" / "td3_improved"
+
+    TRAINING_PATH = MODELS_PATH / "tdmpc2_mirror"
     CHECKPOINT_FINAL = TRAINING_PATH / "final"
     CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
     CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
@@ -520,30 +522,7 @@ if __name__ == "__main__":
     CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
     CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
     CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
-    # CHECKPOINT_250K_PATH = TRAINING_PATH / "checkpoint_250k"
-    OLD_MODEL_PATH = (
-        Path(__file__).resolve().parent.parent
-        / "models"
-        / "tdmpc_baseline_weak_and_strong_bots_only"
-    )
-    # OPPONENT_PATH = MODEL_PATH / "opponent_350k"
-    TD3_WEIGHTS_PATH = (
-        Path(__file__).resolve().parent.parent
-        / "models"
-        / "td3_HockeyEnv_72000-s699.pth"
-    )
-    TD3_WEIGHTS_PATH_118 = (
-        Path(__file__).resolve().parent.parent
-        / "models"
-        / "td3_benchmarks"
-        / "td3_HockeyEnv_118.pth"
-    )
-    TD3_WEIGHTS_PATH_119 = (
-        Path(__file__).resolve().parent.parent
-        / "models"
-        / "td3_benchmarks"
-        / "td3_HockeyEnv_119.pt"
-    )
+
     env = SparseRewardHockeyEnv()
     tdmpc_agent = TDMPCAgent(CHECKPOINT_FINAL, tdmpc=None, step=2_000_000)
     checkpoint_400k = TDMPCAgent(
@@ -556,26 +535,25 @@ if __name__ == "__main__":
     weak_bot = WeakBot()
     evaluator = Evaluator(device="cuda")
 
-    td3_config_path = Path(__file__).resolve().parent / "TD3" / "config.yaml"
-    td3_cfg = Config(td3_config_path)["td3"]
-
-    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
-    td3_cfg["observation_space"] = env.observation_space
-    td3_cfg["action_space"] = action_space
-
-    td3_bank_shot = TD3(td3_cfg)
-    td3_bank_shot.restore_state(torch.load(TD3_WEIGHTS_PATH_118))
-    td3_faker = TD3(td3_cfg)
-    td3_faker.restore_state(torch.load(TD3_WEIGHTS_PATH_119))
+    td3_faker = create_td3_agent(
+        name="TD3_Faker",
+        weights_path=TD3_FAKER_PATH / "model.pt",
+        config_path=TD3_FAKER_PATH / "config.yaml",
+    )
+    td3_improved = create_td3_agent(
+        name="TD3_Improved",
+        weights_path=TD3_IMPROVED_PATH / "model.pt",
+        config_path=TD3_IMPROVED_PATH / "config.yaml",
+    )
 
     sac_last_year_agent = SACLastYearAgent(
         env=env,
     )
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
-        agent=td3_faker,
+        agent=td3_improved,
         opponents=[sac_last_year_agent],
-        num_episodes=20,
+        num_episodes=30,
         render_mode="human",
         save_path=None,
         wandb_run=None,

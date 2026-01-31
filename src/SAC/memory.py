@@ -362,14 +362,8 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
         self.beta_frames = beta_frames
         self.frame = 1 #for beta calculation
 
-        # sum-tree for priorities
-        self.tree_capacity = 1
-        while self.tree_capacity < capacity:
-            self.tree_capacity *= 2
-
-        self.sum_tree = np.zeros(2 * self.tree_capacity - 1, dtype=np.float32)
-        self.min_tree = np.full(2 * self.tree_capacity - 1, float('inf'), dtype=np.float32)
         self.max_priority = 1.0
+        self.priorities = np.zeros((capacity,), dtype=np.float32)
 
     def beta_by_frame(self, frame_idx):
         """
@@ -397,45 +391,17 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
 
     def update_priorities(self, batch_indices, batch_priorities):
         self.max_priority = max(self.max_priority, np.max(batch_priorities))
-        tree_indices = batch_indices + self.tree_capacity - 1
-        batch_priorities = (batch_priorities + 1e-6) ** self.alpha
-
-        for i, tree_idx in enumerate(tree_indices):
-            self.sum_tree[tree_idx] = batch_priorities[i]
-            self.min_tree[tree_idx] = batch_priorities[i]
-            idx = tree_idx
-            while idx != 0:
-                idx = (idx - 1) // 2
-                left = 2 * idx + 1
-                right = left + 1
-                self.sum_tree[idx] = self.sum_tree[left] + self.sum_tree[right]
-                self.min_tree[idx] = min(self.min_tree[left], self.min_tree[right])
+        priorities = ( np.abs(batch_priorities) + 1e-6 ) ** self.alpha
+        self.priorities[batch_indices] = priorities
 
     def sample_buffer(self, batch_size):
-        total_priority = self.sum_tree[0]
-        segment = total_priority / batch_size
+        if len(self) == 0:
+            raise ValueError("Cannot sample from an empty buffer")
+        prios = self.priorities[:len(self)]
+        total_priority = prios.sum()
+        sampling_probabilities = prios / total_priority
 
-        targets = np.random.uniform(
-                np.arange(batch_size) * segment,
-                np.arange(1, batch_size + 1) * segment
-        )
-        tree_indices = np.zeros(batch_size, dtype=np.int64)
-        current_indices = np.zeros(batch_size, dtype=np.int64)
-
-        for _ in range(int(np.log2(self.tree_capacity))):
-            left = 2 * current_indices + 1
-            right = left + 1
-            left_values = self.sum_tree[left]
-            mask = targets > left_values
-            targets[mask] -= left_values[mask]
-            current_indices = np.where(mask, right, left)
-
-        tree_indices = current_indices
-
-        batch_indices = tree_indices - self.tree_capacity + 1
-        # Clips ghost indices to the max valid index, hopefully this doesn't
-        # bias too much
-        batch_indices = np.clip(batch_indices, 0, len(self) - 1)
+        batch_indices = np.random.choice(len(self), batch_size, p=sampling_probabilities)
 
         states = self.state_memory[batch_indices]
         states_ = self.new_state_memory[batch_indices]
@@ -445,12 +411,11 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
 
         # P(i) = p_i / total_priority
         # w = (N * P) ^ -beta; N = len(buffer)
-        priorities = self.sum_tree[tree_indices]
+        priorities = self.priorities[batch_indices]
         sampling_probabilities = priorities / total_priority
         N = len(self)
-        beta = self.beta_by_frame(self.frame)
         self.frame += 1
-        weights = (N * sampling_probabilities) ** (-beta)
+        weights = (N * sampling_probabilities) ** (-self.beta_by_frame(self.frame))
         weights /= weights.max()
         return states, actions, rewards, states_, dones, batch_indices, weights
 
@@ -458,18 +423,16 @@ class VecPrioritizedReplayBuffer(VecReplayBuffer):
         super().save(filename)
         np.savez_compressed(
             filename + '_priorities.npz',
-            sum_tree=self.sum_tree,
-            min_tree=self.min_tree,
             max_priority=self.max_priority,
+            priorities=self.priorities,
             frame=self.frame
         )
 
     def load(self, filename):
         super().load(filename)
         data = np.load(filename + '_priorities.npz')
-        self.sum_tree = data['sum_tree']
-        self.min_tree = data['min_tree']
         self.max_priority = data['max_priority'].item()
+        self.priorities = data['priorities']
         self.frame = data['frame'].item()
 
 class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
@@ -538,6 +501,7 @@ class VecNStepPERBuffer(VecPrioritizedReplayBuffer):
             self.n_step_history.popleft()
 
     # needless to call, but whatever
+    # note: this does NOT save the queues
     def save(self, filename):
         super().save(filename)
 
@@ -615,17 +579,16 @@ def test_vec_per():
     memory = VecPrioritizedReplayBuffer(num_envs=num_envs, capacity=mem_size, input_shape=(4,), n_actions=1, alpha=1.0)
     dummy_obs = np.zeros((num_envs, 4))
     memory.store_transition(dummy_obs, np.zeros((num_envs, 1)), np.zeros((num_envs,)), dummy_obs, np.zeros((num_envs,), dtype=bool))
-    assert np.isclose(memory.sum_tree[7], 1.000001, atol=1e-5)
-    assert np.isclose(memory.sum_tree[8], 1.000001, atol=1e-5)
-    assert np.isclose(memory.sum_tree[0], 2.000002, atol=1e-5)
+    # test priority assignment
+    assert np.isclose(memory.priorities[0], 1.0)
+    assert np.isclose(memory.priorities[1], 1.0)
     print("  Priority assignment test passed.")
 
     indices = np.array([0, 1])
     new_priorities = np.array([0.5, 0.2], dtype=np.float32)
     memory.update_priorities(indices, new_priorities)
-    assert np.isclose(memory.sum_tree[7], 0.5)
-    assert np.isclose(memory.sum_tree[8], 0.2)
-    assert np.isclose(memory.sum_tree[0], 0.7)
+    assert np.isclose(memory.priorities[0], 0.5)
+    assert np.isclose(memory.priorities[1], 0.2)
     print("  Priority update test passed.")
 
     num_envs = 1

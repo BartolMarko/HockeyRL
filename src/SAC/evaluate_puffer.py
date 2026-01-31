@@ -1,3 +1,5 @@
+import os
+import sys
 import numpy as np
 from omegaconf import OmegaConf
 import time
@@ -156,6 +158,16 @@ def save_gameplay_video(env, agent, opponent, video_path, num_episodes: int = 1)
     return view_gameplay(env, agent, opponent, render=False, save_folder=video_path, num_episodes=num_episodes)
 
 def main(args):
+    if len(args) < 2:
+        print("Usage: python evaluate_puffer.py <left_agent_name> <right_agent_name>")
+        print("Usage: python evaluate_puffer.py -e <left_agent_name> <right_agent_name>")
+        sys.exit(1)
+    render = True
+    num_episodes = 10
+    if args[0] == '-e':
+        render = False
+        num_episodes = 100
+        args = args[1:]
     left_agent = args[0]
     right_agent = args[1]
     # experiment_name = 'sac-v0-gaussian-replay-self-play-mirror'
@@ -167,15 +179,20 @@ def main(args):
             return h_env.BasicOpponent(weak=False)
         elif name.lower() == 'weakbot':
             return h_env.BasicOpponent(weak=True)
-        else:
+        elif name.startswith('sac'):
             return helper.load_agent_from_config(name, env)
+        elif name == "oldsac":
+            from KaranhanS.load_model import get_agent
+            return get_agent(env)
+        else:
+            raise ValueError(f"Unknown agent name: {name}")
 
     agent = get_agent_by_name(left_agent)
     opponent = get_agent_by_name(right_agent)
     env.close()
 
     # view_gameplay(env, agent, opponent, render=False, save_folder='videos', num_episodes=10)
-    win, lose, draw = view_gameplay(env, agent, opponent, render=True, num_episodes=10)
+    win, lose, draw = view_gameplay(env, agent, opponent, render=render, num_episodes=num_episodes)
     print(f"L: {left_agent} wins {win}")
     print(f"R: {right_agent} wins {lose}")
     print(f"Draws = {draw}")

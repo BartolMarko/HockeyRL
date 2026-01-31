@@ -6,7 +6,7 @@ td3:
   buffer_size: 1000000
   polyak: 0.995
   batch_size: 128
-  prioritized_replay: False 
+  prioritized_replay: True 
   pr_alpha: 0.6
   pr_beta: 0.4
   pr_epsilon: 0.000001
@@ -19,8 +19,8 @@ td3:
     learning_rate: 0.001
 
 training:
-  run_name: td3_self_play_test_run_thompson
-  total_timesteps: 5000000 # and this from 4.5M
+  run_name: td3_self_play_per
+  total_timesteps: 7000000
   max_ep_length: 251
   seed: 699
   # choices [gaussian, pink, ou]
@@ -31,9 +31,9 @@ training:
   start_after: 10000
   use_opp_scheduler: True
   max_opp_pool: 20
-  opp_update_freq: 100000 # orig 10000
+  opp_update_freq: 10000
   save_ckpt_locally: True
-  result_directory: "results6"
+  result_directory: "results2"
   eval_freq: 10000
   eval_episodes_per_opp: 20
   video_episodes_per_outcome: 20
@@ -45,7 +45,7 @@ training:
 
   opponent_scheduler:
     # choices [fixed, linear, thompson]
-    type: thompson
+    type: linear
     phase_shifts: [0, 2000000, 4000000]
     # opponent_types: [['basic'], ['multi', [ [.2, ['basic']], [.8, ['strong']] ] ], ['multi', [ [.2, ['basic'] ], [.2, ['strong'] ], [.6, ['self'] ] ] ] ]
     opponent_types:

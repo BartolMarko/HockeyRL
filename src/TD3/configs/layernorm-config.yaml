@@ -10,6 +10,7 @@ td3:
   pr_alpha: 0.6
   pr_beta: 0.4
   pr_epsilon: 0.000001
+  use_layernorm: True
 
   actor:
     hidden_sizes: [256, 256]
@@ -19,8 +20,8 @@ td3:
     learning_rate: 0.001
 
 training:
-  run_name: td3_self_play_test_run_thompson
-  total_timesteps: 5000000 # and this from 4.5M
+  run_name: td3_self_play_layer_norm_linear_pool_10M
+  total_timesteps: 10000000
   max_ep_length: 251
   seed: 699
   # choices [gaussian, pink, ou]
@@ -31,9 +32,9 @@ training:
   start_after: 10000
   use_opp_scheduler: True
   max_opp_pool: 20
-  opp_update_freq: 100000 # orig 10000
+  opp_update_freq: 40000
   save_ckpt_locally: True
-  result_directory: "results6"
+  result_directory: "results3"
   eval_freq: 10000
   eval_episodes_per_opp: 20
   video_episodes_per_outcome: 20
@@ -45,8 +46,8 @@ training:
 
   opponent_scheduler:
     # choices [fixed, linear, thompson]
-    type: thompson
-    phase_shifts: [0, 2000000, 4000000]
+    type: linear
+    phase_shifts: [0, 3000000, 6000000]
     # opponent_types: [['basic'], ['multi', [ [.2, ['basic']], [.8, ['strong']] ] ], ['multi', [ [.2, ['basic'] ], [.2, ['strong'] ], [.6, ['self'] ] ] ] ]
     opponent_types:
       - ['basic']
@@ -61,7 +62,7 @@ training:
             [0.2, ['basic']],
             [0.2, ['strong']],
             [0.5, ['self']], 
-            [0.1, ['custom']] # only changed this 
+            [0.1, ['custom']]
           ]
         ]
       # - ['multi',

@@ -11,6 +11,7 @@ from hockey.hockey_env import HockeyEnv
 from src.TD3.td3 import TD3
 from src.TD3.schedule import SchedulerFactory
 from src.TD3.opponent_scheduler import OpponentSchedulerFactory
+from src.TD3.enivornment_scheduler import EnviornmentSchedulerFactory
 from src.TD3.noise import NosieFactory
 from src.TD3.config_reader import Config
 
@@ -18,9 +19,6 @@ from src.episode import Episode
 from src.training_monitor import TrainingMonitor
 from src.named_agent import WeakBot
 from src.evaluation import Evaluator
-
-
-RUN_NAME = "td3_self_play_test_run_thompson"
 
 def set_seed(random_seed):
     if random_seed is not None:
@@ -30,13 +28,11 @@ def set_seed(random_seed):
         torch.cuda.manual_seed(random_seed)
 
 
-def update_cfg(env, action_space, cfg):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    cfg['observation_space'] = env.observation_space
-    cfg['device'] = device
-    cfg['action_space'] = action_space
+def update_cfg(env, cfg):
+    TD3.enhance_cfg(cfg, env)
 
 def main():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', action='store', type=str,
                         default='config.yaml', help='Config file')
@@ -49,8 +45,8 @@ def main():
     action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
     env_name = env.__class__.__name__
 
-    update_cfg(env, action_space, cfg)
-    update_cfg(env, action_space, cfg['td3'])
+    update_cfg(env, cfg)
+    update_cfg(env, cfg['td3'])
 
     log_interval = 20
     total_timesteps = t_cfg['total_timesteps']
@@ -65,13 +61,15 @@ def main():
 
     opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=noise_scheduler.reset)
 
+    env_scheduler = EnviornmentSchedulerFactory.get_environment_scheduler(t_cfg)
+
     td3 = TD3(cfg['td3'])
 
     training_monitor = TrainingMonitor(
-        run_name=RUN_NAME,
+        run_name=t_cfg['run_name'],
         config=cfg
     )
-    evaluator = Evaluator(cfg['device'])
+    evaluator = Evaluator(device)
 
     print(next(td3.model.actor.parameters()).device)
     
@@ -107,6 +105,7 @@ def main():
         i_episode = 0
         start_idx = 0
 
+    env = env_scheduler.get_env(0)
     ob, _info = env.reset()
     ob_agent2 = env.obs_agent_two()
     noise_sampler.reset()
@@ -133,7 +132,8 @@ def main():
         ob=ob_new
         ob_agent2 = env.obs_agent_two()
         episode.add(ob, a1, a2, reward, done)
-        if done or trunc or total_length == max_episode_length: 
+        if done or trunc or total_length == max_episode_length:
+            env = env_scheduler.get_env(t) 
             ob, _ = env.reset()
             ob_agent2 = env.obs_agent_two()
             win_info[i_episode % log_interval] = info['winner']
@@ -161,11 +161,17 @@ def main():
                         if opp_scheduler.trigger_phase_change():
                             save_ckpt(i_episode)
                             print(f"triggered phase change at episode: {i_episode}")
+                    if hasattr(env_scheduler, "trigger_phase_change"):
+                        env_scheduler.trigger_phase_change()
             
             if t_cfg.use_opp_scheduler:
                 agent2 = opp_scheduler.get_opponent(t)
 
             noise_sampler.reset()
+            td3.on_episode_end()
+            if t_cfg.get('episode_mirroring', False):
+                episode.mirror()
+                td3.store_episode(episode)
             episode = Episode(ob)
 
         if t % t_cfg.opp_update_freq == 0:

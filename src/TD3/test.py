@@ -21,6 +21,8 @@ def parse_args():
                         help='path for model evaluation')
     parser.add_argument('--config', type=str,
                         help='config for td3', default='./src/TD3/config.yaml')
+    parser.add_argument('--opp_config', type=str,
+                        help='config for td3 opp', default='./src/TD3/config.yaml')
     parser.add_argument('-m', '--maxepisodes', type=int, 
                         default=1000, help='max episodes')
     parser.add_argument('-t', '--maxtimesteps', default=2000, type=int,
@@ -34,12 +36,16 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_td3_cfg(cfg : Config):
+    return cfg.get('td3', cfg)
 
 def test():
 
     opts = parse_args()
 
-    cfg = Config(opts.config)['td3']
+    cfg = get_td3_cfg(Config(opts.config))
+    opp_cfg = get_td3_cfg(Config(opts.opp_config))
+    print(opp_cfg)
 
     save_gif = opts.gif
 
@@ -55,9 +61,9 @@ def test():
 
     opp_type = opts.opponent.lower()
     
-    action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
-    cfg['observation_space'] = env.observation_space
-    cfg['action_space'] = action_space
+    TD3.enhance_cfg(cfg, env)
+    TD3.enhance_cfg(opp_cfg, env)
+    
 
     match opp_type:
         case 'weak':
@@ -68,7 +74,9 @@ def test():
             agent2 = CustomOpponent()
         case _:
             if os.path.exists(opp_type):
-                agent2 = TD3(cfg)
+                agent2 = TD3(opp_cfg)
+                print(agent2.model.actor)
+                print("loading agent2")
                 agent2.restore_state(torch.load(opp_type))
                 opp_type = 'td3' # override for gif path
             else:

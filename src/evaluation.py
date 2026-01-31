@@ -12,7 +12,7 @@ from gymnasium import spaces
 
 from src.named_agent import StrongBot, WeakBot
 from src.episode import Episode, Outcome, Possession
-from src.named_agent import NamedAgent
+from src.named_agent import NamedAgent, SACLastYearAgent
 from src.environments import SparseRewardHockeyEnv
 
 from src.TDMPC.agent import TDMPCAgent
@@ -370,7 +370,7 @@ class Evaluator:
 
                 if (
                     render_mode == "rgb_array"
-                    and results_opponent[episode.outcome]
+                    and results_opponent[self.OVERALL_NAME][episode.outcome]
                     <= save_episodes_per_outcome[episode.outcome]
                 ):
                     outcome_video_builders[episode.outcome].add_rgb_frames(
@@ -512,7 +512,15 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "tdmpc_self_play"
+    TRAINING_PATH = Path(__file__).resolve().parent.parent / "models" / "tdmpc2_mirror"
+    CHECKPOINT_FINAL = TRAINING_PATH / "final"
+    CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
+    CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
+    CHECKPOINT_1_1M_PATH = TRAINING_PATH / "checkpoint_1_1m"
+    CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
+    CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
+    CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
+    # CHECKPOINT_250K_PATH = TRAINING_PATH / "checkpoint_250k"
     OLD_MODEL_PATH = (
         Path(__file__).resolve().parent.parent
         / "models"
@@ -537,12 +545,12 @@ if __name__ == "__main__":
         / "td3_HockeyEnv_119.pt"
     )
     env = SparseRewardHockeyEnv()
-    tdmpc_agent = TDMPCAgent(MODEL_PATH, tdmpc=None, step=750_000)
-    # self_play_opponent = TDMPCAgent(
-    #     OPPONENT_PATH, tdmpc=None, step=350_000, name_suffix="_self_350k"
-    # )
-    old_opponent = TDMPCAgent(
-        OLD_MODEL_PATH, tdmpc=None, step=500_000, name_suffix="_old_500k"
+    tdmpc_agent = TDMPCAgent(CHECKPOINT_FINAL, tdmpc=None, step=2_000_000)
+    checkpoint_400k = TDMPCAgent(
+        CHECKPOINT_400K_PATH, tdmpc=None, step=400_000, name_suffix="_self_400k"
+    )
+    checkpoint_600k = TDMPCAgent(
+        CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, name_suffix="_self_600k"
     )
     strong_bot = StrongBot()
     weak_bot = WeakBot()
@@ -554,26 +562,26 @@ if __name__ == "__main__":
     action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
     td3_cfg["observation_space"] = env.observation_space
     td3_cfg["action_space"] = action_space
-    td3_agent = TD3(td3_cfg)
-    td3_agent.restore_state(torch.load(TD3_WEIGHTS_PATH_118))
 
-    # wandb_run = wandb.init(
-    #     entity="wayne-gradientzky",
-    #     project="hockey-rl",
-    #     name="test_run_eval",
-    #     config=OmegaConf.to_container(tdmpc_agent.tdmpc.cfg),
-    # )
+    td3_bank_shot = TD3(td3_cfg)
+    td3_bank_shot.restore_state(torch.load(TD3_WEIGHTS_PATH_118))
+    td3_faker = TD3(td3_cfg)
+    td3_faker.restore_state(torch.load(TD3_WEIGHTS_PATH_119))
+
+    sac_last_year_agent = SACLastYearAgent(
+        env=env,
+    )
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
-        agent=tdmpc_agent,
-        opponents=[td3_agent],
-        num_episodes=30,
+        agent=td3_faker,
+        opponents=[sac_last_year_agent],
+        num_episodes=20,
         render_mode="human",
         save_path=None,
         wandb_run=None,
         save_heatmaps=True,
         save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
-        train_step=22,
+        train_step=800_000,
     )
     print(results)
     # wandb_run.finish()

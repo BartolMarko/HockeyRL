@@ -62,7 +62,7 @@ def main():
 
     def on_phase_change():
         td3.reset_priorities()
-        noise_sampler.reset()
+        noise_scheduler.reset()
 
     opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=on_phase_change)
 

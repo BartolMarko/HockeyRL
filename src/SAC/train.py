@@ -107,6 +107,11 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
     agent.show_info()
     opponent_pool.show_info()
 
+    # skip warmup_games if buffer already has data [ e.g. when resuming, recovering ]
+    if len(agent.memory) >= cfg.batch_size:
+        print(f"[WARM] Replay buffer has {len(agent.memory)} samples. Skipping warmup games.")
+        cfg.warmup_games = 0
+
     for i in range(n_games):
         opponent = opponent_pool.sample_opponent()
         metrics = run_episode(
@@ -199,8 +204,6 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         opponent_pool.update_pool(agent, episode_index=i, logger=logger)
         env_step = i + 1
 
-    logger.close()
-    env.close()
     print("[Training completed] [episodes: {} + {} = {}]".format(start_episode, env_step, env_step + start_episode))
     final_eval = epfw.puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
     print("Opponents Stats:")
@@ -218,6 +221,8 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
     draw_rate /= total_episodes
     print(f"Win Rate: {win_rate:.2f}, Lose Rate: {lose_rate:.2f}, Draw Rate: {draw_rate:.2f}")
     print(f"{win_rate:.2f}, {lose_rate:.2f}, {draw_rate:.2f}")
+    logger.close()
+    env.close()
 
 
 def set_dry_run_params(cfg):

@@ -150,7 +150,6 @@ def view_gameplay(env, agent, opponent, render: bool = True, save_folder: str|No
             draw += 1
     if save_folder is not None:
         imageio.mimwrite(video_path, frames, fps=30, format='gif')
-    env.close()
     return wins, lose, draw
 
 def save_gameplay_video(env, agent, opponent, video_path, num_episodes: int = 1):

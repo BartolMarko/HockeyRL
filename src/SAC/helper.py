@@ -70,6 +70,8 @@ class HeatmapTracker:
             print("[WARN] No data recorded yet for heatmap.")
             return
 
+        self.heatmap = 2 * self.heatmap / self.total_steps
+
         plt.figure(figsize=(12, 7))
         extent = [self.x_range[0], self.x_range[1], self.y_range[0], self.y_range[1]]
         im = plt.imshow(
@@ -81,7 +83,7 @@ class HeatmapTracker:
         )
 
         cbar = plt.colorbar(im)
-        cbar.set_label('# of Visits', rotation=270, labelpad=15)
+        cbar.set_label('Normalized # of Visits', rotation=270, labelpad=15)
         plt.title(title)
         plt.xlabel('x')
         plt.ylabel('y')

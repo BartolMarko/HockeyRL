@@ -68,7 +68,8 @@ class HockeyVecEnv:
 
     def reset(self, seed=None):
         if seed is None:
-            seed = 0
+            seed = np.random.randint(0, 10000)
+        # vec-env limits arguments to reset, can't use any other than seed
         obs, info = self.vec_env.reset(seed=seed)
         if isinstance(info, list) and len(info) > 0 and 'obs_agent_two' in info[0]:
             self._last_obs_agent_two = np.stack([i['obs_agent_two'] for i in info])

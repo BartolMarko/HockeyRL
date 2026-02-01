@@ -205,7 +205,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         opponent_pool.update_pool(agent, episode_index=i, logger=logger)
         env_step = i + 1
 
-    print("[Training completed] [episodes: {} + {} = {}]".format(start_episode, env_step, env_step + start_episode))
+    print("[TREN] Training completed [episodes: {} + {} = {}]".format(start_episode, env_step, env_step + start_episode))
     final_eval = epfw.puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
     print("Opponents Stats:")
     opponent_pool.show_scoreboard()

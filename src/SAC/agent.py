@@ -115,6 +115,10 @@ class Agent:
                 print("[WARN] No alpha value specified in config for fixed alpha. Using default alpha=0.2")
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
+        if cfg.get('use_munchausen', False):
+            assert 0.0 < cfg.munchausen_alpha <= 1.0, "munchausen_alpha must be in (0, 1]"
+            assert cfg.munchausen_lo_clip < 0.0, "munchausen_lo_clip must be negative"
+
         # vectorized env support flag
         num_envs = cfg.get('num_envs', 1)
         self.is_vectorized = num_envs > 1
@@ -138,6 +142,8 @@ class Agent:
         print(f"  Replay Buffer Type: {self.buffer_type}")
         if self.buffer_type in ['per', 'n-step-per']:
             print(f"    Prioritized Experience Replay: Enabled")
+            if self.buffer_type == 'n-step-per':
+                print(f"    N-Step Returns: Enabled (n={self.cfg.n_step_buffer_n})")
         print(f"  Batch Size: {self.batch_size}")
         print(f"  Discount Factor (Gamma): {self.gamma}")
         print(f"  Target Network Update Frequency: {self.target_update_freq}")
@@ -153,6 +159,10 @@ class Agent:
         print(f"  Vectorized Environment Support: {'Enabled' if self.is_vectorized else 'Disabled'}")
         if self.is_vectorized:
             print(f"    Number of Environments: {self.cfg.get('num_envs', 1)}")
+        if self.cfg.get('use_munchausen', False):
+            print(f"  Munchausen RL: Enabled")
+            print(f"    Munchausen Alpha: {self.cfg.munchausen_alpha}")
+            print(f"    Munchausen Log-Prob Clipping: [{self.cfg.munchausen_lo_clip}, 0.0]")
 
 
     def end_episode(self):
@@ -245,6 +255,27 @@ class Agent:
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()
 
+    def _compute_munchausen_reward(self, state, action, reward):
+        """
+        Computes the Munchausen augmented reward.
+        Ref: Munchausen Reinforcement Learning (Vieillard et al., NeurIPS 2020)
+        """
+        with T.no_grad():
+            q1_values = self.critic_1.forward(state_tensor, action_tensor)
+            q2_values = self.critic_2.forward(state_tensor, action_tensor)
+            min_q_values = T.min(q1_values, q2_values)
+
+            # Compute log-policy
+            new_actions, log_probs = self.actor.sample_normal(state_tensor, reparameterize=False)
+            log_policy = log_probs.view(-1)
+
+            # Munchausen term
+            munchausen_term = T.clamp(self.cfg.munchausen_alpha * log_policy, min=self.cfg.munchausen_lo_clip, max=0.0)
+
+            # Augmented reward
+            munchausen_reward = reward + munchausen_term.item()
+        return munchausen_reward
+
     def store(self, state, action, reward, new_state, done):
         """Stores a transition in the replay buffer, adding intrinsic reward (curious)."""
         intrinsic_reward = self.explorer.get_intrinsic_reward(state, action, new_state)
@@ -313,6 +344,9 @@ class Agent:
         state_ = T.tensor(new_state, dtype=T.float).to(self.actor.device)
         state = T.tensor(state, dtype=T.float).to(self.actor.device)
         action = T.tensor(action, dtype=T.float, device=self.actor.device)
+
+        if self.cfg.get('use_munchausen', False):
+            reward = self._compute_munchausen_reward(state, action, reward)
 
         # Compute target Q-values
         with T.no_grad():

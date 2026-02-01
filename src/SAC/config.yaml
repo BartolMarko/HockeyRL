@@ -54,6 +54,8 @@ target_entropy: phasic
 target_update_freq: 1
 # Explorer
 explorer:
+  type: pink
+
   # type: random
 
   # type: 'gaussian'
@@ -71,8 +73,12 @@ explorer:
   # beta: 0.3
   # hidden_dim: 64
   # lr_pred: 0.001
-
-  type: pink
+# Munchausen RL
+# comment: though MRL says PER and N-Step-Returns is not needed
+# but we still do it, should check without it too
+use_munchauser: True
+munchausen_alpha: 0.9
+munchausen_lo_clip: -1
 
 # Network
 algorithm: "sac"
@@ -89,7 +95,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-old-agents"
+exp_name: "sac-v4-pink-6-step-per-old-agents-MRL"
 resume: False
 save_video: True
 log_gradients: True

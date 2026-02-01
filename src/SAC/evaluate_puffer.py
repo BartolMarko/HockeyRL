@@ -7,6 +7,7 @@ import time
 import helper
 from hockey import hockey_env as h_env
 import puffer_wrapper as pfw
+import imageio
 
 def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, episodes_per_env=None):
     start_time = time.time()

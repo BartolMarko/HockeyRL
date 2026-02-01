@@ -165,7 +165,7 @@ class SelfPlayManager(opponents.OpponentInPool):
         }
         self.sampler.add_arm(weight=-1)
         save_path = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', episode_number)
-        if agent is not "test-agent":
+        if agent != "test-agent":
             agent.save_models(save_path)
         return True
 

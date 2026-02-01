@@ -8,6 +8,54 @@ from exploration import get_explorer
 from network import ActorNet, CriticNet
 import pickle
 
+class EntropyManager:
+    def __init__(self, target_entropy):
+        self.target_entropy = target_entropy
+
+    def get_entropy(self):
+        return self.target_entropy
+
+    def update(self, current_win_rate, current_alpha):
+        return False
+
+    def id(self):
+        raise NotImplementedError
+
+class FixedEntropyManager(EntropyManager):
+    def __init__(self, target_entropy):
+        super().__init__(target_entropy)
+
+    def id(self):
+        return "fixedEntropyMgr({:.2f})".format(self.target_entropy)
+
+class PhasicEntropyManager(EntropyManager):
+    def __init__(self, target_h_min=-4.0, target_h_max=-1.0,
+                     max_steps_stagnant=500):
+        super().__init__(target_entropy=target_h_max)
+        self.target_h_min = target_h_min
+        self.target_h_max = target_h_max
+        self.steps_stagnant = 0
+        self.max_steps_stagnant = max_steps_stagnant
+
+    def update(self, current_win_rate, current_alpha):
+        if current_alpha < 0.01 and current_win_rate < 0.95:
+            self.steps_stagnant += 1
+        else:
+            self.steps_stagnant = 0
+        if self.steps_stagnant > self.max_steps_stagnant:
+            print(f"[AGNT] Resetting target entropy to max value: {self.target_h_max}")
+            self.target_entropy = self.target_h_max
+            self.steps_stagnant = 0
+            return True
+        if self.target_entropy > self.target_h_min:
+            self.target_entropy -= 0.0001
+        return False
+
+    def id(self):
+        return "phasicEntropyMgr({:.2f},{:.2f},{})".format(
+                    self.target_h_min, self.target_h_max,
+                    self.max_steps_stagnant)
+
 class Agent:
     def __init__(self, cfg, inference_only=False):
         self.cfg = cfg
@@ -56,7 +104,10 @@ class Agent:
                 else:
                     self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor.device)
             self.alpha_optim = T.optim.Adam([self.log_alpha], lr=cfg.lr_alpha)
-            self.target_entropy = -np.prod(cfg.n_actions).item()
+            if cfg.get('target_entropy', '') == 'phasic':
+                self.target_entropy_mgr = PhasicEntropyManager()
+            else:
+                self.target_entropy_mgr = FixedEntropyManager(-np.prod(cfg.n_actions))
         else:
             if hasattr(cfg, 'alpha') and cfg.alpha:
                 self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
@@ -94,7 +145,7 @@ class Agent:
         if hasattr(self, 'log_alpha'):
             print(f"  Automatic Entropy Tuning: Enabled")
             print(f"    Initial Alpha (Entropy Coefficient): {self.get_alpha().item()}")
-            print(f"    Target Entropy: {self.target_entropy}")
+            print(f"    Target Entropy Manager: {self.target_entropy_mgr.id()}")
         else:
             print(f"  Automatic Entropy Tuning: Disabled")
             print(f"    Fixed Alpha (Entropy Coefficient): {self.alpha.item()}")
@@ -316,7 +367,7 @@ class Agent:
 
         # Update alpha
         if hasattr(self, 'log_alpha'):
-            alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy).detach()).mean()
+            alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy_mgr.get_entropy()).detach()).mean()
             self.alpha_optim.zero_grad()
             alpha_loss.backward()
             self.alpha_optim.step()
@@ -345,6 +396,7 @@ class Agent:
             'Losses/critic_1_loss': critic_1_loss.item(),
             'Losses/critic_2_loss': critic_2_loss.item(),
             'HyperParam/alpha': self.get_alpha().item(),
+            'HyperParam/target_entropy': self.target_entropy_mgr.get_entropy(),
             'Metrics/entropy': -log_probs.mean().item(),
             'Metrics/q1_mean': q1_old.mean().item(),
             'Metrics/q1_std': q1_old.std().item(),

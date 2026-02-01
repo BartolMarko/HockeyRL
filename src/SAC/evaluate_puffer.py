@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import numpy as np
 from omegaconf import OmegaConf
 import time
@@ -184,6 +185,11 @@ def main(args):
         elif name == "oldsac":
             from KaranhanS.load_model import get_agent
             return get_agent(env)
+        elif name.startswith('td3'):
+            from src.agent_factory import agent_factory
+            cfg_path = f'{name}.yaml'
+            cfg = OmegaConf.load(cfg_path)
+            return agent_factory(name, cfg)
         else:
             raise ValueError(f"Unknown agent name: {name}")
 

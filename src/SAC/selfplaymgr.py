@@ -130,13 +130,26 @@ class SelfPlayManager(opponents.OpponentInPool):
                 return True
         return False
 
+    def get_lowest_priority_episode(self):
+        if len(self.pool) == 0:
+            return None
+        weights = self.sampler.get_weights()
+        min_weight = min(weights)
+        min_index = weights.index(min_weight)
+        return self.pool[min_index]
+
     def add_episode_number_to_pool(self, agent, episode_number: int):
         if not self._check_valid_addition(agent, episode_number):
             return False
         if len(self.pool) >= self.max_pool_size:
-            removed_episode = self.pool.pop(0)
-            self.sampler.remove_arm(0)
-            del self.pool_meta[removed_episode]
+            lowest_priority_episode = self.get_lowest_priority_episode()
+            assert lowest_priority_episode is not None, "Lowest priority episode should not be None when pool is full."
+            print("[SPLY] Pool is full. Removing lowest priority episode "
+                  f"{lowest_priority_episode} to add episode {episode_number}.")
+            index_in_pool = self.pool_meta[lowest_priority_episode]['index_in_pool']
+            self.sampler.remove_arm(index_in_pool)
+            self.pool.remove(lowest_priority_episode)
+            del self.pool_meta[lowest_priority_episode]
             for idx, ep in enumerate(self.pool):
                 self.pool_meta[ep]['index_in_pool'] = idx
         self.pool.append(episode_number)
@@ -152,7 +165,8 @@ class SelfPlayManager(opponents.OpponentInPool):
         }
         self.sampler.add_arm(weight=-1)
         save_path = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', episode_number)
-        agent.save_models(save_path)
+        if agent is not "test-agent":
+            agent.save_models(save_path)
         return True
 
     def update_priorities(self, episode_number_to_score: dict):
@@ -339,3 +353,52 @@ def create_selfplay_manager(cfg, subcfg, name="selfplay_manager"):
     if 'name' in subcfg:
         name = subcfg.name
     return SelfPlayManager(name, cfg, subcfg)
+
+def test_remove_lowest_priority():
+    class DummySampler:
+        def __init__(self):
+            self.weights = []
+        def add_arm(self, weight):
+            self.weights.append(weight)
+        def remove_arm(self, index):
+            del self.weights[index]
+        def get_weights(self):
+            return self.weights
+
+    from omegaconf import OmegaConf
+    cfg = OmegaConf.create({
+        'exp_name': 'test_exp',
+        'pooling': []
+    })
+    subcfg = OmegaConf.create({
+        'max_pool_size': 3,
+        'priority': 0.8,
+        'sampler': {'name': 'uniform'},
+        'pooling': [ {'type': 'episode', 'freq': 1} ],
+        'activation_type': 'always_on'
+    })
+
+    spm = SelfPlayManager("test_mgr", cfg, subcfg)
+    spm.sampler = DummySampler()
+    spm.is_active_flag = True
+
+    spm.pool = [10, 20, 30]
+    spm.pool_meta = {
+        10: {'index_in_pool': 0},
+        20: {'index_in_pool': 1},
+        30: {'index_in_pool': 2}
+    }
+    spm.sampler.weights = [0.5, 0.2, 0.8]
+
+    lowest_episode = spm.get_lowest_priority_episode()
+    assert lowest_episode == 20, f"Expected lowest priority episode to be 20, got {lowest_episode}"
+
+    spm.add_episode_number_to_pool("test-agent", 40)
+    assert 20 not in spm.pool, "Episode 20 should have been removed from the pool."
+    assert 40 in spm.pool, "Episode 40 should have been added to the pool."
+    assert len(spm.pool) == 3, f"Pool size should be 3 after addition, got {len(spm.pool)}"
+
+    print("test_remove_lowest_priority passed.")
+
+if __name__ == "__main__":
+    test_remove_lowest_priority()

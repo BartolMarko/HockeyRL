@@ -6,9 +6,12 @@ opponent_pool:
   type: 'weighted'
 opponents:
   - type: 'StrongBot'
-    priority: 0.65
+    priority: 0.40
   - type: 'WeakBot'
-    priority: 0.35
+    priority: 0.20
+  - type: 'CustomAgent'
+    experiment_name: sac-v0-gaussian-replay-self-play-mirror
+    priority: 0.40
 self_play:
   - name: 'SelfPlayMgr'
     priority: 0.7
@@ -24,17 +27,18 @@ self_play:
 num_envs: 16
 
 # rewards
-reward_transform: "v0"
-still_puck_penalty: 0.1
-draw_penalty: 3
+reward_transform: "v4"
+still_puck_penalty: 0.005
+draw_penalty: 4
 
 # Buffers
-buffer_type: "per"
+buffer_type: "n-step-per"
 buffer_max_size: 1500000
 upside_down: True
+n_step_buffer_n: 6
 
 # Training
-n_games: 5000
+n_games: 7500
 warmup_games: 300
 learn_steps_per_episode: 1
 batch_size: 1024
@@ -45,6 +49,7 @@ tau: 0.005
 # alpha
 automatic_entropy_tuning: True
 lr_alpha: 0.00025
+target_entropy: phasic
 # critic target network
 target_update_freq: 1
 # Explorer
@@ -74,7 +79,7 @@ algorithm: "sac"
 hidden_size: 512
 
 # Evaluation
-eval_freq: 241
+eval_freq: 239
 eval_episodes: 32
 
 # Model saving
@@ -84,7 +89,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v0-pink-per"
+exp_name: "sac-v4-pink-6-step-per-old-agents"
 resume: False
 save_video: True
 log_gradients: True

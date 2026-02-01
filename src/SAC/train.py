@@ -197,6 +197,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             logger.log_heatmaps(i)
             opponent_pool.show_scoreboard()
             opponent_pool.end_evaluation()
+            agent.target_entropy_mgr.update(win_rate, agent.get_alpha())
             print(f"[EVAL] Evaluation at Episode {i}: Win: {win_rate:.2f}, Lose: {lose_rate:.2f}, Draw: {draw_rate:.2f}")
 
         # every self play mgr handles the update by itself

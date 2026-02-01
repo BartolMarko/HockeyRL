@@ -27,21 +27,6 @@ def get_tensor(x, device, dtype=torch.float32):
         x = x.to(device=device, dtype=dtype)
     return x
 
-def linear_schedule(schdl, step):
-    """
-    Outputs values following a linear decay schedule.
-    Adapted from https://github.com/facebookresearch/drqv2
-    """
-    try:
-        return float(schdl)
-    except ValueError:
-        match = re.match(r'linear\((.+),(.+),(.+)\)', schdl)
-        if match:
-            init, final, duration = [float(g) for g in match.groups()]
-            mix = np.clip(step / duration, 0.0, 1.0)
-            return (1.0 - mix) * init + mix * final
-    raise NotImplementedError(schdl)
-
 class HeatmapTracker:
     def __init__(self, num_envs, x_range=(-4, 4), y_range=(-2.5, 2.5), bins=(48, 32)):
         """

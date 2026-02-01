@@ -1,5 +1,6 @@
 import numpy as np
 from hockey import hockey_env as h_env
+from types import MethodType
 
 LEFT_GOAL_X = h_env.W / 2 - 245 / h_env.SCALE
 LEFT_GOAL_CENTER_Y = h_env.H / 2
@@ -9,13 +10,6 @@ LEFT_GOAL_TOP_Y = LEFT_GOAL_CENTER_Y + 1.0 * GOAL_Y_OFFSET
 LEFT_GOAL_BOTTOM_Y = LEFT_GOAL_CENTER_Y - 1.0 * GOAL_Y_OFFSET
 LEFT_GOAL_TOP_CLIPPED_Y = LEFT_GOAL_CENTER_Y + 0.9 * GOAL_Y_OFFSET
 LEFT_GOAL_BOTTOM_CLIPPED_Y = LEFT_GOAL_CENTER_Y - 0.9 * GOAL_Y_OFFSET
-
-
-class SparseRewardHockeyEnv(h_env.HockeyEnv):
-    """Remove reward shaping from the HockeyEnv. (Remove closeness to puck reward.)"""
-
-    def get_reward(self, info: dict) -> float:
-        return self._compute_reward()
 
 
 class DefenseModeImprovedEnv(h_env.HockeyEnv):
@@ -123,11 +117,58 @@ def environment_factory(env_name: str):
     match env_name.lower():
         case "hockeyenv" | "normal":
             return h_env.HockeyEnv()
-        case "sparserewardhockeyenv":
-            return SparseRewardHockeyEnv()
         case "attack":
             return AttackModeEnv()
         case "defense":
             return DefenseModeEnv()
+        case "defensemodeimproved":
+            return DefenseModeImprovedEnv()
+        case "leftfirstpossession":
+            return LeftFirstPossessionEnv()
+        case "rightfirstpossession":
+            return RightFirstPossessionEnv()
         case _:
             raise ValueError(f"Unknown environment name: {env_name}")
+
+
+def get_sparse_reward(self: h_env.HockeyEnv, info: dict) -> float:
+    return self._compute_reward()
+
+
+def euclidean_distance(a: tuple[float, float], b: tuple[float, float]) -> float:
+    return np.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
+
+def get_defense_reward_function(defense_reward_weight: float):
+    def defense_reward(self: h_env.HockeyEnv, info: dict) -> float:
+        win_lose_reward = self._compute_reward()
+
+        defense_reward = 0.0
+        if self.puck.position.x > h_env.CENTER_X:  # Puck is on the right half
+            defense_reward -= euclidean_distance(
+                (self.player1.position.x, self.player1.position.y),
+                (LEFT_GOAL_X, LEFT_GOAL_CENTER_Y),
+            )
+        return win_lose_reward + defense_reward_weight * defense_reward
+
+    return defense_reward
+
+
+def env_reward_wrapper(
+    env: h_env.HockeyEnv, reward_function_name: str, **kwargs
+) -> h_env.HockeyEnv:
+    """Wrap the environment to modify its reward structure."""
+    match reward_function_name.lower():
+        case "default" | "normal":
+            return env
+        case "sparse" | "sparsereward":
+            env.get_reward = MethodType(get_sparse_reward, env)
+            return env
+        case "defense" | "defensereward":
+            defense_reward_weight = kwargs["defense_reward_weight"]
+            env.get_reward = MethodType(
+                get_defense_reward_function(defense_reward_weight), env
+            )
+            return env
+        case _:
+            raise ValueError(f"Unknown reward function name: {reward_function_name}")

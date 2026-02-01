@@ -12,7 +12,7 @@ from src.named_agent import StrongBot, WeakBot
 from src.episode import Episode, Outcome, Possession
 from src.named_agent import NamedAgent, SACLastYearAgent
 from src.agent_factory import create_td3_agent
-from src.environments import SparseRewardHockeyEnv
+from src.environments import DefenseModeImprovedEnv
 
 from src.TDMPC.agent import TDMPCAgent
 
@@ -528,23 +528,33 @@ if __name__ == "__main__":
     TD3_BANK_SHOT_PATH = MODELS_PATH / "td3_benchmarks" / "td3_bank_shot"
     TD3_IMPROVED_PATH = MODELS_PATH / "td3_benchmarks" / "td3_improved"
 
-    TRAINING_PATH = MODELS_PATH / "tdmpc2_mirror"
-    CHECKPOINT_FINAL = TRAINING_PATH / "final"
-    CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
-    CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
-    CHECKPOINT_1_1M_PATH = TRAINING_PATH / "checkpoint_1_1m"
-    CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
+    TRAINING_PATH_OLD = MODELS_PATH / "tdmpc2_mirror"
+    CHECKPOINT_FINAL_OLD = TRAINING_PATH_OLD / "final"
+    # CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
+    # CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
+    # CHECKPOINT_1_1M_PATH = TRAINING_PATH / "checkpoint_1_1m"
+    # CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
+    # CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
+    # CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
+    TRAINING_PATH = MODELS_PATH / "tdmpc2_action_repeat"
     CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
-    CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
-
-    env = SparseRewardHockeyEnv()
-    tdmpc_agent = TDMPCAgent(CHECKPOINT_FINAL, tdmpc=None, step=2_000_000)
-    checkpoint_400k = TDMPCAgent(
-        CHECKPOINT_400K_PATH, tdmpc=None, step=400_000, name_suffix="_self_400k"
+    CHECKPOINT_100K_PATH = TRAINING_PATH / "checkpoint_100k"
+    env = DefenseModeImprovedEnv()
+    tdmpc_agent = TDMPCAgent(
+        CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, eval_mode=True
     )
-    checkpoint_600k = TDMPCAgent(
-        CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, name_suffix="_self_600k"
+    checkpoint_100k = TDMPCAgent(
+        CHECKPOINT_100K_PATH, tdmpc=None, step=100_000, name_suffix="_self_100k"
     )
+    tdmpc_old = TDMPCAgent(
+        CHECKPOINT_FINAL_OLD, tdmpc=None, step=2_000_000, name_suffix="_old"
+    )
+    # checkpoint_400k = TDMPCAgent(
+    #     CHECKPOINT_400K_PATH, tdmpc=None, step=400_000, name_suffix="_self_400k"
+    # )
+    # checkpoint_600k = TDMPCAgent(
+    #     CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, name_suffix="_self_600k"
+    # )
     strong_bot = StrongBot()
     weak_bot = WeakBot()
     evaluator = Evaluator(device="cuda")
@@ -566,14 +576,14 @@ if __name__ == "__main__":
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
         agent=tdmpc_agent,
-        opponents=[td3_improved],
+        opponents=[strong_bot],
         num_episodes=30,
         render_mode="human",
         save_path=None,
         wandb_run=None,
         save_heatmaps=True,
-        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
-        train_step=800_000,
+        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 50, Outcome.DRAW: 20},
+        train_step=100_000,
     )
     print(results)
     # wandb_run.finish()

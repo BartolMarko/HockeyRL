@@ -4,9 +4,10 @@ import time
 import random
 from pathlib import Path
 from omegaconf import OmegaConf
+from hockey.hockey_env import HockeyEnv
 
 from src.agent_factory import agent_factory
-from src.environments import environment_factory
+from src.environments import environment_factory, env_reward_wrapper
 from src.evaluation import Evaluator
 from src.opponent_pool import opponent_pool_factory
 from src.training_monitor import TrainingMonitor
@@ -18,7 +19,7 @@ from src.TDMPC.agent import TDMPCAgent
 torch.backends.cudnn.benchmark = True
 
 # TODO: MAJOR: add copy of TDMPC1 code for backward compatibility
-CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2_defense.yaml"
 
 
 def set_seed(seed):
@@ -62,8 +63,16 @@ def train(cfg):
     assert torch.cuda.is_available()
     set_seed(cfg.seed)
 
-    env = environment_factory(cfg.env_name)
-    cfg = add_env_variables_to_config(env, cfg)
+    evaluation_env = HockeyEnv()
+    cfg = add_env_variables_to_config(evaluation_env, cfg)
+    train_envs = []
+    for env_name in cfg.train_env_list:
+        current_env = environment_factory(env_name)
+        train_envs.append(
+            env_reward_wrapper(
+                current_env, cfg.reward_name, **cfg.get("reward_kwargs", {})
+            )
+        )
 
     training_opponents_configs = {
         opp_name: opp_cfg
@@ -108,7 +117,6 @@ def train(cfg):
     evaluate_against_self = cfg.get("evaluate_against_self", False)
     mirror_episodes = cfg.get("mirror_episodes", False)
     soft_winrate_threshold = cfg.get("add_self_winrate_soft_threshold", 200.0)
-    episodes_per_loop_step = cfg.get("episodes_per_loop_step", 1)
     # If no threshold given, only add self at fixed intervals
 
     episode_idx, step = 0, 0
@@ -160,7 +168,7 @@ def train(cfg):
         opponent = opponent_pool.sample_opponent()
 
         steps_played = 0
-        for _ in range(episodes_per_loop_step):
+        for env in train_envs:
             episode, _ = evaluator.run_episode(
                 env,
                 agent,
@@ -235,7 +243,7 @@ def train(cfg):
 
             agent.eval_mode = True
             evaluator.evaluate_agent_and_save_metrics(
-                env,
+                evaluation_env,
                 agent,
                 evaluation_opponents,
                 num_episodes=cfg.eval_episodes_per_opponent,

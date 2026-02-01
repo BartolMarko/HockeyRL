@@ -1,7 +1,14 @@
 run_name: debug_tdmpc
 
 # environment
-env_name: SparseRewardHockeyEnv
+train_env_list:
+  - DefenseModeImproved
+  - LeftFirstPossession
+  - RightFirstPossession
+reward_name: defense
+reward_kwargs:
+  defense_reward_weight: 0.002
+
 action_repeat: 2
 discount: 0.99
 max_episode_length: 251
@@ -68,9 +75,6 @@ opponent_pool: ThompsonSampling
 opponent_pool_window_size: 100
 opponent_pool_draw_weight: 0.5
 max_num_opponents_in_pool: 10
-
-episodes_per_loop_step: 2
-# To ensure one time left player has first possession and one time right has first possession
 
 # Opponents:
 opponents:

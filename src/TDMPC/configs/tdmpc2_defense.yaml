@@ -1,7 +1,14 @@
-run_name: tdmpc2_action_repeat2_100k_soft_selfplay_3M_steps_mirror
+run_name: tdmpc2_action_repeat2_defense_env_sparse_reward
 
 # environment
-env_name: SparseRewardHockeyEnv
+train_env_list:
+  - DefenseModeImproved
+  - LeftFirstPossession
+  - RightFirstPossession
+reward_name: sparse
+reward_kwargs:
+  defense_reward_weight: 0.002
+
 action_repeat: 2
 discount: 0.99
 max_episode_length: 251

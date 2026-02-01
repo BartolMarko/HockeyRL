@@ -1,0 +1,115 @@
+run_name: tdmpc2_action_repeat2_100k_soft_selfplay_3M_steps_mirror
+
+# environment
+env_name: SparseRewardHockeyEnv
+action_repeat: 2
+discount: 0.99
+max_episode_length: 251
+train_steps: 3000000
+mirror_episodes: True
+
+# planning
+iterations: 6
+num_samples: 512
+num_elites: 64
+mixture_coef: 0.05
+min_std: 0.05
+temperature: 0.5
+momentum: 0.1
+
+# learning
+compile: True
+batch_size: 512
+max_buffer_size: 1000000
+horizon: 5
+reward_coef: 0.1
+value_coef: 0.1
+consistency_coef: 20
+rho: 0.5
+lr: 3e-4
+std_schedule: linear(0.5, 0.05, 25000)
+per_alpha: 0.6
+per_beta: 0.4
+grad_clip_norm: 20
+seed_steps: 5000
+update_freq: 2
+tau: 0.01
+
+# architecture
+enc_dim: 256
+num_enc_layers: 2
+mlp_dim: 512
+dropout: 0  # Q network dropout, TDMPCv2 uses 0.01, TDMPCv1 uses 0
+latent_dim: 64 
+## used 50 before in TDMPCv1, switch to 64
+## in TDMPCv2 they have 512 (probably overkill + better suited for multitask)
+simnorm_dim: 8
+
+# reward and Q value distributional settings
+vmin: -2.5
+vmax: 2.5  # ln(10) with some leeway
+num_bins: 51
+
+# misc
+seed: 1
+eval_freq: 25000
+save_model: True
+save_model_freq: 50000
+device: cuda
+
+# Evaluation
+eval_episodes_per_opponent: 50
+final_eval_episodes_per_opponent: 50
+video_episodes_per_outcome: 30
+save_heatmaps: True
+
+# Opponent pool settings
+opponent_pool: ThompsonSampling
+opponent_pool_window_size: 100
+opponent_pool_draw_weight: 0.5
+max_num_opponents_in_pool: 10
+
+episodes_per_loop_step: 2
+# To ensure one time left player has first possession and one time right has first possession
+
+# Opponents:
+opponents:
+  TD3_faker:
+    type: TD3
+    weights_path: ./models/td3_benchmarks/td3_faker/model.pt
+    config_path: ./models/td3_benchmarks/td3_faker/config.yaml
+    evaluate_against: True
+    train_start_step: 2000000
+    removable: False
+  TD3_improved:
+    type: TD3
+    weights_path: ./models/td3_benchmarks/td3_improved/model.pt
+    config_path: ./models/td3_benchmarks/td3_improved/config.yaml
+    evaluate_against: True
+    train_start_step: 2000000
+    removable: False
+  SAC_last_year:
+    type: SACLastYear
+    train_start_step: 2000000
+    evaluate_against: True
+    removable: False
+  StrongBot:
+    type: StrongBot
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+  WeakBot:
+    type: WeakBot
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+
+# Self play
+selfplay: true
+self_removable: True
+selfplay_start_step: 100000
+selfplay_freq: 100000
+add_self_winrate_soft_threshold: 0.8 
+# Add self if winrate against current opponents in pool is above this threshold
+# or if selfplay_freq steps have passed since last addition 
+evaluate_against_self: False

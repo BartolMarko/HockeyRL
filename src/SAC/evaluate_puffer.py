@@ -125,7 +125,7 @@ def puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 
         print(f"[EVAL] vs {opponent.name}: Wins: {overall_stats[opponent.name]['win']}, Losses: {overall_stats[opponent.name]['lose']}, Draws: {overall_stats[opponent.name]['draw']}.")
     return overall_stats
 
-def view_gameplay(env, agent, opponent, render: bool = True, save_folder: str|None = None, num_episodes: int = 5):
+def view_gameplay(env, agent, opponent, render: bool = True, video_path: str|None = None, num_episodes: int = 5):
     wins, lose, draw = 0, 0, 0
     frames = []
     render_mode = 'human' if render else 'rgb_array'
@@ -135,7 +135,7 @@ def view_gameplay(env, agent, opponent, render: bool = True, save_folder: str|No
         done = False
         obs_opponent = env.obs_agent_two()
         while not done:
-            if render or save_folder is not None:
+            if render or video_path is not None:
                 frames.append(env.render(mode=render_mode))
             if render:
                 time.sleep(0.03)
@@ -152,12 +152,12 @@ def view_gameplay(env, agent, opponent, render: bool = True, save_folder: str|No
             lose += 1
         elif winner == 0:
             draw += 1
-    if save_folder is not None:
+    if video_path is not None:
         imageio.mimwrite(video_path, frames, fps=30, format='gif')
     return wins, lose, draw
 
 def save_gameplay_video(env, agent, opponent, video_path, num_episodes: int = 1):
-    return view_gameplay(env, agent, opponent, render=False, save_folder=video_path, num_episodes=num_episodes)
+    return view_gameplay(env, agent, opponent, render=False, video_path=video_path, num_episodes=num_episodes)
 
 def main(args):
     if len(args) < 2:
@@ -166,9 +166,15 @@ def main(args):
         sys.exit(1)
     render = True
     num_episodes = 10
+    save_path = None
     if args[0] == '-e':
         render = False
         num_episodes = 100
+        args = args[1:]
+    elif args[0] == '-s':
+        render = False
+        num_episodes = 1
+        save_path = 'gameplay.gif'
         args = args[1:]
     left_agent = args[0]
     right_agent = args[1]
@@ -181,6 +187,9 @@ def main(args):
             return h_env.BasicOpponent(weak=False)
         elif name.lower() == 'weakbot':
             return h_env.BasicOpponent(weak=True)
+        elif name.lower() == 'puckfollowbot':
+            from adversarial import create_puck_follow_bot
+            return create_puck_follow_bot()
         elif name.startswith('sac'):
             return helper.load_agent_from_config(name, env)
         elif name == "oldsac":
@@ -199,7 +208,7 @@ def main(args):
     env.close()
 
     # view_gameplay(env, agent, opponent, render=False, save_folder='videos', num_episodes=10)
-    win, lose, draw = view_gameplay(env, agent, opponent, render=render, num_episodes=num_episodes)
+    win, lose, draw = view_gameplay(env, agent, opponent, render=render, video_path=save_path, num_episodes=num_episodes)
     print(f"L: {left_agent} wins {win}")
     print(f"R: {right_agent} wins {lose}")
     print(f"Draws = {draw}")

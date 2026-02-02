@@ -31,7 +31,7 @@ class FixedEntropyManager(EntropyManager):
 class PhasicEntropyManager(EntropyManager):
     def __init__(self, target_h_min=-4.0, target_h_max=-1.0,
                      max_steps_stagnant=500):
-        super().__init__(target_entropy=target_h_max)
+        super().__init__(target_entropy=target_h_min)
         self.target_h_min = target_h_min
         self.target_h_max = target_h_max
         self.steps_stagnant = 0
@@ -48,7 +48,7 @@ class PhasicEntropyManager(EntropyManager):
             self.steps_stagnant = 0
             return True
         if self.target_entropy > self.target_h_min:
-            self.target_entropy -= 0.0001
+            self.target_entropy -= 1. / (self.max_steps_stagnant)
         return False
 
     def id(self):
@@ -347,6 +347,7 @@ class Agent:
 
         if self.cfg.get('use_munchausen', False):
             reward = self._compute_munchausen_reward(state, action, reward)
+            log.update({'Metrics/munchausen_reward_mean': reward.mean().item()})
 
         # Compute target Q-values
         with T.no_grad():

@@ -95,7 +95,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-old-agents-MRL"
+exp_name: "sac-v4-pink-6-step-per-old-agents-MRL-4"
 resume: False
 save_video: True
 log_gradients: True

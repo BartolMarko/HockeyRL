@@ -19,7 +19,7 @@ from src.TDMPC.agent import TDMPCAgent
 torch.backends.cudnn.benchmark = True
 
 # TODO: MAJOR: add copy of TDMPC1 code for backward compatibility
-CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2_defense.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2.yaml"
 
 
 def set_seed(seed):

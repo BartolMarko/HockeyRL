@@ -5,6 +5,7 @@ import wandb
 from copy import deepcopy
 from omegaconf import OmegaConf
 from pathlib import Path
+import colorednoise
 
 from src.TDMPC import init
 import src.TDMPC.helper as h
@@ -100,6 +101,17 @@ class TOLD(nn.Module):
 class TDMPC:
     """Implementation of TD-MPC learning + inference."""
 
+    predefined_actions_borders = torch.tensor(
+        [
+            [x, y, torque, shoot]
+            for x in [-1, 0, 1]
+            for y in [-1, 0, 1]
+            for torque in [-1, 0, 1]
+            for shoot in [0, 1]
+        ],
+        dtype=torch.float32,
+    ).cuda()
+
     def __init__(self, cfg, load_dir: str | Path = None):
         self.cfg = cfg
         if load_dir is not None:
@@ -110,6 +122,13 @@ class TDMPC:
         self.model_target = deepcopy(self.model)
         self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
         self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
+
+        self.planner_name = self.cfg.get("planner_name", "default")
+        self.planning_noise_beta = self.cfg.get("planning_noise_beta", 0.25)
+        self.fraction_elites_reused = self.cfg.get("fraction_elites_reused", 0.25)
+        self.seed_actions = self.cfg.get("seed_actions", False)
+        self.seeded_horizon = min(self.cfg.get("seeded_horizon", 5), self.cfg.horizon)
+        self.previous_elites = None
 
         self.action_repeat = self.cfg.get("action_repeat", 1)
         self.previous_action = None
@@ -123,9 +142,19 @@ class TDMPC:
 
         self.static_batch = None
 
+        self.select_plan_function()
         if self.cfg.compile:
             self._plan = torch.compile(self._plan, mode="default")
             self._update = torch.compile(self._update, mode="reduce-overhead")
+
+    def select_plan_function(self):
+        match self.planner_name.lower():
+            case "default":
+                self._plan = self._default_plan
+            case "icem":
+                self._plan = self.iCEM
+            case _:
+                raise ValueError(f"Unknown planner name: {self.planner_name}")
 
     def state_dict(self):
         """Retrieve state dict of TOLD model, including slow-moving target network."""
@@ -199,19 +228,146 @@ class TDMPC:
             self._prev_mean = torch.zeros(
                 self.cfg.horizon, self.cfg.action_dim, device=self.device
             )
+            self.previous_elites = None
         self.model.eval()
         obs = torch.tensor(obs, dtype=torch.float32, device=self.device)
 
         planned_action, std = self._plan(obs)
         if not eval_mode:
             planned_action += std * torch.randn(self.cfg.action_dim, device=std.device)
+            # TODO: pink noise exploration
 
         self.same_action_counter = 1
         self.previous_action = planned_action
         return planned_action
 
+    def insert_predefined_actions(self, actions: torch.Tensor):
+        """
+        Seed the first part of the action sequence with predefined actions.
+
+        actions: Tensor of shape (horizon, num_samples, action_dim)
+        """
+        repeated_seeds = (
+            self.predefined_actions_borders.unsqueeze(0)
+            .repeat(self.seeded_horizon, 1, 1)
+            .to(self.device)
+        )
+        actions[: self.seeded_horizon, : self.predefined_actions_borders.shape[0]] = (
+            repeated_seeds
+        )
+
     @torch.no_grad()
-    def _plan(self, obs: torch.Tensor):
+    def iCEM(self, obs: torch.Tensor):
+        """
+        Plan next action using TD-MPC inference.
+        obs: raw input observation
+        """
+        obs = obs.unsqueeze(0)
+        # Sample policy trajectories
+        horizon = self.cfg.horizon
+        num_pi_trajs = int(self.cfg.mixture_coef * self.cfg.num_samples)
+        if num_pi_trajs > 0:
+            pi_actions = torch.empty(
+                horizon, num_pi_trajs, self.cfg.action_dim, device=self.device
+            )
+            z = self.model.encode(obs).repeat(num_pi_trajs, 1)
+            for t in range(horizon):
+                pi_actions[t] = self.model.pi(z, self.cfg.min_std)
+                z = self.model.next(z, pi_actions[t])
+
+        # Initialize state and parameters
+        num_elites_reused = int(self.fraction_elites_reused * self.cfg.num_elites)
+        z = self.model.encode(obs).repeat(
+            self.cfg.num_samples + num_pi_trajs + num_elites_reused, 1
+        )
+        mean = torch.zeros(horizon, self.cfg.action_dim, device=self.device)
+        std = 2 * torch.ones(horizon, self.cfg.action_dim, device=self.device)
+
+        mean[:-1] = self._prev_mean[1:]
+        previous_elites = (
+            None if self.previous_elites is None else self.previous_elites[:-1]
+        )
+        if previous_elites is not None:
+            previous_elites = torch.cat(
+                [
+                    previous_elites,
+                    torch.randn(  # TODO: maybe colored noise here as well?
+                        1, num_elites_reused, self.cfg.action_dim, device=self.device
+                    ),
+                ],
+                dim=0,
+            )
+
+        # Iterate CEM
+        for i in range(self.cfg.iterations):
+            actions = (
+                torch.tensor(
+                    colorednoise.powerlaw_psd_gaussian(
+                        self.planning_noise_beta,
+                        size=(self.cfg.num_samples, mean.shape[1], mean.shape[0]),
+                    ).transpose([2, 0, 1])
+                )
+                .to(self.device)
+                .type(torch.float32)
+            )
+            actions = torch.clamp(
+                mean.unsqueeze(1) + std.unsqueeze(1) * actions,
+                -1,
+                1,
+            )
+            if i == 0 and self.seed_actions:
+                self.insert_predefined_actions(actions)
+
+            # Add mean in last iteration
+            if i == self.cfg.iterations - 1:
+                actions[:, -1] = mean
+
+            # Reuse previous elites
+            if previous_elites is not None and num_elites_reused > 0:
+                actions = torch.cat([actions, previous_elites], dim=1)
+
+            if num_pi_trajs > 0:
+                actions = torch.cat([actions, pi_actions], dim=1)
+
+            # Compute elite actions
+            value = self.estimate_value(
+                z[: actions.shape[1]], actions, horizon
+            ).nan_to_num_(0)
+            elite_idxs = torch.topk(
+                value.squeeze(1), self.cfg.num_elites, dim=0
+            ).indices
+            elite_value, elite_actions = value[elite_idxs], actions[:, elite_idxs]
+            previous_elites_indices = torch.topk(
+                elite_value.squeeze(1), num_elites_reused, dim=0
+            ).indices
+            previous_elites = elite_actions[:, previous_elites_indices]
+
+            # Update parameters (weighted update, not typical CEM)
+            max_value = elite_value.max(0)[0]
+            score = torch.exp(self.cfg.temperature * (elite_value - max_value))
+            score /= score.sum(0)
+            _mean = torch.sum(score.unsqueeze(0) * elite_actions, dim=1) / (
+                score.sum(0) + 1e-9
+            )
+            _std = torch.sqrt(
+                torch.sum(
+                    score.unsqueeze(0) * (elite_actions - _mean.unsqueeze(1)) ** 2,
+                    dim=1,
+                )
+                / (score.sum(0) + 1e-9)
+            )
+            _std = _std.clamp_(self.std, 2)
+            mean, std = self.cfg.momentum * mean + (1 - self.cfg.momentum) * _mean, _std
+
+        self._prev_mean = mean
+        self.previous_elites = previous_elites
+
+        score = score.squeeze(1)
+        best_idx = score.argmax()
+        return elite_actions[0, best_idx], _std[0]
+
+    @torch.no_grad()
+    def _default_plan(self, obs: torch.Tensor):
         """
         Plan next action using TD-MPC inference.
         obs: raw input observation
@@ -253,6 +409,9 @@ class TDMPC:
                 -1,
                 1,
             )
+            if i == 0 and self.seed_actions:
+                self.insert_predefined_actions(actions)
+
             if num_pi_trajs > 0:
                 actions = torch.cat([actions, pi_actions], dim=1)
 

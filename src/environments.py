@@ -116,6 +116,16 @@ class AttackModeEnv(h_env.HockeyEnv):
         ret = super().reset(*args, **kwargs)
         self.max_timesteps = 250
         return ret
+    
+
+class DefenseModeEnvSparse(SparseRewardHockeyEnv, DefenseModeEnv):
+    pass
+
+class AttackModeEnvSparse(SparseRewardHockeyEnv, AttackModeEnv):
+    pass
+
+class DefenseModeImprovedEnvSparse(SparseRewardHockeyEnv, DefenseModeImprovedEnv):
+    pass
 
 
 def environment_factory(env_name: str):
@@ -123,11 +133,19 @@ def environment_factory(env_name: str):
     match env_name.lower():
         case "hockeyenv" | "normal":
             return h_env.HockeyEnv()
-        case "sparserewardhockeyenv":
+        case "sparserewardhockeyenv" | "sparse":
             return SparseRewardHockeyEnv()
         case "attack":
             return AttackModeEnv()
         case "defense":
             return DefenseModeEnv()
+        case "defense_improved":
+            return DefenseModeImprovedEnv()
+        case "attack_sparse":
+            return AttackModeEnvSparse()
+        case "defense_sparse":
+            return DefenseModeEnvSparse()
+        case "defense_improved_sparse":
+            return DefenseModeImprovedEnvSparse()
         case _:
             raise ValueError(f"Unknown environment name: {env_name}")

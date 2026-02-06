@@ -2,6 +2,7 @@ from .noise import Noise
 from .gaussian import GaussianNoise
 from .ou_noise import OUNoise
 from .pink_noise import PinkNoise
+from .zero_noise import ZeroNoise
 
 
 __all__ = [
@@ -9,25 +10,28 @@ __all__ = [
     "GaussianNoise",
     "OUNoise",
     "PinkNoise",
-    "NoiseFactory"
+    "NoiseFactory",
+    "ZeroNoise",
     "get_noise_types",
 ]
 
 GAUSSIAN = 'gaussian'
 OU       = 'ou'
 PINK     = 'pink'
+ZERO     = 'zero'
 
 _NOISE_REGISTER = {
     GAUSSIAN: GaussianNoise,
     OU:       OUNoise,
-    PINK:     PinkNoise
+    PINK:     PinkNoise,
+    ZERO:     ZeroNoise
 }
 
 def get_noise_types():
     return list(_NOISE_REGISTER.keys())
 
 
-class NosieFactory:
+class NoiseFactory:
     @staticmethod
     def get_noise(noise_string, *args, **kwargs):
         try:

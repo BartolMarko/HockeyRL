@@ -97,6 +97,19 @@ class TOLD(nn.Module):
         Q_2 = h.two_hot_inv(Q_raw_2, self.cfg)
         return torch.min(Q_1, Q_2)
 
+    def get_non_policy_optimizer_config(self):
+        """Return the parameters and learning rate for the optimizer of the non-policy part of the model."""
+        return [
+            {
+                "params": self._encoder.parameters(),
+                "lr": self.cfg.lr * self.cfg.get("enc_lr_scale", 1.0),
+            },
+            {"params": self._dynamics.parameters(), "lr": self.cfg.lr},
+            {"params": self._reward.parameters(), "lr": self.cfg.lr},
+            {"params": self._Q1.parameters(), "lr": self.cfg.lr},
+            {"params": self._Q2.parameters(), "lr": self.cfg.lr},
+        ]
+
 
 class TDMPC:
     """Implementation of TD-MPC learning + inference."""
@@ -120,7 +133,9 @@ class TDMPC:
         self.std = h.linear_schedule(self.cfg.std_schedule, 0)
         self.model = TOLD(self.cfg).cuda()
         self.model_target = deepcopy(self.model)
-        self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
+        self.optim = torch.optim.Adam(
+            self.model.get_non_policy_optimizer_config(), lr=self.cfg.lr
+        )
         self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
 
         self.n_step = self.cfg.get("n_step_returns", 1)
@@ -286,7 +301,7 @@ class TDMPC:
 
         mean[:-1] = self._prev_mean[1:]
         previous_elites = (
-            None if self.previous_elites is None else self.previous_elites[:-1]
+            None if self.previous_elites is None else self.previous_elites[1:]
         )
         if previous_elites is not None:
             previous_elites = torch.cat(

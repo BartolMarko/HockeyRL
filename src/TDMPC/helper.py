@@ -342,7 +342,7 @@ class ReplayBuffer:
                 )
             truncated_n_step[t] *= (1 - done[t]).int()
             if t + n_step < dim:
-                reward_n_step_sum -= (
+                reward_n_step_sum[t] -= (
                     (truncated_n_step[t] == n_step - 1).float()
                     * (self.cfg.discount**n_step)
                     * reward[t + n_step]

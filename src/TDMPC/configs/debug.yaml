@@ -85,18 +85,23 @@ opponents:
     evaluate_against: True
     train_start_step: 2000000
     removable: False
-  TD3_improved:
+  TD3_bank_shot:
     type: TD3
-    weights_path: ./models/td3_benchmarks/td3_improved/model.pt
-    config_path: ./models/td3_benchmarks/td3_improved/config.yaml
+    weights_path: ./models/td3_benchmarks/td3_bank_shot/model.pth
+    config_path: ./models/td3_benchmarks/td3_bank_shot/config.yaml
+    evaluate_against: True
+    train_start_step: 2000000
+    removable: False
+  TD3_163k_improved:
+    type: TD3
+    weights_path: ./models/td3_benchmarks/td3_163k_improved/model.pt
+    config_path: ./models/td3_benchmarks/td3_163k_improved/config.yaml
     evaluate_against: True
     train_start_step: 2000000
     removable: False
   SAC_last_year:
     type: SACLastYear
-    train_start_step: 2000000
     evaluate_against: True
-    removable: False
   StrongBot:
     type: StrongBot
     train_start_step: 0

@@ -11,6 +11,7 @@ from src.TD3.config_reader import Config
 from src.TD3.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer, PERNumpy, NStepRollOut
 from src.named_agent import NamedAgent
 from src.episode import Episode
+from src.TD3.rnd import RND
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -99,6 +100,17 @@ class TD3(NamedAgent):
         else:
             self.buffer = ReplayBuffer(self._obs_dim, self._action_n, self._config['buffer_size'])
 
+        
+        self.use_rnd = self._config.get('rnd') is not None
+        if self.use_rnd:
+            self.rnd_network = RND(
+                self._obs_dim,
+                self._config['rnd']['hidden_sizes'],
+                self._config['rnd']['output_size'],
+                gamma = self._config['gamma'],
+                lr = self._config['rnd'].get('learning_rate', 1e-4)
+            )
+
     def _hard_copy_nets(self):
         self.model_target.restore_state(self.model.state())
 
@@ -165,6 +177,15 @@ class TD3(NamedAgent):
     def update(self, t):
 
         data = self.buffer.sample_torch(self._config['batch_size'])
+        if self.use_rnd:
+            int_rew = self.rnd_network.get_intrinsic_reward(data[0])
+            total_rew = data[2] + self._config['rnd'].get('beta', 0.1) * int_rew
+
+            if self.pr_replay:
+                data = (data[0], data[1], total_rew, data[3], data[4], data[5], data[6], data[7])
+            else:
+                data = (data[0], data[1], total_rew, data[3], data[4], data[5])
+        
 
         self.critic_optimizer.zero_grad()
         loss_q, td_errors = self.compute_q_loss(data)
@@ -194,8 +215,17 @@ class TD3(NamedAgent):
             self.policy_optimizer.step()
 
             self._copy_nets()
+
+        loss_dict = {"loss_q": loss_q.item()}
+
+        if loss_pi is not None:
+            loss_dict['loss_pi'] = loss_pi.item()
+
+        if self.use_rnd:
+            rnd_loss = self.rnd_network.update(data[0])
+            loss_dict['loss_rnd'] = rnd_loss
     
-        return loss_q.item(), loss_pi.item() if loss_pi is not None else None
+        return loss_dict
     
     def act(self, obs):
         obs = torch.tensor(obs, dtype=torch.float32, device=device)
@@ -205,10 +235,18 @@ class TD3(NamedAgent):
         return self.act(obs)
 
     def state(self):
-        return self.model.state()
+        model_state = self.model.state()
+        if self.use_rnd:
+            return model_state
+        else:
+            return (model_state, self.rnd_network.state())
     
     def restore_state(self, state):
-        self.model.restore_state(state)
+        if self.use_rnd:
+            self.model.restore_state(state[0])
+            self.rnd_network.restore_state(state[1])
+        else:
+            self.model.restore_state(state)
         self._hard_copy_nets()
 
     def save_to_wandb(self, wandb_run, step):

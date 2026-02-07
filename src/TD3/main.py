@@ -2,6 +2,7 @@ import argparse, os
 import pickle
 import random
 from pathlib import Path
+from collections import defaultdict
 
 import torch, numpy as np
 from gymnasium import spaces
@@ -91,7 +92,7 @@ def main():
         print("Loading checkpoint: ", t_cfg['resume_from']['checkpoint'])
         td3.restore_state( torch.load(t_cfg['resume_from']['checkpoint']))
 
-    k = 0
+    counter_ = 0
 
     win_info = np.zeros(log_interval)
     last_n_winrates = np.zeros(log_interval)
@@ -153,8 +154,8 @@ def main():
 
             if i_episode % log_interval == 0:
                 winrate  = (win_info == 1).mean()
-                last_n_winrates[k % log_interval] = winrate
-                k += 1
+                last_n_winrates[counter_ % log_interval] = winrate
+                counter_ += 1
 
                 if last_n_winrates.mean() > .88:
                     if hasattr(opp_scheduler, "trigger_phase_change"):
@@ -178,20 +179,19 @@ def main():
             opp_scheduler.add_agent(td3.get_policy_config(), f"self_play_t_{t}")
 
         if t > t_cfg.start_after and t % t_cfg.update_every == 0:
-            q_losses = []
-            pi_losses = []
+            losses_dict = defaultdict(list)
             for j in range(t_cfg.update_every):
-                loss_q, loss_pi = td3.update(j)
-                q_losses.append(loss_q)
-                if loss_pi is not None:
-                    pi_losses.append(loss_pi)
+                losses = td3.update(j)
+                for k, loss_val in losses.items():
+                    losses_dict[k].append(loss_val)
 
-            mean_loss_q  = np.array(q_losses).mean()
-            mean_loss_pi = np.array(pi_losses).mean()
+            mean_losses = {
+                k : np.array(losses).mean() 
+                for k, losses in losses_dict.items()
+            }
 
             training_monitor.run.log(
-                {"loss_q": mean_loss_q,
-                "loss_pi": mean_loss_pi},
+                mean_losses,
                 step = t
             )
 

@@ -123,9 +123,9 @@ class TD3(NamedAgent):
 
     def compute_q_loss(self, data):
         if self.pr_replay:
-            obs, act, rew, obs_new, done, Ns, weights, inds = data
+            obs, act, rew, obs_new, done, weights, inds = data
         else:
-            obs, act, rew, obs_new, done, Ns = data
+            obs, act, rew, obs_new, done = data
             weights = torch.ones_like(rew, device=rew.device)
 
         q1 = self.model.q1(obs, act)
@@ -143,7 +143,7 @@ class TD3(NamedAgent):
             q2_pi_targ = self.model_target.q2(obs_new, a2)
 
             q_pi_targ  = torch.min(q1_pi_targ, q2_pi_targ)
-            target = rew + (self._config['gamma']**Ns)*(1-done)*q_pi_targ
+            target = rew + (self._config['gamma']**self.N)*(1-done)*q_pi_targ
         
         td_error1 = q1 - target
         td_error2 = q2 - target

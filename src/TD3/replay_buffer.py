@@ -18,16 +18,14 @@ class ReplayBuffer:
         self.obs_new = np.zeros((max_size, obs_dim), dtype=np.float32)
         self.rew = np.zeros(max_size, dtype=np.float32)
         self.done = np.zeros(max_size, dtype=np.float32)
-        self.Ns = np.zeros(max_size, dtype=np.float32)
         self.idx, self.size, self.max_size = 0, 0, max_size
 
-    def add_transition(self, ob, act, rew, ob_new, done, N):
+    def add_transition(self, ob, act, rew, ob_new, done):
         self.obs[self.idx] = ob
         self.act[self.idx] = act 
         self.rew[self.idx] = rew
         self.obs_new[self.idx] = ob_new
         self.done[self.idx] = done
-        self.Ns[self.idx] = N
         self.idx = (self.idx + 1) % self.max_size
         self.size = min(self.size + 1, self.max_size)
 
@@ -38,8 +36,7 @@ class ReplayBuffer:
             self.act[inds],
             self.rew[inds],
             self.obs_new[inds],
-            self.done[inds],
-            self.Ns[inds]
+            self.done[inds]
         )
     
     def sample_torch(self, batch_size):
@@ -61,9 +58,9 @@ class PrioritizedReplayBuffer(ReplayBuffer):
         self.min_tree = MinSegmentTree(it_capcaity)
         self.max_priority = 1.0
     
-    def add_transition(self, ob, act, rew, ob_new, done, N):
+    def add_transition(self, ob, act, rew, ob_new, done):
         idx = self.idx
-        super().add_transition(ob, act, rew, ob_new, done, N)
+        super().add_transition(ob, act, rew, ob_new, done)
         self.sum_tree[idx] = self.max_priority ** self.alpha
         self.min_tree[idx] = self.max_priority ** self.alpha
 
@@ -83,8 +80,7 @@ class PrioritizedReplayBuffer(ReplayBuffer):
             self.act[inds],
             self.rew[inds],
             self.obs_new[inds],
-            self.done[inds],
-            self.Ns[inds]
+            self.done[inds]
         )
     
     def sample(self, batch_size):
@@ -131,19 +127,17 @@ class PERNumpy:
         self.rew = np.zeros(max_size, dtype=np.float32)
         self.done = np.zeros(max_size, dtype=np.float32)
         self.priorities = np.zeros(max_size, dtype=np.float32)
-        self.Ns = np.zeros(max_size, dtype=np.float32)
         self.alpha = alpha
         self.beta  = beta
         self.idx, self.size, self.max_size = 0, 0, max_size
         self.max_priority = 1.0
 
-    def add_transition(self, ob, act, rew, ob_new, done, N):
+    def add_transition(self, ob, act, rew, ob_new, done):
         self.obs[self.idx] = ob
         self.act[self.idx] = act 
         self.rew[self.idx] = rew
         self.obs_new[self.idx] = ob_new
         self.done[self.idx] = done
-        self.Ns[self.idx] = N
         
         self.priorities[self.idx] = self.max_priority
 
@@ -170,9 +164,8 @@ class PERNumpy:
         rew = self.rew[indices]
         obs_new = self.obs_new[indices]
         done = self.done[indices]
-        Ns = self.Ns[indices]
         
-        return obs, act, rew, obs_new, done, Ns, weights, indices
+        return obs, act, rew, obs_new, done, weights, indices
     
     def sample_torch(self, batch_size):
         batch = self.sample(batch_size)
@@ -218,7 +211,7 @@ class NStepRollOut:
         # got reward: total_reward, reached state sn
         # _, _, _, obN, doneN = self.buffer[-1]
         self.buffer.popleft()
-        return (ob0, a0, total_reward, obN, d, i + 1)
+        return (ob0, a0, total_reward, obN, d)
     
     def reset(self):
         self.buffer.clear()

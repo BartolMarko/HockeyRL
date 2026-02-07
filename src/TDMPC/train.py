@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import time
 import random
+import os
 from pathlib import Path
 from omegaconf import OmegaConf
 from hockey.hockey_env import HockeyEnv
@@ -12,13 +13,13 @@ from src.evaluation import Evaluator
 from src.opponent_pool import opponent_pool_factory
 from src.training_monitor import TrainingMonitor
 
+
 from src.TDMPC.tdmpc import TDMPC
 from src.TDMPC.helper import ReplayBuffer
 from src.TDMPC.agent import TDMPCAgent
 
 torch.backends.cudnn.benchmark = True
 
-# TODO: MAJOR: add copy of TDMPC1 code for backward compatibility
 CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "tdmpc2.yaml"
 
 
@@ -267,6 +268,10 @@ if __name__ == "__main__":
     if major_cc >= 8:
         torch.set_float32_matmul_precision("high")
         print(f"Set float32 matmul precision to high. CUDA: {major_cc}.{minor_cc}")
+
+    if os.environ.get("DEBUG", "False").lower() == "true":
+        CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "debug.yaml"
+        os.environ["WANDB_MODE"] = "offline"
 
     with open(CONFIG_PATH, "r") as f:
         cfg = OmegaConf.load(f)

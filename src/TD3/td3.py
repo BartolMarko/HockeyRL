@@ -182,9 +182,9 @@ class TD3(NamedAgent):
             total_rew = data[2] + self._config['rnd'].get('beta', 0.1) * int_rew
 
             if self.pr_replay:
-                data = (data[0], data[1], total_rew, data[3], data[4], data[5], data[6], data[7])
+                data = (*data[:1], total_rew, *data[3:])
             else:
-                data = (data[0], data[1], total_rew, data[3], data[4], data[5])
+                data = (*data[:1], total_rew, *data[3:])
         
 
         self.critic_optimizer.zero_grad()

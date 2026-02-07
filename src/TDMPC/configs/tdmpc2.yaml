@@ -31,6 +31,7 @@ planning_noise_beta: 0.25
 fraction_elites_reused: 0.25
 
 # learning
+n_step_returns: 3
 compile: True
 batch_size: 512
 max_buffer_size: 1000000

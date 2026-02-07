@@ -290,44 +290,63 @@ class ReplayBuffer:
         weights = (total * probs[idxs]) ** (-self.cfg.per_beta)
         weights /= weights.max()
 
+        n_step = self.cfg.get("n_step_returns", 1)
+        dim = self.cfg.horizon + n_step
         obs = self._obs[idxs]
         next_obs_shape = self._obs.shape[1:]
         next_obs = torch.empty(
-            (self.cfg.horizon + 1, self.cfg.batch_size, *next_obs_shape),
+            (dim, self.cfg.batch_size, *next_obs_shape),
             dtype=obs.dtype,
             device=obs.device,
         )
         action = torch.empty(
-            (self.cfg.horizon + 1, self.cfg.batch_size, *self._action.shape[1:]),
+            (dim, self.cfg.batch_size, *self._action.shape[1:]),
             dtype=torch.float32,
             device=self.device,
         )
         reward = torch.empty(
-            (self.cfg.horizon + 1, self.cfg.batch_size),
+            (dim, self.cfg.batch_size),
             dtype=torch.float32,
             device=self.device,
         )
         done = torch.empty(
-            (self.cfg.horizon + 1, self.cfg.batch_size),
+            (dim, self.cfg.batch_size),
+            dtype=torch.float32,
+            device=self.device,
+        )
+        truncated_n_step = torch.zeros(
+            (dim, self.cfg.batch_size),
+            dtype=torch.int32,
+            device=self.device,
+        )
+        reward_n_step_sum = torch.zeros(
+            (dim, self.cfg.batch_size),
             dtype=torch.float32,
             device=self.device,
         )
 
-        for t in range(self.cfg.horizon + 1):
+        for t in range(dim - 1, -1, -1):
             _idxs = (idxs + t) % self.capacity
             next_obs[t] = self._obs[(_idxs + 1) % self.capacity]
             action[t] = self._action[_idxs]
             reward[t] = self._reward[_idxs]
             done[t] = self._done[_idxs]
 
-        if not action.is_cuda:
-            action, reward, done, idxs, weights = (
-                action.cuda(),
-                reward.cuda(),
-                done.cuda(),
-                idxs.cuda(),
-                weights.cuda(),
-            )
+            reward_n_step_sum[t] = reward[t]
+            if t != dim - 1:
+                truncated_n_step[t] = (truncated_n_step[t + 1] + 1).clamp(
+                    max=n_step - 1
+                )
+                reward_n_step_sum[t] += (
+                    self.cfg.discount * reward_n_step_sum[t + 1] * (1 - done[t])
+                )
+            truncated_n_step[t] *= (1 - done[t]).int()
+            if t + n_step < dim:
+                reward_n_step_sum -= (
+                    (truncated_n_step[t] == n_step - 1).float()
+                    * (self.cfg.discount**n_step)
+                    * reward[t + n_step]
+                )
 
         return (
             obs,
@@ -335,6 +354,8 @@ class ReplayBuffer:
             action,
             reward.unsqueeze(2),
             done.unsqueeze(2),
+            truncated_n_step,
+            reward_n_step_sum.unsqueeze(2),
             idxs,
             weights,
         )

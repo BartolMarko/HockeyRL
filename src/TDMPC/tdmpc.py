@@ -123,6 +123,7 @@ class TDMPC:
         self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
         self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
 
+        self.n_step = self.cfg.get("n_step_returns", 1)
         self.planner_name = self.cfg.get("planner_name", "default")
         self.planning_noise_beta = self.cfg.get("planning_noise_beta", 0.25)
         self.fraction_elites_reused = self.cfg.get("fraction_elites_reused", 0.25)
@@ -470,12 +471,29 @@ class TDMPC:
         return pi_loss
 
     @torch.no_grad()
-    def _td_target(self, next_obs, reward, done):
+    def _n_step_td_target(
+        self, t, next_obses, truncated_n_step, reward_n_step_sum, done
+    ):
         """Compute the TD-target from a reward and the observation at the following time step."""
-        # TODO: Should model_target be used for next_z computation?
-        next_z = self.model.encode(next_obs)
-        td_target = reward + self.cfg.discount * (1 - done) * self.model_target.Q_min(
-            next_z, self.model.pi(next_z, self.cfg.min_std)
+        n_step_indices = (
+            torch.full_like(
+                truncated_n_step[t],
+                t,
+                dtype=truncated_n_step.dtype,
+                device=truncated_n_step.device,
+            )
+            + truncated_n_step[t]
+        )
+        batch_indices = torch.arange(
+            truncated_n_step[t].shape[0], device=truncated_n_step.device
+        )
+        n_step_ahead_next_obs = next_obses[n_step_indices, batch_indices]
+        z_n_step_ahead = self.model.encode(n_step_ahead_next_obs)
+
+        td_target = reward_n_step_sum[t] + (
+            self.cfg.discount ** (truncated_n_step[t] + 1).float().unsqueeze(1)
+        ) * (1 - done[n_step_indices, batch_indices]) * self.model_target.Q_min(
+            z_n_step_ahead, self.model.pi(z_n_step_ahead, self.cfg.min_std)
         )
         return td_target
 
@@ -516,7 +534,17 @@ class TDMPC:
 
     def _update(self, batch):
         """Main update function. Corresponds to one iteration of the TOLD model learning."""
-        obs, next_obses, action, reward, done, _, weights = batch
+        (
+            obs,
+            next_obses,
+            action,
+            reward,
+            done,
+            truncated_n_step,
+            reward_n_step_sum,
+            _,
+            weights,
+        ) = batch
         self.optim.zero_grad(set_to_none=True)
         self.model.train()
 
@@ -531,11 +559,14 @@ class TDMPC:
             Q1, Q2 = self.model.Q_raw(z, action[t])
             reward_pred = self.model.reward_raw(z, action[t])
             z = self.model.next(z, action[t])
+            zs.append(z.detach())
+
             with torch.no_grad():
                 next_obs = next_obses[t]
                 next_z = self.model_target.encode(next_obs)
-                td_target = self._td_target(next_obs, reward[t], done[t])
-            zs.append(z.detach())
+                td_target = self._n_step_td_target(
+                    t, next_obses, truncated_n_step, reward_n_step_sum, done
+                )
 
             # Losses
             rho = self.cfg.rho**t

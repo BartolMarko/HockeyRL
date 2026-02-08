@@ -1,6 +1,9 @@
 import numpy as np
 from hockey import hockey_env as h_env
 from types import MethodType
+from time import sleep
+
+from src.control import get_n_future_puck_positions
 
 LEFT_GOAL_X = h_env.W / 2 - 245 / h_env.SCALE
 LEFT_GOAL_CENTER_Y = h_env.H / 2
@@ -10,6 +13,71 @@ LEFT_GOAL_TOP_Y = LEFT_GOAL_CENTER_Y + 1.0 * GOAL_Y_OFFSET
 LEFT_GOAL_BOTTOM_Y = LEFT_GOAL_CENTER_Y - 1.0 * GOAL_Y_OFFSET
 LEFT_GOAL_TOP_CLIPPED_Y = LEFT_GOAL_CENTER_Y + 0.9 * GOAL_Y_OFFSET
 LEFT_GOAL_BOTTOM_CLIPPED_Y = LEFT_GOAL_CENTER_Y - 0.9 * GOAL_Y_OFFSET
+
+
+class PuckTestingEnv(h_env.HockeyEnv):
+    def step(self, action):
+        ret = super().step(np.zeros_like(action))
+        obs = self._get_obs()
+
+        if self.t0:
+            n_future_positions = get_n_future_puck_positions(obs, n=9)
+            for i, pos in enumerate(n_future_positions[:-2]):
+                print(f"Future puck position {i + 1}: {pos}")
+                future_puck = self._create_puck(
+                    (pos[0] + h_env.CENTER_X, pos[1] + h_env.CENTER_Y), (255, 0, 255)
+                )
+                self.drawlist.append(future_puck)
+            player = self._create_player(
+                (
+                    h_env.CENTER_X + n_future_positions[-1][0],
+                    h_env.CENTER_Y + n_future_positions[-1][1],
+                ),
+                (255, 255, 0),
+                False,
+            )
+            self.drawlist.append(player)
+
+        self.t0 = 0
+        sleep(0.5)
+        return ret
+
+    def reset(self, *args, **kwargs):
+        _ = super().reset(*args, **kwargs)
+        self.t0 = 1
+
+        self.world.DestroyBody(self.player1)
+        self.world.DestroyBody(self.player2)
+        self.world.DestroyBody(self.puck)
+
+        self.player1 = self._create_player((0, 0), (255, 0, 0), False)
+        self.player2 = self._create_player((h_env.W, h_env.H), (0, 255, 0), True)
+
+        self.puck = self._create_puck(
+            (
+                5 * h_env.W / 6,
+                h_env.H / 2 + self.r_uniform(-h_env.H / 2, h_env.H / 2) * 0.8,
+            ),
+            (0, 0, 0),
+        )
+
+        puck_target = (LEFT_GOAL_X, LEFT_GOAL_CENTER_Y)
+        puck_direction = self.puck.position - np.array(puck_target)
+        puck_direction = puck_direction / puck_direction.length
+        force = (
+            -puck_direction
+            * h_env.SHOOTFORCEMULTIPLIER
+            * self.puck.mass
+            / self.timeStep
+        )
+        self.puck.ApplyForceToCenter(force, True)
+
+        self.drawlist = self.drawlist[:11]
+        self.drawlist.extend([self.player1, self.player2, self.puck])
+
+        obs = self._get_obs()
+        info = self._get_info()
+        return obs, info
 
 
 class DefenseModeImprovedEnv(h_env.HockeyEnv):

@@ -1,4 +1,4 @@
-run_name: tdmpc2
+run_name: tdmpc2_baseline_shoot_bias_0.5
 
 # environment
 train_env_list:
@@ -25,6 +25,7 @@ mixture_coef: 0.05
 min_std: 0.05
 temperature: 0.5
 momentum: 0.1
+shoot_bias: 0.5
 
 # iCEM specific
 planning_noise_beta: 0.25
@@ -40,7 +41,7 @@ value_coef: 0.1
 consistency_coef: 20
 rho: 0.5
 lr: 3e-4
-enc_lr_scale: 0.3
+enc_lr_scale: 1.0
 std_schedule: linear(0.5, 0.05, 25000)
 per_alpha: 0.6
 per_beta: 0.4

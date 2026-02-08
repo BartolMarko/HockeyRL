@@ -144,6 +144,7 @@ class TDMPC:
         self.seed_actions = self.cfg.get("seed_actions", False)
         self.seeded_horizon = min(self.cfg.get("seeded_horizon", 5), self.cfg.horizon)
         self.previous_elites = None
+        self.shoot_bias = self.cfg.get("shoot_bias", 0.0)
 
         self.action_repeat = self.cfg.get("action_repeat", 1)
         self.previous_action = None
@@ -243,6 +244,7 @@ class TDMPC:
             self._prev_mean = torch.zeros(
                 self.cfg.horizon, self.cfg.action_dim, device=self.device
             )
+            self._prev_mean[:, -1] = self.shoot_bias
             self.previous_elites = None
         self.model.eval()
         obs = torch.tensor(obs, dtype=torch.float32, device=self.device)
@@ -403,6 +405,7 @@ class TDMPC:
         # Initialize state and parameters
         z = self.model.encode(obs).repeat(self.cfg.num_samples + num_pi_trajs, 1)
         mean = torch.zeros(horizon, self.cfg.action_dim, device=self.device)
+        mean[:, -1] = self.shoot_bias
         std = 2 * torch.ones(horizon, self.cfg.action_dim, device=self.device)
 
         prev_mean_shifted = self._prev_mean[1:]

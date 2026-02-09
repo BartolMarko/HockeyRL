@@ -2,6 +2,7 @@ import numpy as np
 from hockey import hockey_env as h_env
 from types import MethodType
 from time import sleep
+import math
 
 from src.control import (
     get_n_future_puck_positions,
@@ -19,7 +20,7 @@ LEFT_GOAL_TOP_CLIPPED_Y = LEFT_GOAL_CENTER_Y + 0.9 * GOAL_Y_OFFSET
 LEFT_GOAL_BOTTOM_CLIPPED_Y = LEFT_GOAL_CENTER_Y - 0.9 * GOAL_Y_OFFSET
 
 # Test consts
-PLAYER_SPAWN_POS = (LEFT_GOAL_X + 1.5, LEFT_GOAL_CENTER_Y + 0.2)
+PLAYER_SPAWN_POS = (LEFT_GOAL_X + 0.75, LEFT_GOAL_TOP_CLIPPED_Y)
 PLAYER_TARGET_POS = (LEFT_GOAL_X + 0.75, LEFT_GOAL_BOTTOM_Y)
 
 
@@ -53,8 +54,8 @@ class PuckTestingEnv(h_env.HockeyEnv):
                     obs,
                     n,
                     n_future_positions[-1],
-                    0.0,
-                    0.0,
+                    target_angle=math.atan2(-obs[15], -obs[14]),
+                    shoot=0.0,
                 )
             )
 
@@ -83,7 +84,7 @@ class PuckTestingEnv(h_env.HockeyEnv):
             (0, 0, 0),
         )
 
-        puck_target = (LEFT_GOAL_X, LEFT_GOAL_TOP_Y)
+        puck_target = (LEFT_GOAL_X, LEFT_GOAL_CENTER_Y)
         puck_direction = self.puck.position - np.array(puck_target)
         puck_direction = puck_direction / puck_direction.length
         force = (
@@ -154,7 +155,7 @@ class PlayerMovingTestingEnv(h_env.HockeyEnv):
         self.actions_list = list(
             move_player_towards_position(
                 self._get_obs(),
-                n=5,
+                n=15,
                 target_pos_xy=(
                     PLAYER_TARGET_POS[0] - h_env.CENTER_X,
                     PLAYER_TARGET_POS[1] - h_env.CENTER_Y,

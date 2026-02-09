@@ -8,6 +8,7 @@ from pathlib import Path
 import colorednoise
 
 from src.TDMPC import init
+from src.TDMPC.action_hints import get_action_hints
 import src.TDMPC.helper as h
 
 CONFIG_FILE = "config.yaml"
@@ -141,15 +142,13 @@ class TDMPC:
         self.planner_name = self.cfg.get("planner_name", "default")
         self.planning_noise_beta = self.cfg.get("planning_noise_beta", 0.25)
         self.fraction_elites_reused = self.cfg.get("fraction_elites_reused", 0.25)
-        self.seed_actions = self.cfg.get("seed_actions", False)
-        self.seeded_horizon = min(self.cfg.get("seeded_horizon", 5), self.cfg.horizon)
         self.previous_elites = None
         self.shoot_bias = self.cfg.get("shoot_bias", 0.0)
+        self.use_action_hints = self.cfg.get("use_action_hints", True)
 
         self.action_repeat = self.cfg.get("action_repeat", 1)
         self.previous_action = None
-        self.same_action_counter = 0
-        # For action repeat
+        self.same_action_counter = 0  # For action repeat
 
         self.model.eval()
         self.model_target.eval()
@@ -248,30 +247,18 @@ class TDMPC:
             self.previous_elites = None
         self.model.eval()
         obs = torch.tensor(obs, dtype=torch.float32, device=self.device)
+        if self.use_action_hints:
+            self.action_hints = torch.from_numpy(
+                get_action_hints(obs.cpu().numpy(), self.cfg.horizon)
+            ).cuda()
 
         planned_action, std = self._plan(obs)
         if not eval_mode:
             planned_action += std * torch.randn(self.cfg.action_dim, device=std.device)
-            # TODO: pink noise exploration
 
         self.same_action_counter = 1
         self.previous_action = planned_action
         return planned_action
-
-    def insert_predefined_actions(self, actions: torch.Tensor):
-        """
-        Seed the first part of the action sequence with predefined actions.
-
-        actions: Tensor of shape (horizon, num_samples, action_dim)
-        """
-        repeated_seeds = (
-            self.predefined_actions_borders.unsqueeze(0)
-            .repeat(self.seeded_horizon, 1, 1)
-            .to(self.device)
-        )
-        actions[: self.seeded_horizon, : self.predefined_actions_borders.shape[0]] = (
-            repeated_seeds
-        )
 
     @torch.no_grad()
     def iCEM(self, obs: torch.Tensor):
@@ -332,8 +319,6 @@ class TDMPC:
                 -1,
                 1,
             )
-            if i == 0 and self.seed_actions:
-                self.insert_predefined_actions(actions)
 
             # Add mean in last iteration
             if i == self.cfg.iterations - 1:
@@ -403,15 +388,15 @@ class TDMPC:
                 z = self.model.next(z, pi_actions[t])
 
         # Initialize state and parameters
-        z = self.model.encode(obs).repeat(self.cfg.num_samples + num_pi_trajs, 1)
+        num_elites_reused = int(self.fraction_elites_reused * self.cfg.num_elites)
+        z = self.model.encode(obs).repeat(
+            self.cfg.num_samples + num_pi_trajs + num_elites_reused, 1
+        )
         mean = torch.zeros(horizon, self.cfg.action_dim, device=self.device)
         mean[:, -1] = self.shoot_bias
+        mean[:-1] = self._prev_mean[1:]
         std = 2 * torch.ones(horizon, self.cfg.action_dim, device=self.device)
-
-        prev_mean_shifted = self._prev_mean[1:]
-        valid_len = min(prev_mean_shifted.shape[0], mean.shape[0] - 1)
-        if valid_len > 0:
-            mean[:valid_len] = prev_mean_shifted[:valid_len]
+        previous_elites = None
 
         # Iterate CEM
         for i in range(self.cfg.iterations):
@@ -427,18 +412,26 @@ class TDMPC:
                 -1,
                 1,
             )
-            if i == 0 and self.seed_actions:
-                self.insert_predefined_actions(actions)
+            if i == 0 and self.use_action_hints:
+                actions[:, : self.action_hints.shape[1], :] = self.action_hints
+            if self.previous_elites is not None and num_elites_reused > 0:
+                actions = torch.cat([actions, previous_elites], dim=1)
 
             if num_pi_trajs > 0:
                 actions = torch.cat([actions, pi_actions], dim=1)
 
             # Compute elite actions
-            value = self.estimate_value(z, actions, horizon).nan_to_num_(0)
+            value = self.estimate_value(
+                z[: actions.shape[1]], actions, horizon
+            ).nan_to_num_(0)
             elite_idxs = torch.topk(
                 value.squeeze(1), self.cfg.num_elites, dim=0
             ).indices
             elite_value, elite_actions = value[elite_idxs], actions[:, elite_idxs]
+            previous_elites_indices = torch.topk(
+                elite_value.squeeze(1), num_elites_reused, dim=0
+            ).indices
+            previous_elites = elite_actions[:, previous_elites_indices]
 
             # Update parameters
             max_value = elite_value.max(0)[0]

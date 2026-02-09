@@ -10,11 +10,6 @@ PLAYER_MAX_SPEED = 10.0
 PLAYER_MASS = 58.0
 PLAYER_INERTIA = 4.57809
 
-PUCK_X_POS_INDEX = 12
-PUCK_Y_POS_INDEX = 13
-PUCK_X_VEL_INDEX = 14
-PUCK_Y_VEL_INDEX = 15
-
 
 def get_n_future_puck_positions(observation: np.ndarray, n: int) -> np.ndarray:
     puck_pos = observation[12:14].copy()

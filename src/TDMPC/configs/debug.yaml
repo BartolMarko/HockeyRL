@@ -2,20 +2,21 @@ run_name: debug_tdmpc
 
 # environment
 train_env_list:
-  - DefenseModeImproved
   - LeftFirstPossession
   - RightFirstPossession
-reward_name: defense
+reward_name: sparse
 reward_kwargs:
-  defense_reward_weight: 0.002
+  defense_reward_weight: 0
 
-action_repeat: 2
+action_repeat: 1
 discount: 0.99
 max_episode_length: 251
 train_steps: 3000000
 mirror_episodes: True
 
 # planning
+planner_name: default
+use_action_hints: true
 iterations: 6
 num_samples: 512
 num_elites: 64
@@ -23,6 +24,8 @@ mixture_coef: 0.05
 min_std: 0.05
 temperature: 0.5
 momentum: 0.1
+fraction_elites_reused: 0.25
+shoot_bias: 0.0
 
 # learning
 compile: False

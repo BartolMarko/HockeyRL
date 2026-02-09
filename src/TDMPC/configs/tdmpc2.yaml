@@ -1,4 +1,4 @@
-run_name: tdmpc2_baseline_shoot_bias_0.5
+run_name: tdmpc2_action_hints_reuse_elites
 
 # environment
 train_env_list:
@@ -16,8 +16,7 @@ mirror_episodes: True
 
 # planning
 planner_name: default
-seed_actions: False
-seeded_horizon: 5
+use_action_hints: True
 iterations: 6
 num_samples: 512
 num_elites: 64
@@ -25,11 +24,11 @@ mixture_coef: 0.05
 min_std: 0.05
 temperature: 0.5
 momentum: 0.1
-shoot_bias: 0.5
+shoot_bias: 0.0
+fraction_elites_reused: 0.25
 
 # iCEM specific
 planning_noise_beta: 0.25
-fraction_elites_reused: 0.25
 
 # learning
 compile: True
@@ -41,7 +40,7 @@ value_coef: 0.1
 consistency_coef: 20
 rho: 0.5
 lr: 3e-4
-enc_lr_scale: 1.0
+enc_lr_scale: 0.3
 std_schedule: linear(0.5, 0.05, 25000)
 per_alpha: 0.6
 per_beta: 0.4

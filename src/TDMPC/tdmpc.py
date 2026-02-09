@@ -141,10 +141,10 @@ class TDMPC:
 
         self.planner_name = self.cfg.get("planner_name", "default")
         self.planning_noise_beta = self.cfg.get("planning_noise_beta", 0.25)
-        self.fraction_elites_reused = self.cfg.get("fraction_elites_reused", 0.25)
+        self.fraction_elites_reused = self.cfg.get("fraction_elites_reused", 0.0)
         self.previous_elites = None
         self.shoot_bias = self.cfg.get("shoot_bias", 0.0)
-        self.use_action_hints = self.cfg.get("use_action_hints", True)
+        self.use_action_hints = self.cfg.get("use_action_hints", False)
 
         self.action_repeat = self.cfg.get("action_repeat", 1)
         self.previous_action = None

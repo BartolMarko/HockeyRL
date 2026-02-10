@@ -62,7 +62,7 @@ num_bins: 51
 
 # misc
 seed: 1
-eval_freq: 500
+eval_freq: 500000
 save_model: True
 save_model_freq: 1500
 device: cuda

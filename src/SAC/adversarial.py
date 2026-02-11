@@ -72,6 +72,7 @@ class VecPuckFollowBot:
     def __init__(self, num_envs, name="PuckFollowBot"):
         self.num_envs = num_envs
         self.opponents = [PuckFollowBot(name + "_{}".format(i)) for i in range(num_envs)]
+        self.name = name
 
     def plan_batch(self, obs):
         actions = []

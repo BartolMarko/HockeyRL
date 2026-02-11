@@ -351,6 +351,9 @@ def get_opponent_pool(cfg, env=None) -> OpponentPool:
                 opponent = pfw.VecStrongBot(cfg.num_envs)
             else:
                 opponent = StrongBot()
+        elif opp_type == 'PuckFollowBot':
+            import adversarial as adv
+            opponent = adv.create_puck_follow_bot(cfg.num_envs)
         elif opp_type == 'CustomAgent':
             experiment_name = opp_cfg.get('experiment_name')
             from helper import load_agent_from_config

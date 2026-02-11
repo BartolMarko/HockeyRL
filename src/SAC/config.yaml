@@ -1,4 +1,4 @@
-dry_run: False
+dry_run: True
 
 # Environment
 n_actions: 4
@@ -8,6 +8,8 @@ opponents:
   - type: 'StrongBot'
     priority: 0.40
   - type: 'WeakBot'
+    priority: 0.20
+  - type: PuckFollowBot
     priority: 0.20
   - type: 'CustomAgent'
     experiment_name: sac-v0-gaussian-replay-self-play-mirror

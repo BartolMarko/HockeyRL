@@ -16,7 +16,7 @@ def ricochet_target(puck, goal, wall_y):
     when the ball hits the target position t
     it goes to the goal, it's obvious that ty \in {-Y_MAX, Y_MIN}
     because it has to be on the border, for tx
-    we know that tx >= px and, and gx <= px,
+    we know that tx >= px and, and gx >= tx,
     then following ideal reflection:
     tan(theta) = (tx - px)/abs(ty - gy)
     tan(phi)   = (gx - tx)/abs(gy - ty)
@@ -94,8 +94,8 @@ class CustomOpponent(NamedAgent):
       # target_y = (210 / SCALE)*self.y_dir
       # target = np.array([target_x, target_y])
 
-      target_top    = ricochet_target(puck, goal_pos,  3.5)
-      target_bottom = ricochet_target(puck, goal_pos, -3.5)
+      target_top    = ricochet_target(puck, goal_pos,  2.8)
+      target_bottom = ricochet_target(puck, goal_pos, -2.8)
 
       if target_top is None and target_bottom is None:
         target = goal_pos

@@ -140,17 +140,23 @@ class Agent:
             elif cfg.get('target_entropy', '') == 'sinosoidal':
                 self.target_entropy_mgr = SinosoidalEntropyManager()
             else:
-                self.target_entropy_mgr = FixedEntropyManager(-np.prod(cfg.n_actions))
+                target_entropy = -np.prod(cfg.n_actions)
+                if cfg.get('use_munchausen', False):
+                    target_entropy *= 0.75
+                self.target_entropy_mgr = FixedEntropyManager(target_entropy)
         else:
             if hasattr(cfg, 'alpha') and cfg.alpha:
                 self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
             else:
-                print("[WARN] No alpha value specified in config for fixed alpha. Using default alpha=0.2")
+                print("[WARN] No alpha value specified in config for fixed alpha."
+                      "Using default alpha=0.2")
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
         if cfg.get('use_munchausen', False):
-            assert 0.0 < cfg.munchausen_alpha <= 1.0, "munchausen_alpha must be in (0, 1]"
-            assert cfg.munchausen_lo_clip < 0.0, "munchausen_lo_clip must be negative"
+            assert 0.0 < cfg.munchausen_alpha <= 1.0, \
+                "munchausen_alpha must be in (0, 1]"
+            assert cfg.munchausen_lo_clip < 0.0, \
+                "munchausen_lo_clip must be negative"
 
         # vectorized env support flag
         num_envs = cfg.get('num_envs', 1)
@@ -288,29 +294,18 @@ class Agent:
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()
 
-    def _compute_munchausen_reward(self, state, action, reward):
+    def _compute_munchausen_reward(self, state, action):
         """
-        Computes the Munchausen augmented reward.
+        Computes the Munchausen reward.
         Ref: Munchausen Reinforcement Learning (Vieillard et al., NeurIPS 2020)
         """
-        # TODO: needs fix
         with T.no_grad():
-            q1_values = self.critic_1.forward(state, action)
-            q2_values = self.critic_2.forward(state, action)
-            min_q_values = T.min(q1_values, q2_values)
-
-            # Compute log-policy
             new_actions, log_probs = self.actor.sample_normal(
                     state, reparameterize=False)
             log_policy = log_probs.view(-1)
-
-            # Munchausen term
-            munchausen_term = T.clamp(self.cfg.munchausen_alpha * log_policy,
-                                      min=self.cfg.munchausen_lo_clip, max=0.0)
-
-            # Augmented reward
-            munchausen_reward = reward + munchausen_term.item()
-        return munchausen_reward
+        munchausen_term = self.cfg.munchausen_alpha * T.clamp(
+                log_policy, min=self.cfg.munchausen_lo_clip)
+        return munchausen_term
 
     def store(self, state, action, reward, new_state, done):
         """Stores a transition in the replay buffer, adding intrinsic reward (curious)."""
@@ -369,7 +364,7 @@ class Agent:
         if self.memory.mem_cntr < self.batch_size:
             return log_data
 
-        if self.buffer_type in [ 'per', 'n-step-per' ]:
+        if self.buffer_type in ['per', 'n-step-per']:
             state, action, reward, new_state, done, indices, weights = self.memory.sample_buffer(self.batch_size)
             weights = T.tensor(weights, dtype=T.float).to(self.actor.device)
         else:
@@ -381,10 +376,6 @@ class Agent:
         state = T.tensor(state, dtype=T.float).to(self.actor.device)
         action = T.tensor(action, dtype=T.float, device=self.actor.device)
 
-        if self.cfg.get('use_munchausen', False):
-            reward = self._compute_munchausen_reward(state, action, reward)
-            log.update({'Metrics/munchausen_reward_mean': reward.mean().item()})
-
         # Compute target Q-values
         with T.no_grad():
             next_actions, next_log_probs = self.actor.sample_normal(state_, reparameterize=False)
@@ -393,9 +384,17 @@ class Agent:
             q_next = T.min(q1_next, q2_next) - self.get_alpha() * next_log_probs
             if self.buffer_type == 'n-step-per':
                 # use gamma^n for skipping n-1 steps
-                q_target = reward + ( self.gamma ** self.cfg.n_step_buffer_n ) * (1 - done.float()) * q_next.view(-1)
+                q_target = reward + (self.gamma ** self.cfg.n_step_buffer_n) * \
+                                    (1 - done.float()) * q_next.view(-1)
             else:
                 q_target = reward + self.gamma * (1 - done.float()) * q_next.view(-1)
+
+        if self.cfg.get('use_munchausen', False):
+            msac_reward = self._compute_munchausen_reward(state, action)
+            log_data.update({
+                'Metrics/munchausen_reward_mean': msac_reward.mean().item()
+            })
+            q_target = q_target + msac_reward * (1 - done.float())
 
         # Update critics
         self.critic_1.optimizer.zero_grad()
@@ -416,8 +415,8 @@ class Agent:
         critic1_grad_norm = sum(p.grad.norm().item() for p in self.critic_1.parameters() if p.grad is not None)
         critic2_grad_norm = sum(p.grad.norm().item() for p in self.critic_2.parameters() if p.grad is not None)
 
-        critic1_clipped_grad_norm = T.nn.utils.clip_grad_norm_(self.critic_1.parameters(), max_norm=1.0)
-        critic2_clipped_grad_norm = T.nn.utils.clip_grad_norm_(self.critic_2.parameters(), max_norm=1.0)
+        T.nn.utils.clip_grad_norm_(self.critic_1.parameters(), max_norm=1.0)
+        T.nn.utils.clip_grad_norm_(self.critic_2.parameters(), max_norm=1.0)
 
         self.critic_1.optimizer.step()
         self.critic_2.optimizer.step()
@@ -433,7 +432,7 @@ class Agent:
 
         actor_grad_norm = sum(p.grad.norm().item() for p in self.actor.parameters() if p.grad is not None)
 
-        actor_clipped_grad_norm = T.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0)
+        T.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0)
         self.actor.optimizer.step()
 
         # Update alpha
@@ -449,7 +448,7 @@ class Agent:
             self.update_target_networks(method='soft')
 
         # Update Replay Buffer priorities if using PER or N-Step-PER
-        if self.buffer_type in [ 'per', 'n-step-per' ]:
+        if self.buffer_type in ['per', 'n-step-per']:
             self.memory.update_priorities(indices, priorities)
             log_data.update({
                 'per/avg_priority': np.mean(priorities),

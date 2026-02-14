@@ -138,7 +138,7 @@ def view_gameplay(env, agent, opponent, render: bool = True, video_path: str|Non
             if render or video_path is not None:
                 frames.append(env.render(mode=render_mode))
             if render:
-                time.sleep(0.03)
+                time.sleep(0.02)
             agent_action = agent.act(obs)
             opponent_action = opponent.act(obs_opponent)
             combined_action = np.hstack([agent_action, opponent_action])

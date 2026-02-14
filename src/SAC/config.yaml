@@ -10,7 +10,7 @@ opponents:
   - type: 'WeakBot'
     priority: 0.20
   - type: PuckFollowBot
-    priority: 0.15
+    priority: 0.35
   - type: 'CustomAgent'
     experiment_name: sac-v0-gaussian-replay-self-play-mirror
     priority: 0.40
@@ -51,7 +51,7 @@ tau: 0.005
 # alpha
 automatic_entropy_tuning: True
 lr_alpha: 0.00025
-target_entropy: sinosoidal
+# target_entropy: sinosoidal
 # critic target network
 target_update_freq: 1
 # Explorer
@@ -78,9 +78,9 @@ explorer:
 # Munchausen RL
 # comment: though MRL says PER and N-Step-Returns is not needed
 # but we still do it, should check without it too
-use_munchauser: False
+use_munchausen: True
 munchausen_alpha: 0.9
-munchausen_lo_clip: -1
+munchausen_lo_clip: -10
 
 # Network
 algorithm: "sac"
@@ -97,7 +97,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-old-agents-sin-ent"
+exp_name: "sac-v4-pink-6-step-per-old-agents-MRL"
 resume: False
 save_video: True
 log_gradients: True

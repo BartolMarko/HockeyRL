@@ -10,7 +10,7 @@ opponents:
   - type: 'WeakBot'
     priority: 0.20
   - type: PuckFollowBot
-    priority: 0.30
+    priority: 0.20
 self_play:
   - name: 'SelfPlayMgr'
     priority: 0.7
@@ -75,7 +75,7 @@ explorer:
 # Munchausen RL
 # comment: though MRL says PER and N-Step-Returns is not needed
 # but we still do it, should check without it too
-use_munchausen: True
+use_munchausen: False
 munchausen_alpha: 0.9
 munchausen_lo_clip: -10
 
@@ -94,7 +94,7 @@ save_model_freq: 400
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-MRL-sin-ent"
+exp_name: "sac-v4-pink-6-step-per-sin-ent"
 resume: False
 save_video: True
 log_gradients: True

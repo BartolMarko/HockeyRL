@@ -5,20 +5,25 @@ from sampler import get_sampler_by_name
 import time
 from pathlib import Path
 
+
 class PoolingStrategy:
     """
     Base class for pooling strategies.
     """
+
     def __init__(self, name="pooling_strategy"):
         self.name = name
 
     def valid_addition(self, *args, **kwargs):
-        raise NotImplementedError("valid_addition method must be implemented by subclasses.")
+        raise NotImplementedError(
+                "valid_addition method must be implemented by subclasses.")
+
 
 class EpisodePoolingStrategy(PoolingStrategy):
     """
     Pools based on episode numbers.
     """
+
     def __init__(self, freq, name="episode_pooling_strategy"):
         super().__init__(name)
         self.freq = freq
@@ -30,11 +35,13 @@ class EpisodePoolingStrategy(PoolingStrategy):
     def __str__(self):
         return f"EpisodePoolingStrategy(freq={self.freq})"
 
+
 class LastCloneWinPoolingStrategy(PoolingStrategy):
     """
     Pools based on last clone win rate.
     """
-    def __init__(self, win_rate_threshold, name="last_clone_win_pooling_strategy"):
+
+    def __init__(self, win_rate_threshold, name="win_pooling_strategy"):
         super().__init__(name)
         self.win_rate_threshold = win_rate_threshold
         self.first_agent = True
@@ -54,6 +61,7 @@ class LastCloneWinPoolingStrategy(PoolingStrategy):
     def __str__(self):
         return f"LastCloneWinPoolingStrategy(delta={self.win_rate_threshold})"
 
+
 def get_pooling_strategy_by_name(name, cfg):
     name = name.lower()
     if name == 'episode':
@@ -65,6 +73,7 @@ def get_pooling_strategy_by_name(name, cfg):
     else:
         raise ValueError(f"Unknown pooling strategy name: {name}")
 
+
 def create_pooling_strategy(cfg):
     strategies = []
     for strat_cfg in cfg.pooling:
@@ -73,6 +82,7 @@ def create_pooling_strategy(cfg):
         strategies.append(strategy)
     return strategies
 
+
 class SelfPlayManager(opponents.OpponentInPool):
     """
     Manages a pool of past agent versions for self-play. Keeps track of the
@@ -80,6 +90,7 @@ class SelfPlayManager(opponents.OpponentInPool):
     Every sampling request loads the agent from disk. Needs to be sent to GPU
     before use.
     """
+
     def __init__(self, name, cfg, subcfg, index=0) -> None:
         super().__init__(None, index)
         self.name = name
@@ -143,11 +154,12 @@ class SelfPlayManager(opponents.OpponentInPool):
             return False
         if len(self.pool) >= self.max_pool_size:
             lowest_priority_episode = self.get_lowest_priority_episode()
-            assert lowest_priority_episode is not None, "Lowest priority episode should not be None when pool is full."
+            assert lowest_priority_episode is not None, \
+                   "Lowest priority episode should not be None when pool full."
             print("[SPLY] Pool is full. Removing lowest priority episode "
-                  f"{lowest_priority_episode} to add episode {episode_number}.")
-            index_in_pool = self.pool_meta[lowest_priority_episode]['index_in_pool']
-            self.sampler.remove_arm(index_in_pool)
+                  f"{lowest_priority_episode} to add episode {episode_number}")
+            idx_p = self.pool_meta[lowest_priority_episode]['index_in_pool']
+            self.sampler.remove_arm(idx_p)
             self.pool.remove(lowest_priority_episode)
             del self.pool_meta[lowest_priority_episode]
             for idx, ep in enumerate(self.pool):
@@ -218,7 +230,7 @@ class SelfPlayManager(opponents.OpponentInPool):
         executed at the end of evaluation, for now activates self if the condition is met
         """
         activation_type = self.subcfg.get('activation_type', 'always_on')
-        if self.is_active_flag == True:
+        if self.is_active_flag:
             return
         if activation_type == 'always_on':
             self.is_active_flag = True
@@ -277,22 +289,31 @@ class SelfPlayManager(opponents.OpponentInPool):
             wins = meta.get('win_count', 0)
             losses = meta.get('loss_count', 0)
             draws = meta.get('draw_count', 0)
-            total = meta.get('total_games', 0)
             win_rate = meta.get('win_rate', 0.0)
-            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_wins", wins)
-            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_losses", losses)
-            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_draws", draws)
-            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_win_rate", win_rate)
+            logger.add_scalar(
+                    f"SelfPlay_Opponents/{self.name}_ep{episode}_wins", wins)
+            logger.add_scalar(
+                    f"SelfPlay_Opponents/{self.name}_ep{episode}_losses",
+                    losses)
+            logger.add_scalar(
+                    f"SelfPlay_Opponents/{self.name}_ep{episode}_draws", draws)
+            logger.add_scalar(
+                    f"SelfPlay_Opponents/{self.name}_ep{episode}_win_rate",
+                    win_rate)
             priority = self.sampler.get_weights()[meta['index_in_pool']]
-            logger.add_scalar(f"SelfPlay_Opponents/{self.name}_ep{episode}_priority", priority)
+            logger.add_scalar(
+                    f"SelfPlay_Opponents/{self.name}_ep{episode}_priority",
+                    priority)
         # log duration in pool
         current_time = time.time()
-        durations = [current_time - self.pool_meta[ep]['added_time'] for ep in self.pool]
+        durations = [current_time - self.pool_meta[ep]['added_time']
+                     for ep in self.pool]
         mean_duration = np.mean(durations) if len(durations) > 0 else 0.0
         max_duration = np.max(durations) if len(durations) > 0 else 0.0
-        logger.add_scalar(f"SelfPlay/{self.name}_max_pool_duration", max_duration)
-        logger.add_scalar(f"SelfPlay/{self.name}_mean_pool_duration", mean_duration)
-
+        logger.add_scalar(f"SelfPlay/{self.name}_max_pool_duration",
+                          max_duration)
+        logger.add_scalar(f"SelfPlay/{self.name}_mean_pool_duration",
+                          mean_duration)
 
     def show_info(self, level=1):
         prefix_space = " " * (level * 2 - 1)
@@ -311,7 +332,8 @@ class SelfPlayManager(opponents.OpponentInPool):
         if len(self.pool) == 0:
             print("--- no play from pool.")
             return
-        print(f"{'Episode':10} | {'Wins':5} | {'Losses':7} | {'Draws':5} | {'Win Rate':8} | {'Priority':8} | {'Time in Pool':15}")
+        print(f"{'Episode':10} | {'Wins':5} | {'Losses':7} | {'Draws':5} | "
+              f"{'Win Rate':8} | {'Priority':8} | {'Time in Pool':15}")
         print("-" * 75)
         win_rate_accum = 0.0
         total_eps = 0
@@ -326,7 +348,8 @@ class SelfPlayManager(opponents.OpponentInPool):
             total_eps += total > 0
             priority = self.sampler.get_weights()[meta['index_in_pool']]
             time_in_pool = time.time() - meta['added_time']
-            print(f"{episode:<10} | {wins:<5} | {losses:<7} | {draws:<5} | {win_rate:<8.2f} | {priority:<8.2f} | {time_in_pool:<15.2f}s")
+            print(f"{episode:<10} | {wins:<5} | {losses:<7} | {draws:<5} | "
+                  f"{win_rate:<8.2f} | {priority:<8.2f} | {time_in_pool:<15.2f}s")
         win_rate_avg = win_rate_accum / total_eps
         print("-" * 75)
         print(f"Average Win Rate across pool: {win_rate_avg:.2f}")
@@ -342,7 +365,8 @@ class SelfPlayManager(opponents.OpponentInPool):
             win_rate /= len(self.pool)
             return win_rate
         elif total_eps == 0 and win_rate != 0.0:
-            print(f"[SPLY] Warning: win_rate calculation inconsistency in SelfPlayManager '{self.name}'")
+            print("[SPLY] Warning: win_rate calculation inconsistency in "
+                  f"SelfPlayManager '{self.name}'")
         return 0.0
 
     def get_agent_name(self):
@@ -354,14 +378,18 @@ def create_selfplay_manager(cfg, subcfg, name="selfplay_manager"):
         name = subcfg.name
     return SelfPlayManager(name, cfg, subcfg)
 
+
 def test_remove_lowest_priority():
     class DummySampler:
         def __init__(self):
             self.weights = []
+
         def add_arm(self, weight):
             self.weights.append(weight)
+
         def remove_arm(self, index):
             del self.weights[index]
+
         def get_weights(self):
             return self.weights
 
@@ -374,7 +402,7 @@ def test_remove_lowest_priority():
         'max_pool_size': 3,
         'priority': 0.8,
         'sampler': {'name': 'uniform'},
-        'pooling': [ {'type': 'episode', 'freq': 1} ],
+        'pooling': [{'type': 'episode', 'freq': 1}],
         'activation_type': 'always_on'
     })
 
@@ -391,14 +419,18 @@ def test_remove_lowest_priority():
     spm.sampler.weights = [0.5, 0.2, 0.8]
 
     lowest_episode = spm.get_lowest_priority_episode()
-    assert lowest_episode == 20, f"Expected lowest priority episode to be 20, got {lowest_episode}"
+    assert lowest_episode == 20, \
+        f"Expected lowest priority episode to be 20, got {lowest_episode}"
 
     spm.add_episode_number_to_pool("test-agent", 40)
-    assert 20 not in spm.pool, "Episode 20 should have been removed from the pool."
+    assert 20 not in spm.pool, \
+        "Episode 20 should have been removed from the pool."
     assert 40 in spm.pool, "Episode 40 should have been added to the pool."
-    assert len(spm.pool) == 3, f"Pool size should be 3 after addition, got {len(spm.pool)}"
+    assert len(spm.pool) == 3, \
+        f"Pool size should be 3 after addition, got {len(spm.pool)}"
 
     print("test_remove_lowest_priority passed.")
+
 
 if __name__ == "__main__":
     test_remove_lowest_priority()

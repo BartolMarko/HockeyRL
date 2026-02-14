@@ -1,19 +1,22 @@
-import random
 import numpy as np
 from sampler import get_sampler_using_config
 from comprl.client.agent import Agent
 from hockey import hockey_env as h_env
 import puffer_wrapper as pfw
 
+
 class NamedAgent(Agent):
     """
     Agent with a name attribute, should be used for evaluation purposes.
 
-    Functions that should be overriden are on_start_game, on_end_game and get_step.
+    Functions that should be overriden are on_start_game, on_end_game and
+    get_step.
     """
+
     def __init__(self, name: str) -> None:
         super().__init__()
         self.name = name
+
 
 class WeakBot(NamedAgent):
     def __init__(self) -> None:
@@ -23,6 +26,7 @@ class WeakBot(NamedAgent):
     def get_step(self, obs: np.ndarray) -> np.ndarray:
         return self.bot.act(obs)
 
+
 class StrongBot(NamedAgent):
     def __init__(self) -> None:
         super().__init__(name="StrongBot")
@@ -31,12 +35,14 @@ class StrongBot(NamedAgent):
     def get_step(self, obs: np.ndarray) -> np.ndarray:
         return self.bot.act(obs)
 
+
 class OpponentInPool(NamedAgent):
     def __init__(self, agent, index) -> None:
         if hasattr(agent, "name"):
             name = agent.name
         else:
-            name = str(agent).replace("<", "").replace(">", "").replace(" ", "_")
+            name = str(agent).replace("<", "").replace(">", "")
+            name = name.replace(" ", "_")
             name = f"{name}_pool_{index}"
         super().__init__(name=name)
         self.index = index
@@ -48,8 +54,10 @@ class OpponentInPool(NamedAgent):
         self.draw_count = 0
         self.games_played = 0
         self.is_playable = True
-        self.pool = getattr(agent, 'pool', None)                    # only for SelfPlayManager
-        self.ep = getattr(agent, 'ep', None)  # only for SelfPlayManager
+
+        # only for SelfPlayManager
+        self.pool = getattr(agent, 'pool', None)
+        self.ep = getattr(agent, 'ep', None)
 
     def get_agent_name(self):
         return self.name
@@ -74,7 +82,8 @@ class OpponentInPool(NamedAgent):
         elif hasattr(self.agent, "plan"):
             return self.agent.plan(obs)
         else:
-            raise NotImplementedError("The base agent does not have a method to get actions.")
+            raise NotImplementedError(
+                    "The base agent does not have a method to get actions.")
 
     def get_win_rate(self):
         return self.win_rate
@@ -85,7 +94,8 @@ class OpponentInPool(NamedAgent):
         """
         if self.games_played == 0:
             return 0.0
-        return self.loss_count / (self.win_count + self.loss_count + self.draw_count)
+        total = self.win_count + self.loss_count + self.draw_count
+        return self.loss_count / total
 
     def record_play_scores(self, win_count, loss_count, draw_count):
         self.win_count = win_count
@@ -105,24 +115,29 @@ class OpponentInPool(NamedAgent):
         games_played = self.get_games_played()
         win_rate = self.get_win_rate()
         difficulty_score = self.compute_difficulty_score()
-        print(f"[OPNT]: {self.name} | All Games Played: {games_played} | Latest Wins: {self.win_count}, "
-              f"Loses: {self.loss_count}, Draws: {self.draw_count}, Win Rate: {win_rate:.2f} | "
+        print(f"[OPNT]: {self.name} | All Games Played: {games_played} | "
+              f"Latest Wins: {self.win_count}, "
+              f"Loses: {self.loss_count}, Draws: {self.draw_count}, "
+              f"Win Rate: {win_rate:.2f} | "
               f"Difficulty Score: {difficulty_score:.2f}")
 
     def compute_difficulty_score(self):
         # a higher score means this opponent is difficult to beat
         if self.get_games_played() == 0:
             return 0.0
-        return (self.win_count + 0.5 * self.draw_count) / (self.loss_count + self.draw_count + self.win_count)
+        total = self.win_count + self.loss_count + self.draw_count
+        return (self.win_count + 0.5 * self.draw_count) / total
 
     def show_info(self, level=1):
         print(" "*(2 * level) + f"Opponent Name: {self.name}")
 
     def log_stats(self, logger, episode_index):
-        if logger is None: return
+        if logger is None:
+            return
         win_rate = self.get_win_rate()
         logger.add_scalar(f"Opponent/{self.name}/win_rate", win_rate)
-        logger.add_scalar(f"Opponent/{self.name}/sample_count", self.sample_count)
+        logger.add_scalar(f"Opponent/{self.name}/sample_count",
+                          self.sample_count)
 
     def plan_batch(self, obs_batch: np.ndarray) -> np.ndarray:
         if hasattr(self.agent, "plan_batch"):
@@ -137,6 +152,7 @@ class OpponentInPool(NamedAgent):
     def __len__(self):
         # compatibility with SelfPlayManager
         return 1
+
 
 class OpponentPool:
     def __init__(self, cfg=None):
@@ -157,8 +173,10 @@ class OpponentPool:
                 new_opponent.index = len(self.opponents)
                 priority = 0.0  # SelfPlayManager starts with 0 priority
             else:
-                print("WARNING: Adding an OpponentInPool that is not a manager. Creating a new OpponentInPool instead.")
-                new_opponent = OpponentInPool(opponent.agent, index=len(self.opponents))
+                print("WARNING: Adding an OpponentInPool that is not a manager"
+                      ". Creating a new OpponentInPool instead.")
+                new_opponent = OpponentInPool(opponent.agent,
+                                              index=len(self.opponents))
         else:
             new_opponent = OpponentInPool(opponent, index=len(self.opponents))
         self.opponents.append(new_opponent)
@@ -173,7 +191,8 @@ class OpponentPool:
             if opponent.is_mgr():
                 # sample_opponent() in selfplaymgr assigns an agent to itself
                 opponent.sample_opponent()
-            assert opponent.agent is not None, "Sampled opponent {} has no agent assigned.".format(opponent.name)
+            assert opponent.agent is not None, \
+                f"Sampled opponent {opponent.name} has no agent assigned."
         if count == 1:
             return sampled_opponents[0]
         return sampled_opponents
@@ -218,9 +237,9 @@ class OpponentPool:
                 opponent.add_episode_number_to_pool(agent, episode_index)
         self._process_pending_activations()
 
-
     def _postpone_self_play_activation(self, idx: int):
-        print(f"[SPLY] Postponing activation of {self.opponents[idx].name} due to empty pool.")
+        print(f"[SPLY] Postponing activation of {self.opponents[idx].name} due"
+              " to empty pool.")
         self.pending_activations.append(idx)
 
     def _process_pending_activations(self):
@@ -232,11 +251,17 @@ class OpponentPool:
     def _activate_self_play(self, idx: int):
         selfplaymgr = self.opponents[idx]
         if not selfplaymgr.is_mgr():
-            raise ValueError("[SPLY] Provided opponent is not a SelfPlayManager but {}.".format(selfplaymgr.name))
+            raise ValueError(
+                    "[SPLY] Provided opponent is not a SelfPlayManager but {}."
+                    .format(selfplaymgr.name))
         if selfplaymgr not in self.opponents:
-            raise ValueError("[SPLY] Provided SelfPlayManager {} is not in the opponent pool.".format(selfplaymgr.name))
+            raise ValueError(
+                    "[SPLY] Provided SelfPlayManager {} is not in the pool."
+                    .format(selfplaymgr.name))
         if len(selfplaymgr) == 0:
-            raise ValueError("[SPLY] Cannot activate SelfPlayManager {} with empty pool.".format(selfplaymgr.name))
+            raise ValueError(
+                    "[SPLY] Cannot activate {} with empty pool."
+                    .format(selfplaymgr.name))
         if self.sampler.get_weights()[selfplaymgr.index] > 0:
             # already active
             return
@@ -260,7 +285,8 @@ class OpponentPool:
 
     def self_play_mgr_needs_save(self, agent: Agent, env_step: int) -> bool:
         for opponent in self.opponents:
-            if opponent.is_mgr() and opponent.add_episode_number_to_pool(agent, env_step):
+            if opponent.is_mgr() and \
+                    opponent.add_episode_number_to_pool(agent, env_step):
                 return True
         return False
 
@@ -269,7 +295,7 @@ class OpponentPool:
 
     def clear_opponents(self):
         self.opponents = []
-        self.sampler = WeightedSampler(self.cfg)
+        self.sampler = get_sampler_using_config(self.cfg)
 
     def remove_opponent(self, index: int):
         assert 0 <= index < len(self.opponents), "Invalid opponent index." + \
@@ -300,12 +326,12 @@ class OpponentPool:
             print(f"--- Weight: {weights[idx]:.3f}")
             print(opponent.show_info(level=2))
 
-
     def add_to_self_play(self, agent: Agent, episode_number: int) -> None:
         for opponent in self.opponents:
             if opponent.is_mgr() and opponent.active():
                 opponent.add_episode_number_to_pool(agent, episode_number)
-                print(f"[SPLY] Added episode {episode_number} to self-play pool. New Pool Size: {len(opponent)}")
+                print(f"[SPLY] Added episode {episode_number} to self-play "
+                      f"pool. New Pool Size: {len(opponent)}")
 
     def __len__(self):
         return len(self.opponents)
@@ -327,6 +353,7 @@ class OpponentPool:
             new_pool.add_opponent(opponent.agent, priority)
         return new_pool
 
+
 def get_bot_pool(cfg) -> OpponentPool:
     weak_prior = cfg.get('weak_bot_priority', 0.5)
     strg_prior = cfg.get('strg_bot_priority', 0.5)
@@ -334,6 +361,7 @@ def get_bot_pool(cfg) -> OpponentPool:
     pool.add_opponent(WeakBot(), priority=weak_prior)
     pool.add_opponent(StrongBot(), priority=strg_prior)
     return pool
+
 
 def get_opponent_pool(cfg, env=None) -> OpponentPool:
     pool = OpponentPool(cfg)
@@ -358,6 +386,10 @@ def get_opponent_pool(cfg, env=None) -> OpponentPool:
             experiment_name = opp_cfg.get('experiment_name')
             from helper import load_agent_from_config
             opponent = load_agent_from_config(experiment_name, env)
+        elif opp_type == 'CustomPool':
+            # this adds a pool of bots which get activated after set iters
+            from selfplaymgr import create_selfplay_manager
+            opponent = create_selfplay_manager(cfg, opp_cfg)
         else:
             raise ValueError(f"Unknown opponent type: {opp_type}")
         pool.add_opponent(opponent, priority=priority)
@@ -368,6 +400,7 @@ def get_opponent_pool(cfg, env=None) -> OpponentPool:
         for sp_cfg in cfg.self_play:
             pool.add_opponent(create_selfplay_manager(cfg, sp_cfg))
     return pool
+
 
 def test_opponent_pool():
     pool = OpponentPool()
@@ -383,6 +416,7 @@ def test_opponent_pool():
 
     pool.show_scoreboard()
 
+
 def test_opponent_pool_add():
     pool1 = OpponentPool()
     pool1.add_opponent(WeakBot(), priority=0.6)
@@ -393,6 +427,7 @@ def test_opponent_pool_add():
     combined_pool = pool1 + pool2
     combined_pool.show_scoreboard()
 
+
 def verify_sampling_distribution(pool: OpponentPool, num_samples: int = 10000):
     sample_counts = {opponent.name: 0 for opponent in pool.get_all_opponents()}
     for _ in range(num_samples):
@@ -402,16 +437,18 @@ def verify_sampling_distribution(pool: OpponentPool, num_samples: int = 10000):
     sampling_weights = pool.sampler.get_weights()
     total_weight = sum(sampling_weights)
     expected_distribution = {opponent.name: weight / total_weight
-                             for opponent, weight in zip(pool.get_all_opponents(), sampling_weights)}
+                             for opponent, weight in zip(
+                                 pool.get_all_opponents(), sampling_weights)}
 
     print(f"Sampling Distribution {pool} after", num_samples, "samples:")
     for opponent_name, count in sample_counts.items():
         empirical_prob = count / num_samples
         expected_prob = expected_distribution[opponent_name]
-        confidence_interval = 1.96 * np.sqrt((expected_prob * (1 - expected_prob)) / num_samples)
-        # assert abs(empirical_prob - expected_prob) <= confidence_interval, \
-        #     f"Empirical probability {empirical_prob} for {opponent_name} deviates significantly from expected {expected_prob}."
-        print(f"Opponent: {opponent_name}, Empirical: {empirical_prob:.4f}, Expected: {expected_prob:.4f}, CI: ±{confidence_interval:.4f}")
+        bound = np.sqrt((expected_prob * (1 - expected_prob)) / num_samples)
+        confidence_interval = 1.96 * bound
+        print(f"Opponent: {opponent_name}, Empirical: {empirical_prob:.4f}, "
+              f"Expected: {expected_prob:.4f}, CI: ±{confidence_interval:.4f}")
+
 
 if __name__ == "__main__":
     # test_opponent_pool()

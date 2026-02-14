@@ -6,7 +6,7 @@ import numpy as np
 from memory import get_memory_buffer
 from exploration import get_explorer
 from network import ActorNet, CriticNet
-import pickle
+
 
 class EntropyManager:
     def __init__(self, target_entropy):
@@ -15,11 +15,12 @@ class EntropyManager:
     def get_entropy(self):
         return self.target_entropy
 
-    def update(self, current_win_rate, current_alpha):
+    def update(self, current_win_rate, current_alpha, step):
         return False
 
     def id(self):
         raise NotImplementedError
+
 
 class FixedEntropyManager(EntropyManager):
     def __init__(self, target_entropy):
@@ -28,7 +29,9 @@ class FixedEntropyManager(EntropyManager):
     def id(self):
         return "fixedEntropyMgr({:.2f})".format(self.target_entropy)
 
+
 class PhasicEntropyManager(EntropyManager):
+    # TODO: needs fix
     def __init__(self, target_h_min=-4.0, target_h_max=-1.0,
                      max_steps_stagnant=500):
         super().__init__(target_entropy=target_h_min)
@@ -37,7 +40,7 @@ class PhasicEntropyManager(EntropyManager):
         self.steps_stagnant = 0
         self.max_steps_stagnant = max_steps_stagnant
 
-    def update(self, current_win_rate, current_alpha):
+    def update(self, current_win_rate, current_alpha, step):
         if current_alpha < 0.01 and current_win_rate < 0.95:
             self.steps_stagnant += 1
         else:
@@ -55,6 +58,34 @@ class PhasicEntropyManager(EntropyManager):
         return "phasicEntropyMgr({:.2f},{:.2f},{})".format(
                     self.target_h_min, self.target_h_max,
                     self.max_steps_stagnant)
+
+
+class SinosoidalEntropyManager(EntropyManager):
+    """
+    Starts a sinosoidal entropy target after a certain number of steps
+    """
+    def __init__(self, min_ent=-4, max_ent=-1, start_step=1000, period=2500):
+        super().__init__(min_ent)
+        self.start_step = start_step
+        self.period = period
+        self.min_ent = min_ent
+        self.max_ent = max_ent
+        self.amplitude = (max_ent - min_ent) / 2
+        self.center_line = (max_ent + min_ent) / 2
+
+    def update(self, current_win_rate, current_alpha, step):
+        if step < self.start_step:
+            return False
+        # Sinosoidal variation between min_ent and max_ent
+        phase_offset = - np.pi / 2
+        phase = (step - self.start_step) / self.period * 2 * np.pi
+        phase += phase_offset
+        self.target_entropy = self.center_line + self.amplitude * np.sin(phase)
+        return True
+
+    def id(self):
+        return "sinosoidalEntropyMgr({:.2f},{:.2f},start={},period={})".format(
+                    self.min_ent, self.max_ent, self.start_step, self.period)
 
 class Agent:
     def __init__(self, cfg, inference_only=False):
@@ -106,6 +137,8 @@ class Agent:
             self.alpha_optim = T.optim.Adam([self.log_alpha], lr=cfg.lr_alpha)
             if cfg.get('target_entropy', '') == 'phasic':
                 self.target_entropy_mgr = PhasicEntropyManager()
+            elif cfg.get('target_entropy', '') == 'sinosoidal':
+                self.target_entropy_mgr = SinosoidalEntropyManager()
             else:
                 self.target_entropy_mgr = FixedEntropyManager(-np.prod(cfg.n_actions))
         else:
@@ -260,17 +293,20 @@ class Agent:
         Computes the Munchausen augmented reward.
         Ref: Munchausen Reinforcement Learning (Vieillard et al., NeurIPS 2020)
         """
+        # TODO: needs fix
         with T.no_grad():
-            q1_values = self.critic_1.forward(state_tensor, action_tensor)
-            q2_values = self.critic_2.forward(state_tensor, action_tensor)
+            q1_values = self.critic_1.forward(state, action)
+            q2_values = self.critic_2.forward(state, action)
             min_q_values = T.min(q1_values, q2_values)
 
             # Compute log-policy
-            new_actions, log_probs = self.actor.sample_normal(state_tensor, reparameterize=False)
+            new_actions, log_probs = self.actor.sample_normal(
+                    state, reparameterize=False)
             log_policy = log_probs.view(-1)
 
             # Munchausen term
-            munchausen_term = T.clamp(self.cfg.munchausen_alpha * log_policy, min=self.cfg.munchausen_lo_clip, max=0.0)
+            munchausen_term = T.clamp(self.cfg.munchausen_alpha * log_policy,
+                                      min=self.cfg.munchausen_lo_clip, max=0.0)
 
             # Augmented reward
             munchausen_reward = reward + munchausen_term.item()
@@ -444,3 +480,22 @@ class Agent:
             'Metrics/q_target_std': q_target.std().item()
         })
         return log_data
+
+
+def test_sinosoidal_entropy_manager():
+    import matplotlib.pyplot as plt
+    mgr = SinosoidalEntropyManager()
+    entropies = []
+    for step in range(5000):
+        mgr.update(current_win_rate=0.5, current_alpha=0.01, step=step)
+        entropies.append(mgr.get_entropy())
+    plt.plot(entropies)
+    plt.xlabel('Step')
+    plt.ylabel('Target Entropy')
+    plt.title('Sinosoidal Entropy Manager Target Entropy Over Time')
+    plt.grid()
+    plt.show()
+
+
+if __name__ == "__main__":
+    test_sinosoidal_entropy_manager()

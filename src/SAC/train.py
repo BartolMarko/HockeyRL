@@ -8,11 +8,11 @@ import helper as h
 import opponents as opp
 import os
 from pathlib import Path
-import csv
 from omegaconf import OmegaConf
 from helper import Logger, set_env_params, get_resume_episode_number
 from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
+
 
 def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, episodes_per_env=None):
     start_time = time.time()
@@ -90,7 +90,7 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     episode_metrics['draw_rate'] = np.sum(draw_counts) / total_episodes
     episode_metrics['total_episodes'] = total_episodes
     end_time = time.time()
-    episode_metrics['episode_time'] = ( end_time - start_time ) / total_episodes
+    episode_metrics['episode_time'] = (end_time - start_time) / total_episodes
     return episode_metrics
 
 def train_agent(cfg, agent, env, logger, start_episode=0):
@@ -141,26 +141,28 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
 
         if i >= cfg.warmup_games:
             agent.train()
-            for _ in range(int(cfg.learn_steps_per_episode * metrics['episode_length'])):
+            ep_len = metrics['episode_length']
+            for _ in range(int(cfg.learn_steps_per_episode * ep_len)):
                 l_metrics = agent.learn(step=i)
                 if l_metrics is not None:
-                     scalars = {}
-                     histograms = {}
-                     for key, value in l_metrics.items():
-                         if 'hist:' in key:
-                             histograms[key.replace('hist:', '')] = value
-                         else:
-                             scalars[key] = value
+                    scalars = {}
+                    histograms = {}
+                    for key, value in l_metrics.items():
+                        if 'hist:' in key:
+                            histograms[key.replace('hist:', '')] = value
+                        else:
+                            scalars[key] = value
 
-                     if scalars:
+                    if scalars:
                         logger.log_metrics(scalars)
-                     for key, value in histograms.items():
+                    for key, value in histograms.items():
                         logger.add_historam(key, value)
 
         # save models
-        if cfg.save_model and \
-                ((env_step - last_save_step >= cfg.save_model_freq) or \
-                (i == n_games - 1)) or \
+        if cfg.save_model and (
+                (env_step - last_save_step >= cfg.save_model_freq) or
+                (i == n_games - 1)
+                ) or \
                 opponent_pool.self_play_mgr_needs_save(agent, env_step):
             project_dir = logger.get_project_dir()
             models_dir = os.path.join(project_dir, 'models', f'episode_{i}')
@@ -177,7 +179,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
                               logger=logger)
             win_rate = opponent.get_win_rate()
             print(f"[EVAL] Ep {i} vs {opponent.name}: win-rate: {win_rate:.2f}")
-            print(f"[EVAL] Evaluating against opponent pool...")
+            print("[EVAL] Evaluating against opponent pool...")
             final_eval = epfw.puffer_evaluate_against_pool(
                     env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
             logger.add_opponent_pool_stats(opponent_pool)
@@ -197,8 +199,9 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
             logger.log_heatmaps(i)
             opponent_pool.show_scoreboard()
             opponent_pool.end_evaluation()
-            agent.target_entropy_mgr.update(win_rate, agent.get_alpha())
-            print(f"[EVAL] Evaluation at Episode {i}: Win: {win_rate:.2f}, Lose: {lose_rate:.2f}, Draw: {draw_rate:.2f}")
+            agent.target_entropy_mgr.update(win_rate, agent.get_alpha(), i)
+            print(f"[EVAL] Evaluation at Episode {i}: Win: {win_rate:.2f}, "
+                  f"Lose: {lose_rate:.2f}, Draw: {draw_rate:.2f}")
 
         # every self play mgr handles the update by itself
         logger.add_scalar("Rollout/Game Index", i)
@@ -243,6 +246,7 @@ def set_dry_run_params(cfg):
             cfg.self_play[0].activation_epsilon = 0.1
     return cfg
 
+
 if __name__ == '__main__':
     try:
         start_episode = 0
@@ -269,9 +273,15 @@ if __name__ == '__main__':
         train_agent(cfg, agent, env, logger, start_episode=start_episode)
     except Exception as e:
         print(f"An error occurred during training: {e}")
-        h.save_modules_on_failure(agent, results_dir)
+        if cfg.dry_run:
+            print("Dry run mode: Skipping model save on failure.")
+        else:
+            h.save_modules_on_failure(agent, results_dir)
         raise e
     except KeyboardInterrupt:
         print("Training interrupted by user. Saving models...")
-        h.save_modules_on_failure(agent, results_dir)
-        print("Models saved. Exiting...")
+        if cfg.dry_run:
+            print("Dry run mode: Skipping model save on interruption.")
+        else:
+            h.save_modules_on_failure(agent, results_dir)
+            print("Models saved. Exiting...")

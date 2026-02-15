@@ -1,0 +1,49 @@
+name: tex_to_pdf
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "**.tex"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "**.tex"
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref || 'main' }}
+        fetch-depth: 0
+
+    - name: Install dependencies
+      run: |
+            sudo apt-get update
+            sudo apt install -y \
+                latexmk \
+                lmodern \
+                texlive-base \
+                texlive-fonts-extra \
+                texlive-fonts-recommended \
+                texlive-latex-base \
+                texlive-latex-extra \
+                texlive-latex-recommended
+
+    - name: Generate pdfs
+      run: |
+            cd ${{ github.workspace }}/report
+            pdflatex template.tex
+
+    - name: Commit and push PDFs
+      run: |
+            git config --global user.name 'GitHub Actions'
+            git config --global user.email 'actions@github.com'
+            git add -f report/template.pdf
+            git commit -m "Update generated PDFs" || echo "No changes to commit"
+            git push origin HEAD:${{ github.head_ref || 'main' }}

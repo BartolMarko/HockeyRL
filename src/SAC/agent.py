@@ -481,6 +481,9 @@ class Agent:
         })
         return log_data
 
+    def __str__(self):
+        return self.name
+
 
 def test_sinosoidal_entropy_manager():
     import matplotlib.pyplot as plt

@@ -178,8 +178,6 @@ def main(args):
         args = args[1:]
     left_agent = args[0]
     right_agent = args[1]
-    # experiment_name = 'sac-v0-gaussian-replay-self-play-mirror'
-    # experiment_name = 'sac-v0-gaussian-replay-self-play-smaller-pool'
 
     env = h_env.HockeyEnv()
     def get_agent_by_name(name):
@@ -197,25 +195,53 @@ def main(args):
             return get_agent(env)
         elif name.startswith('td3'):
             from src.agent_factory import agent_factory
-            cfg_path = f'{name}.yaml'
+            cfg_path = name
+            if not name.endswith('.yaml'):
+                cfg_path = f"{name}.yaml"
             cfg = OmegaConf.load(cfg_path)
             return agent_factory(name, cfg)
         else:
             raise ValueError(f"Unknown agent name: {name}")
 
     agent = get_agent_by_name(left_agent)
-    opponent = get_agent_by_name(right_agent)
+
+    opponent_list = []
+    if right_agent.endswith('.yaml'):
+        opp_cfg = OmegaConf.load(right_agent)
+        opponents = opp_cfg.opponents
+        for opponent_cfg in opponents:
+            o_type = opponent_cfg.type
+            if o_type in ['WeakBot', 'StrongBot', 'PuckFollowBot']:
+                opponent = get_agent_by_name(o_type)
+                opponent.name = o_type
+            elif o_type == 'CustomAgent':
+                name = opponent_cfg.experiment_name
+                opponent = get_agent_by_name(name)
+            elif o_type == 'TD3':
+                from src.agent_factory import agent_factory
+                cfg_path = opponent_cfg.config_path
+                cfg = OmegaConf.load(cfg_path)
+                opponent = agent_factory(cfg_path.replace('.yaml', ''), cfg)
+            else:
+                opponent = get_agent_by_name(o_type)
+            assert opponent is not None, \
+                f"Failed to create opponent for config: {opponent_cfg}"
+            opponent_list.append(opponent)
+    else:
+        opponent = get_agent_by_name(right_agent)
+        opponent_list.append(opponent)
     env.close()
 
-    # view_gameplay(env, agent, opponent, render=False, save_folder='videos', num_episodes=10)
-    win, lose, draw = view_gameplay(env, agent, opponent, render=render, video_path=save_path, num_episodes=num_episodes)
-    print(f"L: {left_agent} wins {win}")
-    print(f"R: {right_agent} wins {lose}")
-    print(f"Draws = {draw}")
-    print(f"Total = {win + lose + draw}")
+    for opponent in opponent_list:
+        # view_gameplay(env, agent, opponent, render=False, save_folder='videos', num_episodes=10)
+        win, lose, draw = view_gameplay(env, agent, opponent, render=render, video_path=save_path, num_episodes=num_episodes)
+        print(f"L: {agent.name} wins {win}")
+        print(f"R: {opponent.name} wins {lose}")
+        print(f"Draws = {draw}")
+        print(f"Total = {win + lose + draw}")
 
     # NUM_ENVS = 8
-    # vec_env = pfw.create_vec_env(backend='serial', num_envs=NUM_ENVS)
+    # vec_env = pfw.create_vec_env(backend='serial', num_envs=NUM_ENVS, eval=True)
     #
     # opponent = pfw.VecBasicOpponent(NUM_ENVS, weak=True)
     #

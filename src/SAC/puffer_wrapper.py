@@ -41,26 +41,60 @@ def make_hockey_env(env_args=None, env_kwargs=None):
     return h_env.HockeyEnv()
 
 
+class Float32Wrapper(gym.Wrapper):
+    def reset(self, **kwargs):
+        one_starting = kwargs.pop('one_starting', None)
+        if one_starting is None:
+            one_starting = np.random.choice([True, False])
+        kwargs['one_starting'] = one_starting
+        obs, info = self.env.reset(**kwargs)
+        info['obs_agent_two'] = self.obs_agent_two()
+        return obs.astype(np.float32), info
+
+    def step(self, action):
+        obs, reward, done, truncated, info = self.env.step(action)
+        info['obs_agent_two'] = self.obs_agent_two()
+        return obs.astype(np.float32), reward, done, truncated, info
+
+    def obs_agent_two(self):
+        obs = self.env.obs_agent_two()
+        return obs.astype(np.float32)
+
+
+class ShakyObservationWrapper(gym.Wrapper):
+    """
+    aims to have domain randomization by adding tiny bit of noise to the
+    observation.
+    should encourage the agent to be more reactive rather than memorize
+    lets see
+    """
+    _STD_DEV = 0.01
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        return self.add_noise(obs), info
+
+    def step(self, action):
+        obs, reward, done, truncated, info = self.env.step(action)
+        return self.add_noise(obs), reward, done, truncated, info
+
+    def add_noise(self, obs):
+        # use Opponent (6,7), Puck Pos (12,13), Puck Vel (14,15)
+        noise = np.random.normal(0, self._STD_DEV, size=obs.shape)
+        mask = np.zeros(obs.shape)
+        mask[[6, 7, 12, 13, 14, 15]] = 1
+        noise = noise * mask
+        return obs + noise
+
+
 def wrapped_creator(*args, **kwargs):
-    class Float32Wrapper(gym.Wrapper):
-        def reset(self, **kwargs):
-            one_starting = kwargs.pop('one_starting', None)
-            if one_starting is None:
-                one_starting = np.random.choice([True, False])
-            kwargs['one_starting'] = one_starting
-            obs, info = self.env.reset(**kwargs)
-            info['obs_agent_two'] = self.obs_agent_two()
-            return obs.astype(np.float32), info
+    env = h_env.HockeyEnv()
+    env = ShakyObservationWrapper(env)
+    env = Float32Wrapper(env)
+    return env
 
-        def step(self, action):
-            obs, reward, done, truncated, info = self.env.step(action)
-            info['obs_agent_two'] = self.obs_agent_two()
-            return obs.astype(np.float32), reward, done, truncated, info
 
-        def obs_agent_two(self):
-            obs = self.env.obs_agent_two()
-            return obs.astype(np.float32)
-
+def wrapped_creator_test(*args, **kwargs):
     env = h_env.HockeyEnv()
     env = Float32Wrapper(env)
     return env
@@ -111,8 +145,12 @@ class HockeyVecEnv:
         return self.vec_env.render(mode)
 
 
-def create_vec_env(backend, num_envs=4):
-    env_creators = [wrapped_creator for _ in range(num_envs)]
+def create_vec_env(backend, num_envs=4, eval=True):
+    if eval:
+        wrapped_creator_fn = wrapped_creator_test
+    else:
+        wrapped_creator_fn = wrapped_creator
+    env_creators = [wrapped_creator_fn for _ in range(num_envs)]
     if backend == 'multiprocessing':
         backend_cls = AsyncVectorEnv
     elif backend == 'serial':

@@ -6,24 +6,24 @@ opponent_pool:
   type: 'weighted'
 opponents:
   - type: 'StrongBot'
-    priority: 0.20
+    priority: 0.10
   - type: 'WeakBot'
     priority: 0.10
   - type: PuckFollowBot
-    priority: 0.15
+    priority: 0.10
   - type: CustomAgent
-    priority: 0.20
     experiment_name: sac-v4-pink-4-step-per
+    priority: 0.20
   - type: CustomAgent
     experiment_name: sac-v0-gaussian-replay-self-play-mirror
     priority: 0.20
   - type: CustomAgent
     experiment_name: sac-v4-pink-replay
-    priority: 0.15
+    priority: 0.20
 self_play:
   - name: 'SelfPlayMgr'
     priority: 0.4
-    max_pool_size: 5
+    max_pool_size: 20
     activation_type: 'botwin'
     activation_epsilon: 0.8
     pooling:
@@ -31,7 +31,7 @@ self_play:
         freq: 100
     sampler:
       name: 'pfsp'
-      pfsp_p: 0.5
+      pfsp_p: 0.6
 num_envs: 16
 
 # rewards
@@ -84,7 +84,7 @@ save_model_freq: 500
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-4-step-per-league-env-reset"
+exp_name: "sac-v4-pink-4-step-per-league-shaky"
 resume: False
 save_video: True
 log_gradients: True

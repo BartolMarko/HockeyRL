@@ -93,10 +93,12 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     episode_metrics['episode_time'] = (end_time - start_time) / total_episodes
     return episode_metrics
 
+
 def train_agent(cfg, agent, env, logger, start_episode=0):
     n_games = cfg.n_games
     eps_since_beg = start_episode
-    print(f"[Training started] Total Episodes to run: {n_games} + {start_episode} = {n_games + start_episode}")
+    print("[Training started] Total Episodes to run: "
+          f"{n_games} + {start_episode} = {n_games + start_episode}")
 
     last_save_step = 0
     last_eval_step = 0
@@ -109,8 +111,17 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
 
     # skip warmup_games if buffer already has data [ e.g. when resuming, recovering ]
     if len(agent.memory) >= cfg.batch_size:
-        print(f"[WARM] Replay buffer has {len(agent.memory)} samples. Skipping warmup games.")
+        print(f"[WARM] Replay buffer has {len(agent.memory)} samples."
+              "Skipping warmup games.")
         cfg.warmup_games = 0
+
+    if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
+        v_env = pfw.create_vec_env(backend='multiprocessing',
+                                   num_envs=cfg.eval_episodes,
+                                   eval=True)
+        eval_env = pfw.HockeyVecEnv(v_env)
+    else:
+        eval_env = h_env.HockeyEnv()
 
     for i in range(n_games):
         opponent = opponent_pool.sample_opponent()
@@ -131,12 +142,15 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         eps_since_beg += metrics['total_episodes']
         logger.add_scalar("Rollout/Total Episodes", eps_since_beg)
         print(f"[ROUT] Ep {i} vs {opponent.get_agent_name()} | "
-              f"Score/Ep: {metrics['episode_score']:.2f}, Length/Ep: {metrics['episode_length']:.2f}, "
-              f"Time/Ep: {metrics['episode_time']:.2f}s, Win Rate: {metrics['win_rate']:.2f}")
+              f"Score/Ep: {metrics['episode_score']:.2f}, "
+              f"Length/Ep: {metrics['episode_length']:.2f}, "
+              f"Time/Ep: {metrics['episode_time']:.2f}s, "
+              f"Win Rate: {metrics['win_rate']:.2f}")
         opponent.log_stats(logger, episode_index=i + start_episode)
 
         if i == cfg.warmup_games:
-            print(f"[WARM] Warmup phase completed (step: {i}). Starting learning...")
+            print(f"[WARM] Warmup phase completed (step: {i})."
+                  "Starting learning...")
             logger.log_heatmaps(i)
 
         if i >= cfg.warmup_games:
@@ -175,13 +189,13 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         if env_step - last_eval_step >= cfg.eval_freq:
             agent.eval()
             last_eval_step = env_step
-            _ = epfw.evaluate(cfg, agent, opponent, env, episode_index=i+start_episode,
-                              logger=logger)
+            _ = epfw.evaluate(cfg, agent, opponent, eval_env,
+                              episode_index=i+start_episode, logger=logger)
             win_rate = opponent.get_win_rate()
             print(f"[EVAL] Ep {i} vs {opponent.name}: win-rate: {win_rate:.2f}")
             print("[EVAL] Evaluating against opponent pool...")
             final_eval = epfw.puffer_evaluate_against_pool(
-                    env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+                    eval_env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
             logger.add_opponent_pool_stats(opponent_pool)
             win_rate, lose_rate, draw_rate = 0.0, 0.0, 0.0
             total_episodes = 0
@@ -208,8 +222,12 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         opponent_pool.update_pool(agent, episode_index=i, logger=logger)
         env_step = i + 1
 
-    print("[TREN] Training completed [episodes: {} + {} = {}]".format(start_episode, env_step, env_step + start_episode))
-    final_eval = epfw.puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+    print("[TREN] Training completed [episodes: {} + {} = {}]".format(
+        start_episode, env_step, env_step + start_episode))
+    env.close()
+    final_eval = epfw.puffer_evaluate_against_pool(
+            eval_env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+    eval_env.close()
     print("Opponents Stats:")
     opponent_pool.show_scoreboard()
     print("Agent Stats:")
@@ -226,7 +244,6 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
     print(f"Win Rate: {win_rate:.2f}, Lose Rate: {lose_rate:.2f}, Draw Rate: {draw_rate:.2f}")
     print(f"{win_rate:.2f}, {lose_rate:.2f}, {draw_rate:.2f}")
     logger.close()
-    env.close()
 
 
 def set_dry_run_params(cfg):
@@ -267,7 +284,8 @@ if __name__ == '__main__':
             print(f"Resume training from Episode {start_episode}.")
         if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
             vec_env = pfw.create_vec_env(backend='multiprocessing',
-                                         num_envs=cfg.num_envs)
+                                         num_envs=cfg.num_envs,
+                                         eval=False)
             env = pfw.HockeyVecEnv(vec_env)
         on_failure_dir = h.check_failure(logger, agent)
         if on_failure_dir != '':

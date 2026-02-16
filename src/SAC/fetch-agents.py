@@ -106,10 +106,10 @@ def find_best_agents(exp_name='all', server='tcml1'):
             all_agents['opponents'].append(best_agents['opponents'])
 
     # Write the results to a YAML file
-    with open('best_agents.yaml', 'w') as yaml_file:
-        yaml.dump(dict(all_agents), yaml_file)
+    # with open('best_agents.yaml', 'w') as yaml_file:
+    #     yaml.dump(dict(all_agents), yaml_file)
 
-    print("Best agents information saved to best_agents.yaml")
+    # print("Best agents information saved to best_agents.yaml")
 
 
 if __name__ == "__main__":

@@ -6,17 +6,26 @@ opponent_pool:
   type: 'weighted'
 opponents:
   - type: 'StrongBot'
-    priority: 0.40
+    priority: 0.20
   - type: 'WeakBot'
-    priority: 0.20
+    priority: 0.10
   - type: PuckFollowBot
+    priority: 0.15
+  - type: CustomAgent
     priority: 0.20
+    experiment_name: sac-v4-pink-4-step-per
+  - type: CustomAgent
+    experiment_name: sac-v0-gaussian-replay-self-play-mirror
+    priority: 0.20
+  - type: CustomAgent
+    experiment_name: sac-v4-pink-replay
+    priority: 0.15
 self_play:
   - name: 'SelfPlayMgr'
-    priority: 0.7
-    max_pool_size: 20
+    priority: 0.2
+    max_pool_size: 2
     activation_type: 'botwin'
-    activation_epsilon: 0.9
+    activation_epsilon: 0.5
     pooling:
       - type: 'episode'
         freq: 100
@@ -54,47 +63,29 @@ target_update_freq: 1
 # Explorer
 explorer:
   type: pink
-
-  # type: random
-
-  # type: 'gaussian'
-  # mu: 0.5
-  # std_dev: 0.85
-
-  # type: ou
-  # theta: 0.25
-  # sigma: 0.3
-
-  # type: optimistic
-  # beta: 1.1
-
-  # type: curious
-  # beta: 0.3
-  # hidden_dim: 64
-  # lr_pred: 0.001
 # Munchausen RL
-# comment: though MRL says PER and N-Step-Returns is not needed
-# but we still do it, should check without it too
 use_munchausen: False
-munchausen_alpha: 0.9
-munchausen_lo_clip: -10
+# train from a checkpoint for league training
+load_checkpoint: sac-v4-pink-6-step-per-sin-ent
+load_checkpoint_episode: -1
+load_checkpoint_memory: False
 
 # Network
 algorithm: "sac"
 hidden_size: 512
 
 # Evaluation
-eval_freq: 239
+eval_freq: 250
 eval_episodes: 32
 
 # Model saving
 save_model: True
-save_model_freq: 400
+save_model_freq: 500
 
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-sin-ent"
+exp_name: "sac-v4-pink-6-step-per-league"
 resume: False
 save_video: True
 log_gradients: True

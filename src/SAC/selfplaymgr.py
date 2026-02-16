@@ -198,10 +198,14 @@ class SelfPlayManager(opponents.OpponentInPool):
         sampled_episode = self.pool[sampled_idx[0]]
         self.current_episode = sampled_episode
         if self.agent is not None:
-            nth_checkpoint_dir = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', sampled_episode)
+            nth_checkpoint_dir = helper.get_Nth_checkpoint(
+                    Path('results') / self.cfg.exp_name / 'models',
+                    sampled_episode)
             self.agent.load_models(nth_checkpoint_dir)
         else:
-            self.agent = helper.load_agent_Nth_episode(self.cfg.exp_name, sampled_episode, inference_only=True)
+            self.agent = helper.create_agent_Nth_episode(self.cfg.exp_name,
+                                                         sampled_episode,
+                                                         inference_only=True)
         self.agent.name = f"{self.name}_ep{sampled_episode}"
         self.agent.pool = self
         self.agent.ep = sampled_episode
@@ -214,7 +218,9 @@ class SelfPlayManager(opponents.OpponentInPool):
         n = min(n, len(self.pool))
         pool = opponents.OpponentPool()
         for episode_number in self.pool[-n:]:
-            agent = helper.load_agent_Nth_episode(self.cfg.exp_name, episode_number, inference_only=True)
+            agent = helper.create_agent_Nth_episode(self.cfg.exp_name,
+                                                    episode_number,
+                                                    inference_only=True)
             agent.name = f"{self.name}_ep{episode_number}"
             agent.pool = self
             agent.ep = episode_number
@@ -227,20 +233,22 @@ class SelfPlayManager(opponents.OpponentInPool):
 
     def end_evaluation(self, pool):
         """
-        executed at the end of evaluation, for now activates self if the condition is met
+        executed at the end of evaluation, for now activates self
+        if the condition is met
         """
         activation_type = self.subcfg.get('activation_type', 'always_on')
         if self.is_active_flag:
             return
         if activation_type == 'always_on':
             self.is_active_flag = True
-            print(f"[SPLY] Self-Play Manager '{self.name}' set to be active ( always_on )!")
+            print(f"[SPLY] Self-Play Manager '{self.name}' set to be active (always_on)!")
         elif activation_type == 'botwin':
             win_rate = pool.get_last_eval_win_rate()
             epsilon = self.subcfg.get('activation_epsilon', 1.0)
             if win_rate >= epsilon:
                 self.is_active_flag = True
-                print(f"[SPLY] Self-Play Manager '{self.name}' set to be active win_rate {win_rate} >= {epsilon}!")
+                print(f"[SPLY] Self-Play Manager '{self.name}' set to be "
+                      f"active win_rate {win_rate} >= {epsilon}!")
         else:
             raise ValueError(f"Unknown activation type: {activation_type}")
 

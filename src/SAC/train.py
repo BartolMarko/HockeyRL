@@ -256,7 +256,8 @@ if __name__ == '__main__':
         env = h_env.HockeyEnv()
         cfg = set_env_params(cfg, env)
         agent = Agent(cfg)
-        results_dir = Path(__file__).resolve().parent / "results" / cfg.exp_name
+        results_dir = Path(__file__).resolve().parent / "results"
+        results_dir /= cfg.exp_name
         logger = Logger(cfg, results_dir)
         logger.log_git_info()
         if cfg.log_gradients:
@@ -265,11 +266,25 @@ if __name__ == '__main__':
             start_episode = get_resume_episode_number(results_dir / 'models')
             print(f"Resume training from Episode {start_episode}.")
         if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
-            vec_env = pfw.create_vec_env(backend='multiprocessing', num_envs=cfg.num_envs)
+            vec_env = pfw.create_vec_env(backend='multiprocessing',
+                                         num_envs=cfg.num_envs)
             env = pfw.HockeyVecEnv(vec_env)
         on_failure_dir = h.check_failure(logger, agent)
         if on_failure_dir != '':
             h.load_checkpoint_on_failure(agent, on_failure_dir)
+        if cfg.get('load_checkpoint', '') != '':
+            ckpt_folder = Path(__file__).resolve().parent / "results" \
+                / cfg.load_checkpoint / "models"
+            if cfg.get('load_checkpoint_episode', -1) != -1:
+                ckpt_n = cfg.load_checkpoint_episode
+            else:
+                ckpt_n = get_resume_episode_number(ckpt_folder)
+            ckpt_memory = cfg.get('load_checkpoint_memory', False)
+            print(f"Loading checkpoint from {ckpt_folder} at episode {ckpt_n} "
+                  f"with memory={ckpt_memory}")
+            h.load_checkpoint(agent, ckpt_folder, ckpt_n,
+                              load_memory=ckpt_memory)
+
         train_agent(cfg, agent, env, logger, start_episode=start_episode)
     except Exception as e:
         print(f"An error occurred during training: {e}")

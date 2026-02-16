@@ -177,10 +177,10 @@ class Agent:
 
     def show_info(self):
         print("Agent Configuration:")
-        print(f"  Algorithm: Soft Actor-Critic (SAC)")
+        print("  Algorithm: Soft Actor-Critic (SAC)")
         print(f"  Replay Buffer Type: {self.buffer_type}")
         if self.buffer_type in ['per', 'n-step-per']:
-            print(f"    Prioritized Experience Replay: Enabled")
+            print("    Prioritized Experience Replay: Enabled")
             if self.buffer_type == 'n-step-per':
                 print(f"    N-Step Returns: Enabled (n={self.cfg.n_step_buffer_n})")
         print(f"  Batch Size: {self.batch_size}")
@@ -188,21 +188,20 @@ class Agent:
         print(f"  Target Network Update Frequency: {self.target_update_freq}")
         print(f"  Tau (Soft Update Coefficient): {self.tau}")
         if hasattr(self, 'log_alpha'):
-            print(f"  Automatic Entropy Tuning: Enabled")
+            print("  Automatic Entropy Tuning: Enabled")
             print(f"    Initial Alpha (Entropy Coefficient): {self.get_alpha().item()}")
             print(f"    Target Entropy Manager: {self.target_entropy_mgr.id()}")
         else:
-            print(f"  Automatic Entropy Tuning: Disabled")
+            print("  Automatic Entropy Tuning: Disabled")
             print(f"    Fixed Alpha (Entropy Coefficient): {self.alpha.item()}")
         print(f"  Explorer Type: {self.explorer.id()}")
         print(f"  Vectorized Environment Support: {'Enabled' if self.is_vectorized else 'Disabled'}")
         if self.is_vectorized:
             print(f"    Number of Environments: {self.cfg.get('num_envs', 1)}")
         if self.cfg.get('use_munchausen', False):
-            print(f"  Munchausen RL: Enabled")
+            print("  Munchausen RL: Enabled")
             print(f"    Munchausen Alpha: {self.cfg.munchausen_alpha}")
             print(f"    Munchausen Log-Prob Clipping: [{self.cfg.munchausen_lo_clip}, 0.0]")
-
 
     def end_episode(self):
         self.explorer.end_episode()
@@ -280,6 +279,8 @@ class Agent:
 
     def choose_action_from_policy(self, observation):
         """Helper for explorers to get the raw policy action"""
+        if isinstance(observation, list):
+            observation = np.array(observation)
         state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)
         return actions.cpu().detach().numpy()[0]

@@ -239,7 +239,7 @@ class Logger:
 
     def add_agent_artifacts(self, agent_state_folder: str, agent: Agent):
         if self.wandb is not None:
-            artifact = self.wandb.Artifact(f'agent-{self.cfg.exp_name}', type='model')
+            artifact = wandb.Artifact(f'agent-{self.cfg.exp_name}', type='model')
             artifact.add_dir(agent_state_folder)
             self.wandb.log_artifact(artifact)
 

@@ -5,10 +5,14 @@ import numpy as np
 import hockey.hockey_env as h_env
 from multiprocessing import set_start_method
 
+
 class VecBasicOpponent:
     def __init__(self, num_envs, weak=False, keep_mode=True):
         self.num_envs = num_envs
-        self.opponents = [h_env.BasicOpponent(weak=weak, keep_mode=keep_mode) for _ in range(num_envs)]
+        self.opponents = [
+                h_env.BasicOpponent(weak=weak, keep_mode=keep_mode)
+                for _ in range(num_envs)
+        ]
 
     def plan_batch(self, obs):
         actions = []
@@ -20,25 +24,30 @@ class VecBasicOpponent:
     def act(self, obs):
         return self.plan_batch(obs)
 
+
 class VecStrongBot(VecBasicOpponent):
     def __init__(self, num_envs, name='StrongBot'):
         super().__init__(num_envs, weak=False, keep_mode=True)
         self.name = name
+
 
 class VecWeakBot(VecBasicOpponent):
     def __init__(self, num_envs, name='WeakBot'):
         super().__init__(num_envs, weak=True, keep_mode=True)
         self.name = name
 
+
 def make_hockey_env(env_args=None, env_kwargs=None):
     return h_env.HockeyEnv()
 
-def wrapped_creator(*args, **kwargs):
-    buf = kwargs.pop('buf', None)
-    seed = kwargs.pop('seed', 0)
 
+def wrapped_creator(*args, **kwargs):
     class Float32Wrapper(gym.Wrapper):
         def reset(self, **kwargs):
+            one_starting = kwargs.pop('one_starting', None)
+            if one_starting is None:
+                one_starting = np.random.choice([True, False])
+            kwargs['one_starting'] = one_starting
             obs, info = self.env.reset(**kwargs)
             info['obs_agent_two'] = self.obs_agent_two()
             return obs.astype(np.float32), info
@@ -54,8 +63,8 @@ def wrapped_creator(*args, **kwargs):
 
     env = h_env.HockeyEnv()
     env = Float32Wrapper(env)
-    # return pufferlib.emulation.GymnasiumPufferEnv(env=env, buf=buf, seed=seed)
     return env
+
 
 class HockeyVecEnv:
     def __init__(self, vec_env):
@@ -71,21 +80,24 @@ class HockeyVecEnv:
             seed = np.random.randint(0, 10000)
         # vec-env limits arguments to reset, can't use any other than seed
         obs, info = self.vec_env.reset(seed=seed)
-        if isinstance(info, list) and len(info) > 0 and 'obs_agent_two' in info[0]:
-            self._last_obs_agent_two = np.stack([i['obs_agent_two'] for i in info])
+        if isinstance(info, list) and len(info) > 0 and \
+                'obs_agent_two' in info[0]:
+            self._last_obs_agent_two = np.stack(
+                    [i['obs_agent_two'] for i in info])
         elif isinstance(info, dict) and 'obs_agent_two' in info:
-           self._last_obs_agent_two = info['obs_agent_two']
+            self._last_obs_agent_two = info['obs_agent_two']
         return obs, info
 
     def step(self, actions):
         obs, rewards, dones, truncateds, infos = self.vec_env.step(actions)
 
         if isinstance(infos, dict) and 'obs_agent_two' in infos:
-             self._last_obs_agent_two = infos['obs_agent_two']
+            self._last_obs_agent_two = infos['obs_agent_two']
         elif isinstance(infos, list):
-             # Fallback if it returns list of dicts
-             if len(infos) > 0 and 'obs_agent_two' in infos[0]:
-                 self._last_obs_agent_two = np.stack([i['obs_agent_two'] for i in infos])
+            # Fallback if it returns list of dicts
+            if len(infos) > 0 and 'obs_agent_two' in infos[0]:
+                self._last_obs_agent_two = np.stack(
+                        [i['obs_agent_two'] for i in infos])
 
         return obs, rewards, dones, truncateds, infos
 
@@ -98,10 +110,9 @@ class HockeyVecEnv:
     def render(self, mode):
         return self.vec_env.render(mode)
 
+
 def create_vec_env(backend, num_envs=4):
     env_creators = [wrapped_creator for _ in range(num_envs)]
-    env_args = [[] for _ in range(num_envs)]
-    env_kwargs = [{} for _ in range(num_envs)]
     if backend == 'multiprocessing':
         backend_cls = AsyncVectorEnv
     elif backend == 'serial':
@@ -112,13 +123,8 @@ def create_vec_env(backend, num_envs=4):
     vec_env = backend_cls(
         env_fns=env_creators
     )
-    # vec_env = backend_cls(
-    #     env_creators=env_creators,
-    #     env_args=env_args,
-    #     env_kwargs=env_kwargs,
-    #     num_envs=num_envs,
-    # )
     return HockeyVecEnv(vec_env)
+
 
 def test_env(backend):
     try:
@@ -141,12 +147,13 @@ def test_env(backend):
     for step in range(num_steps):
         actions = np.array([act_space.sample() for _ in range(num_envs)])
         next_obs, rewards, dones, truncateds, infos = vec_env.step(actions)
-        real_dones = np.logical_or(dones, truncateds)
-        obs = next_obs
+        _ = np.logical_or(dones, truncateds)
+        _ = next_obs
         if step % 50 == 0:
             print(f"Step {step}")
 
     vec_env.close()
+
 
 def time_fn(fn, *args, **kwargs):
     start_time = time.time()
@@ -154,6 +161,7 @@ def time_fn(fn, *args, **kwargs):
     end_time = time.time()
     print(f"Function {fn.__name__} took {end_time - start_time:.4f} seconds")
     return result
+
 
 if __name__ == "__main__":
     time_fn(test_env, 'multiprocessing')

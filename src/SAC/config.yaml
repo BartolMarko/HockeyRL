@@ -5,27 +5,18 @@ n_actions: 4
 opponent_pool:
   type: 'weighted'
 opponents:
-  - type: 'StrongBot'
-    priority: 0.20
-  - type: 'WeakBot'
-    priority: 0.10
-  - type: PuckFollowBot
-    priority: 0.15
-  - type: CustomAgent
-    priority: 0.20
-    experiment_name: sac-v4-pink-4-step-per
-  - type: CustomAgent
-    experiment_name: sac-v0-gaussian-replay-self-play-mirror
-    priority: 0.20
-  - type: CustomAgent
-    experiment_name: sac-v4-pink-replay
-    priority: 0.15
+- type: StrongBot
+  priority: 0.4
+- type: WeakBot
+  priority: 0.2
+- type: PuckFollowBot
+  priority: 0.3
 self_play:
   - name: 'SelfPlayMgr'
-    priority: 0.2
-    max_pool_size: 2
+    priority: 0.7
+    max_pool_size: 20
     activation_type: 'botwin'
-    activation_epsilon: 0.5
+    activation_epsilon: 0.9
     pooling:
       - type: 'episode'
         freq: 100
@@ -35,15 +26,12 @@ self_play:
 num_envs: 16
 
 # rewards
-reward_transform: "v4"
-still_puck_penalty: 0.005
-draw_penalty: 4
+reward_transform: "v0"
 
 # Buffers
-buffer_type: "n-step-per"
+buffer_type: replay
 buffer_max_size: 1000000
 upside_down: True
-n_step_buffer_n: 6
 
 # Training
 n_games: 7500
@@ -57,18 +45,15 @@ tau: 0.005
 # alpha
 automatic_entropy_tuning: True
 lr_alpha: 0.00025
-target_entropy: sinosoidal
 # critic target network
 target_update_freq: 1
 # Explorer
 explorer:
   type: pink
 # Munchausen RL
-use_munchausen: False
-# train from a checkpoint for league training
-load_checkpoint: sac-v4-pink-6-step-per-sin-ent
-load_checkpoint_episode: -1
-load_checkpoint_memory: False
+use_munchausen: True
+munchausen_alpha: 0.99
+munchausen_lo_clip: -10
 
 # Network
 algorithm: "sac"
@@ -85,7 +70,7 @@ save_model_freq: 500
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-league"
+exp_name: "sac-v4-pink-MRL"
 resume: False
 save_video: True
 log_gradients: True

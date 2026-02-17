@@ -54,7 +54,8 @@ class HeatmapTracker:
 
     def record(self, obs, idx, idy):
         assert self.num_envs == obs.shape[0], \
-            "Observation batch size does not match number of environments."
+            "Observation batch size does not match number of environments. " \
+            f"Expected {self.num_envs}, got {obs.shape[0]} from {obs.shape}."
         ix = np.clip(np.digitize(obs[:, idx], self.x_data) - 1, 0,
                      self.bins[0] - 1)
         iy = np.clip(np.digitize(obs[:, idy], self.y_data) - 1, 0,

@@ -33,7 +33,6 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
 
     cmd = f'ssh {server} "ls {results_path}"'
     experiment_folders = os.popen(cmd).read().strip().split('\n')
-    print(experiment_folders)
 
     for experiment in experiment_folders:
         if exp_name and exp_name not in experiment:
@@ -58,10 +57,7 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
             local_path = Path(f"results/{experiment}/models/{best_folder}")
             copy = True
             if os.path.exists(local_path):
-                if not any(local_path.iterdir()):
-                    print(f"Warning: Experiment {experiment} folder exists but is empty, overwriting.")
-                else:
-                    print(f"Warning: Experiment {experiment} already exists, skipping copy.")
+                if any(local_path.iterdir()):
                     copy = False
             if os.path.exists(local_path.parent):
                 print(f"Warning: Experiment {experiment} already exists with lower episode (new = {best_episode}).")

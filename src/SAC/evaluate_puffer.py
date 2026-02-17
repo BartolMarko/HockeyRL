@@ -1,6 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.append(
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import numpy as np
 from omegaconf import OmegaConf
 import time
@@ -9,6 +10,7 @@ from hockey import hockey_env as h_env
 import puffer_wrapper as pfw
 import imageio
 
+
 def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, episodes_per_env=None):
     start_time = time.time()
     agent.eval()
@@ -16,7 +18,9 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
     if episodes_per_env is None:
         episodes_per_env = 1
     num_episodes = vec_env.num_envs * episodes_per_env
-    assert num_episodes > 0, "Number of episodes must be positive. episodes_per_env = {}".format(episodes_per_env)
+    assert num_episodes > 0, \
+        "Number of episodes must be positive. episodes_per_env = {}".format(
+                episodes_per_env)
 
     win_counts = np.zeros(vec_env.num_envs, dtype=int)
     lose_counts = np.zeros(vec_env.num_envs, dtype=int)
@@ -32,18 +36,18 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
     episode_lengths = 0
 
     while done_count < num_episodes:
-        agent_actions = agent.plan_batch(obs_batch, eval_mode=True, step=episode_index)
+        agent_actions = agent.plan_batch(obs_batch, eval_mode=True,
+                                         step=episode_index)
         if logger is not None:
             logger.add_state(obs_batch)
             logger.add_action(agent_actions)
 
         opponent_actions = opponent.plan_batch(obs_opponent_batch)
         combined_actions = np.hstack([agent_actions, opponent_actions])
-
-        # IMP: Ensure float32 and clip to valid range
         combined_actions = np.clip(combined_actions, -1, 1).astype(np.float32)
 
-        obs_batch, rewards_batch, done_batch, truncated_batch, info_batch = vec_env.step(combined_actions)
+        (obs_batch, rewards_batch, done_batch,
+         truncated_batch, info_batch) = vec_env.step(combined_actions)
 
         active_envs = (episodes_done < episodes_per_env)
         # We should count result if it is terminated OR truncated
@@ -51,7 +55,8 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
         finished_batch = np.logical_and(real_done_batch, active_envs)
         if 'final_info' in info_batch:
             for idx, infos in enumerate(info_batch['final_info']):
-                if infos is None: continue
+                if infos is None:
+                    continue
                 winner = infos.get('winner')
                 if winner == 1:
                     win_counts[idx] += 1
@@ -68,10 +73,11 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
         episodes_done += finished_batch.astype(int)
         done_count += np.sum(finished_batch)
 
-        if isinstance(vec_env, pfw.HockeyVecEnv): # Ensure we are using the wrapper
-             obs_opponent_batch = vec_env.obs_agent_two()
-        else:
-             obs_opponent_batch = info_batch.get('obs_agent_two') # Fallback
+        if isinstance(vec_env, pfw.HockeyVecEnv):
+            # Ensure we are using the wrapper
+            obs_opponent_batch = vec_env.obs_agent_two()
+        else:  # Fallback
+            obs_opponent_batch = info_batch.get('obs_agent_two')
 
         episode_scores += rewards_batch.sum()
         episode_lengths += np.sum(active_envs)
@@ -90,13 +96,16 @@ def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, epi
     episode_metrics['draw'] = np.sum(draw_counts)
     episode_metrics['total_episodes'] = total_episodes
     end_time = time.time()
-    episode_metrics['episode_time'] = ( end_time - start_time ) / total_episodes
+    episode_metrics['episode_time'] = (end_time - start_time) / total_episodes
     return episode_metrics
 
-def puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 100, step: int | None = None, logger=None):
+def puffer_evaluate_against_pool(env, agent, opponent_pool,
+                                 num_episodes: int = 100,
+                                 step: int | None = None, logger=None):
     overall_stats = {}
     players = opponent_pool.get_playable_opponents()
-    print("[EVAL] Starting evaluation against opponent pool...:", [p.name for p in players])
+    print("[EVAL] Starting evaluation against opponent pool...:", [
+        p.name for p in players])
     for opponent in players:
         if opponent.is_mgr():
             pool = opponent.get_last_n_opponents(20)
@@ -114,14 +123,20 @@ def puffer_evaluate_against_pool(env, agent, opponent_pool, num_episodes: int = 
                 'draw': draw_count
             }
         else:
-            metrics = evaluate(agent.cfg, agent, opponent, env, episode_index=step, logger=logger)
+            episodes_per_env = max(1, num_episodes // env.num_envs)
+            metrics = evaluate(agent.cfg, agent, opponent, env,
+                               episode_index=step, logger=logger,
+                               episodes_per_env=episodes_per_env)
             overall_stats[opponent.name] = {
                 'win': metrics['win'],
                 'lose': metrics['lose'],
                 'draw': metrics['draw']
             }
             if opponent.pool:
-                opponent.pool.record_play_scores(metrics['lose'], metrics['win'], metrics['draw'], episode_index=opponent.ep)
+                opponent.pool.record_play_scores(metrics['lose'],
+                                                 metrics['win'],
+                                                 metrics['draw'],
+                                                 episode_index=opponent.ep)
         print(f"[EVAL] vs {opponent.name}: Wins: {overall_stats[opponent.name]['win']}, Losses: {overall_stats[opponent.name]['lose']}, Draws: {overall_stats[opponent.name]['draw']}.")
     return overall_stats
 

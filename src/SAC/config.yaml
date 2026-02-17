@@ -22,13 +22,13 @@ opponents:
     priority: 0.20
 self_play:
   - name: 'SelfPlayMgr'
-    priority: 0.4
+    priority: 0.7
     max_pool_size: 20
     activation_type: 'botwin'
-    activation_epsilon: 0.8
+    activation_epsilon: 0.85
     pooling:
       - type: 'episode'
-        freq: 100
+        freq: 200
     sampler:
       name: 'pfsp'
       pfsp_p: 0.6
@@ -64,10 +64,6 @@ explorer:
   type: pink
 # Munchausen RL
 use_munchausen: False
-# train from a checkpoint for league training
-load_checkpoint: sac-v4-pink-6-step-per-sin-ent
-load_checkpoint_episode: -1
-load_checkpoint_memory: False
 
 # Network
 algorithm: "sac"
@@ -79,12 +75,12 @@ eval_episodes: 32
 
 # Model saving
 save_model: True
-save_model_freq: 500
+save_model_freq: 300
 
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-4-step-per-league-shaky"
+exp_name: "sac-v4-pink-4-step-per-shaky"
 resume: False
 save_video: True
 log_gradients: True

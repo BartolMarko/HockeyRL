@@ -117,7 +117,7 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
 
     if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
         v_env = pfw.create_vec_env(backend='multiprocessing',
-                                   num_envs=cfg.eval_episodes,
+                                   num_envs=cfg.num_envs,
                                    eval=True)
         eval_env = pfw.HockeyVecEnv(v_env)
     else:
@@ -251,7 +251,7 @@ def set_dry_run_params(cfg):
         cfg.n_games = 500
         cfg.warmup_games = 4
         cfg.eval_freq = 8
-        cfg.eval_episodes = 16
+        cfg.eval_episodes = 8
         cfg.save_model_freq = 10
         cfg.max_buffer_size = 128
         cfg.batch_size = 16
@@ -290,7 +290,7 @@ if __name__ == '__main__':
         on_failure_dir = h.check_failure(logger, agent)
         if on_failure_dir != '':
             h.load_checkpoint_on_failure(agent, on_failure_dir)
-        if cfg.get('load_checkpoint', '') != '':
+        elif cfg.get('load_checkpoint', '') != '':
             ckpt_folder = Path(__file__).resolve().parent / "results" \
                 / cfg.load_checkpoint / "models"
             if cfg.get('load_checkpoint_episode', -1) != -1:

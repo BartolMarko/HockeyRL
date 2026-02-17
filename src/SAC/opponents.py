@@ -115,11 +115,13 @@ class OpponentInPool(NamedAgent):
         games_played = self.get_games_played()
         win_rate = self.get_win_rate()
         difficulty_score = self.compute_difficulty_score()
+        performance_score = self.compute_performance_score()
         print(f"[OPNT]: {self.name} | All Games Played: {games_played} | "
               f"Latest Wins: {self.win_count}, "
               f"Loses: {self.loss_count}, Draws: {self.draw_count}, "
               f"Win Rate: {win_rate:.2f} | "
-              f"Difficulty Score: {difficulty_score:.2f}")
+              f"Difficulty Score: {difficulty_score:.2f} | "
+              f"Performance Score: {performance_score:.2f}")
 
     def compute_difficulty_score(self):
         # a higher score means this opponent is difficult to beat
@@ -127,6 +129,11 @@ class OpponentInPool(NamedAgent):
             return 0.0
         total = self.win_count + self.loss_count + self.draw_count
         return (self.win_count + 0.5 * self.draw_count) / total
+
+    def compute_performance_score(self):
+        if self.get_games_played() == 0:
+            return 0.0
+        return (self.win_count - self.loss_count) / self.get_games_played()
 
     def show_info(self, level=1):
         print(" "*(2 * level) + f"Opponent Name: {self.name}")

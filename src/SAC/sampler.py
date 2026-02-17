@@ -122,6 +122,14 @@ class ModifiedDeltaUniformSampler(SamplingStrategy):
     def set_delta(self, new_delta):
         self.delta = new_delta
 
+    def add_arm(self, weight=None) -> int:
+        self.num_arms += 1
+        return self.num_arms - 1
+
+    def remove_arm(self, arm_idx):
+        assert 0 <= arm_idx < self.num_arms
+        self.num_arms -= 1
+
     def sample(self, num_samples):
         assert self.num_arms > 0, "No arms to sample from."
         p = np.array([self.delta ** (self.num_arms - 1 - i) for i in range(self.num_arms)])

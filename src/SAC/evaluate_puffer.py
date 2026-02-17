@@ -189,7 +189,7 @@ def main(args):
     elif args[0] == '-s':
         render = False
         num_episodes = 1
-        save_path = 'gameplay.gif'
+        save_path = 'gameplay__{}vs{}.gif'
         args = args[1:]
     left_agent = args[0]
     right_agent = args[1]
@@ -247,26 +247,30 @@ def main(args):
         opponent_list.append(opponent)
     env.close()
 
+    total_wins = 0
+    total_losses = 0
+    total_draws = 0
+    total_games = 0
     for opponent in opponent_list:
-        # view_gameplay(env, agent, opponent, render=False, save_folder='videos', num_episodes=10)
-        win, lose, draw = view_gameplay(env, agent, opponent, render=render, video_path=save_path, num_episodes=num_episodes)
+        if save_path is not None:
+            d_save_path = save_path.format(agent.name, opponent.name)
+        else:
+            d_save_path = None
+        win, lose, draw = view_gameplay(env, agent, opponent, render=render,
+                                        video_path=d_save_path,
+                                        num_episodes=num_episodes)
         print(f"L: {agent.name} wins {win}")
         print(f"R: {opponent.name} wins {lose}")
         print(f"Draws = {draw}")
         print(f"Total = {win + lose + draw}")
+        total_wins += win
+        total_losses += lose
+        total_draws += draw
+        total_games += win + lose + draw
 
-    # NUM_ENVS = 8
-    # vec_env = pfw.create_vec_env(backend='serial', num_envs=NUM_ENVS, eval=True)
-    #
-    # opponent = pfw.VecBasicOpponent(NUM_ENVS, weak=True)
-    #
-    # EP_PER_ENV = 5
-    # EVAL_EPISODES = NUM_ENVS * EP_PER_ENV
-    # print(f"Evaluation over {EVAL_EPISODES} episodes: ")
-    #
-    # st_time = time.time()
-    # metrics = evaluate(agent.cfg, agent, opponent, vec_env, episodes_per_env=EP_PER_ENV)
-    # print(metrics)
+    performance = (total_wins - total_losses) / total_games
+    print(f"Overall: {agent.name} wins {total_wins}, loses {total_losses}"
+          f", draws {total_draws}, total {total_games}, performance {performance:.2f}")
 
 
 if __name__ == '__main__':

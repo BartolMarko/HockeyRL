@@ -23,6 +23,11 @@ LEFT_GOAL_BOTTOM_CLIPPED_Y = LEFT_GOAL_CENTER_Y - 0.9 * GOAL_Y_OFFSET
 PLAYER_SPAWN_POS = (LEFT_GOAL_X + 0.75, LEFT_GOAL_TOP_CLIPPED_Y)
 PLAYER_TARGET_POS = (LEFT_GOAL_X + 0.75, LEFT_GOAL_BOTTOM_Y)
 
+class SparseRewardHockeyEnv(h_env.HockeyEnv):
+    """Remove reward shaping from the HockeyEnv. (Remove closeness to puck reward.)"""
+
+    def get_reward(self, info: dict) -> float:
+        return self._compute_reward()
 
 class PuckTestingEnv(h_env.HockeyEnv):
     def step(self, action):
@@ -266,6 +271,16 @@ class AttackModeEnv(h_env.HockeyEnv):
         ret = super().reset(*args, **kwargs)
         self.max_timesteps = 250
         return ret
+    
+
+class DefenseModeEnvSparse(SparseRewardHockeyEnv, DefenseModeEnv):
+    pass
+
+class AttackModeEnvSparse(SparseRewardHockeyEnv, AttackModeEnv):
+    pass
+
+class DefenseModeImprovedEnvSparse(SparseRewardHockeyEnv, DefenseModeImprovedEnv):
+    pass
 
 
 def environment_factory(env_name: str):
@@ -273,10 +288,20 @@ def environment_factory(env_name: str):
     match env_name.lower():
         case "hockeyenv" | "normal":
             return h_env.HockeyEnv()
+        case "sparserewardhockeyenv" | "sparse":
+            return SparseRewardHockeyEnv()
         case "attack":
             return AttackModeEnv()
         case "defense":
             return DefenseModeEnv()
+        case "defense_improved":
+            return DefenseModeImprovedEnv()
+        case "attack_sparse":
+            return AttackModeEnvSparse()
+        case "defense_sparse":
+            return DefenseModeEnvSparse()
+        case "defense_improved_sparse":
+            return DefenseModeImprovedEnvSparse()
         case "defensemodeimproved":
             return DefenseModeImprovedEnv()
         case "leftfirstpossession":

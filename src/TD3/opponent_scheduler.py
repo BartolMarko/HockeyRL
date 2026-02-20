@@ -13,6 +13,7 @@ from hockey.hockey_env import HockeyEnv
 from src.TD3.actor_critic import Actor
 from src.TD3.custom_opponent import CustomOpponent
 from src.TD3.td3 import TD3
+from src.TD3.config_reader import Config
 
 from src.named_agent import WeakBot, StrongBot, NamedAgent
 from src.opponent_pool import OpponentPoolThompsonSampling, DEFAULT_PRIOR
@@ -181,7 +182,8 @@ class LinearOpponentScheduler(OpponentScheduler):
         self.opponent_types   = opponent_types
         self.c_ind            = 0
         self.pool             = deque(maxlen=max_pool_size)
-        self.min_winrate       = min_winrate
+        self.pre_models_refs  = list()
+        self.min_winrate      = min_winrate
         self.eval_games       = eval_games
         self.test_env         = HockeyEnv()
         self.weak_opp         = WeakBot()
@@ -196,7 +198,7 @@ class LinearOpponentScheduler(OpponentScheduler):
         '''
         simple grammar:
         Op ::= 
-        ["basic"] | ["strong"] | ["custom"] | ["self"] | ["path/to/model"]
+        ["basic"] | ["strong"] | ["custom"] | ["self"] | [("path/to/model", "path/to/cfg", "model_name")]
         ["multi", [(p, Op)+]] | ["mulit_uniform", [(Op)+]]
         where p \in [0, 1] and sum(p_i) = 1
         '''
@@ -226,11 +228,15 @@ class LinearOpponentScheduler(OpponentScheduler):
             case _:
                 if os.path.exists(code[0]):
                     print("loading", code[0])
-                    td3 = TD3(self.td3_cfg)
+                    assert len(code) == 3, "expected three args: (path/to/model, path/to/cfg, model_name)"
+                    cfg = Config(code[1])
+                    TD3.enhance_cfg(cfg, self.test_env)
+                    td3 = TD3(cfg)
                     td3.restore_state(torch.load(code[0]))
                     actor = td3.model.actor
                     actor.eval()
-                    wrapped = ActorWrapper(actor)
+                    wrapped = ActorWrapper(actor, code[2])
+                    self.pre_models_refs.append(wrapped)
                     return SingleOpponent(wrapped)
                 raise Exception(f"Inavlid code at position 0 {code[0]}, code recevied: {code}")
 
@@ -251,6 +257,7 @@ class LinearOpponentScheduler(OpponentScheduler):
     def get_opponents(self):
         opps = [WeakBot(), StrongBot(), CustomOpponent()]
         opps.extend(self.pool)
+        opps.extend(self.pre_models_refs)
         return opps
     
     def trigger_phase_change(self):
@@ -276,6 +283,7 @@ class LinearOpponentScheduler(OpponentScheduler):
             self.pool.append(wrapped)
 
 
+#TODO: This is broken! DO NOT USE.
 class ThompsonScheduler(OpponentPoolThompsonSampling):
     def __init__(self):
         super().__init__(opponents=[WeakBot(), StrongBot(), CustomOpponent()])

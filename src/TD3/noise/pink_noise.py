@@ -151,13 +151,13 @@ class PinkNoise(Noise):
     reset()
         Reset the buffer with a new time series.
     """
-    def __init__(self, action_dim, seq_len=300, rng=None, epsilon=1e-6):
+    def __init__(self, action_dim, seq_len=300, f_min = 0, rng=None, epsilon=1e-6):
         self.seq_len = seq_len
         self.action_dim = action_dim
         self.rng = rng
         self.epsilon = epsilon
         self.size = (action_dim, self.seq_len)
-        self.minimum_frequency = 0
+        self.minimum_frequency = f_min
         self.scale = 1
         self.beta = 1
         self.time_steps = self.size[-1]

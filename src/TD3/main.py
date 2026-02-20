@@ -12,7 +12,8 @@ from src.TD3.td3 import TD3
 from src.TD3.schedule import SchedulerFactory
 from src.TD3.opponent_scheduler import OpponentSchedulerFactory
 from src.TD3.enivornment_scheduler import EnviornmentSchedulerFactory
-from src.TD3.noise import NosieFactory
+from src.TD3.noise import NoiseFactory
+from src.TD3.reward_shaper import RewardFactory
 from src.TD3.config_reader import Config
 
 from src.episode import Episode
@@ -57,11 +58,13 @@ def main():
 
     noise_scheduler = SchedulerFactory.get_scheduler(t_cfg['noise_scheduler']) 
 
-    noise_sampler = NosieFactory.get_noise(t_cfg['action_noise'], action_dim=action_space.shape[0])
+    noise_sampler = NoiseFactory.get_noise(t_cfg, action_dim=action_space.shape[0])
 
     opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=noise_scheduler.reset)
 
     env_scheduler = EnviornmentSchedulerFactory.get_environment_scheduler(t_cfg)
+
+    reward_shaper = RewardFactory.get_reward_shaper(t_cfg)
 
     td3 = TD3(cfg['td3'])
 
@@ -126,6 +129,7 @@ def main():
         
         a2 = agent2.act(ob_agent2)
         (ob_new, reward, done, trunc, info) = env.step(np.hstack([a1, a2]))
+        reward = reward_shaper.get_reward(ob, a1, reward, info)
         total_reward+= reward
         total_length += 1
         td3.store_transition((ob, a1, reward, ob_new, done))

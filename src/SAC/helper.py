@@ -6,12 +6,13 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from omegaconf import OmegaConf
-from opponents import OpponentInPool, OpponentPool
+from .opponents import OpponentInPool, OpponentPool
 from pathlib import Path
-from agent import Agent
+from .agent import Agent
 
 
 GLOBAL_CONFIG = None
+BASE_PATH = Path('src') / 'SAC'
 
 
 def get_tensor(x, device, dtype=torch.float32):
@@ -354,7 +355,7 @@ def create_agent_Nth_episode(experiment_name: str, n: int, env=None,
     cfg.resume = resume
     agent = Agent(cfg, inference_only=inference_only)
     nth_checkpoint_dir = get_Nth_checkpoint(
-            Path('results') / experiment_name / 'models', n)
+            BASE_PATH / Path('results') / experiment_name / 'models', n)
     agent.load_models(nth_checkpoint_dir)
     return agent
 
@@ -425,7 +426,7 @@ def load_checkpoint_on_failure(agent: Agent, ckpt_dir: str):
 
 def save_modules_on_failure(agent: Agent, save_dir: str):
     """Saves agent modules on failure."""
-    save_path = Path(save_dir) / "failure"
+    save_path = BASE_PATH / Path(save_dir) / "failure"
     save_path.mkdir(parents=True, exist_ok=True)
     agent.save_models(save_path, memory=True)
     print(f"[INFO] Saved agent modules to {save_path} due to failure.")
@@ -437,9 +438,9 @@ def get_config_object(experiment_name='') -> OmegaConf:
     If experiment_name is empty, it will look for the config in the current dir
     """
     if experiment_name:
-        config_path = Path('results') / experiment_name / 'config.yaml'
+        config_path = BASE_PATH /  Path('results') / experiment_name / 'config.yaml'
     else:
-        config_path = Path('config.yaml')
+        config_path = BASE_PATH / Path('config.yaml')
     if not config_path.exists():
         raise FileNotFoundError(f"Config file {config_path} does not exist.")
     cfg = OmegaConf.load(config_path)
@@ -461,6 +462,34 @@ def get_global_config_object():
         cfg = get_config_object()
         set_global_config_object(cfg)
     return GLOBAL_CONFIG
+
+
+def get_my_sac(cfg_path, w_folder) -> Agent:
+    """Factory function to create a SAC agent based on the configuration.
+    Used by the agent_factory"""
+    from src.named_agent import NamedAgent
+    cfg = OmegaConf.load(cfg_path)
+    env = h_env.HockeyEnv()
+    cfg = set_env_params(cfg, env)
+    sac_agent = Agent(cfg, inference_only=True)
+    sac_agent.load_models(w_folder, memory=False)
+
+    class SACWrapper(NamedAgent):
+        def __init__(self, sac_agent):
+            super().__init__(name="sac-placeholder-name")
+            self.sac_agent = sac_agent
+            self.name = self.sac_agent.name
+
+        def get_step(self, obs: np.ndarray) -> np.ndarray:
+            action = self.sac_agent.act(obs)
+            return action
+
+        def act(self, obs: np.ndarray) -> np.ndarray:
+            action = self.sac_agent.act(obs)
+            return action
+
+    agent = SACWrapper(sac_agent)
+    return agent
 
 
 if __name__ == '__main__':

@@ -2,8 +2,9 @@
 
 ### Definitely should be implemented:
 
-- action repeat
-- iCEM
+- smart action seeding:
+    - seed with paths to goal positions
+    - seed with paths to future ball positions
 - Pink noise exploration
 - Opponent adaptation
     - since episode start statistics
@@ -11,11 +12,11 @@
 
 ### Maybe implement:
 
-- Parallelization of evaluation (run evaluation episodes in background while training)
-- Time measuring
 - RNN or some fancier opponent modelling
 
 ## DONE:
+- iCEM
+- action repeat
 - implement opponent evaluation statistics based on first puck possession
 - episode mirroring for training speedup and data efficiency
 - TDMPC2 fancy network symlog smth - fixed exploding losses

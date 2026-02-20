@@ -1,22 +1,21 @@
-run_name: tdmpc2_action_hints_reuse_elites
+run_name: tdmpc2_action_repeat2_defense_env_sparse_reward
 
 # environment
 train_env_list:
+  - DefenseModeImproved
   - LeftFirstPossession
   - RightFirstPossession
 reward_name: sparse
 reward_kwargs:
-  defense_reward_weight: 0
+  defense_reward_weight: 0.002
 
-action_repeat: 1
+action_repeat: 2
 discount: 0.99
 max_episode_length: 251
 train_steps: 3000000
 mirror_episodes: True
 
 # planning
-planner_name: default
-use_action_hints: True
 iterations: 6
 num_samples: 512
 num_elites: 64
@@ -24,11 +23,6 @@ mixture_coef: 0.05
 min_std: 0.05
 temperature: 0.5
 momentum: 0.1
-shoot_bias: 0.0
-fraction_elites_reused: 0.25
-
-# iCEM specific
-planning_noise_beta: 0.25
 
 # learning
 compile: True
@@ -40,7 +34,6 @@ value_coef: 0.1
 consistency_coef: 20
 rho: 0.5
 lr: 3e-4
-enc_lr_scale: 0.3
 std_schedule: linear(0.5, 0.05, 25000)
 per_alpha: 0.6
 per_beta: 0.4
@@ -95,23 +88,18 @@ opponents:
     evaluate_against: True
     train_start_step: 2000000
     removable: False
-  TD3_bank_shot:
+  TD3_improved:
     type: TD3
-    weights_path: ./models/td3_benchmarks/td3_bank_shot/model.pth
-    config_path: ./models/td3_benchmarks/td3_bank_shot/config.yaml
-    evaluate_against: True
-    train_start_step: 2000000
-    removable: False
-  TD3_163k_improved:
-    type: TD3
-    weights_path: ./models/td3_benchmarks/td3_163k_improved/model.pt
-    config_path: ./models/td3_benchmarks/td3_163k_improved/config.yaml
+    weights_path: ./models/td3_benchmarks/td3_improved/model.pt
+    config_path: ./models/td3_benchmarks/td3_improved/config.yaml
     evaluate_against: True
     train_start_step: 2000000
     removable: False
   SAC_last_year:
     type: SACLastYear
+    train_start_step: 2000000
     evaluate_against: True
+    removable: False
   StrongBot:
     type: StrongBot
     train_start_step: 0

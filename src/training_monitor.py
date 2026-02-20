@@ -34,6 +34,7 @@ class TrainingMonitor:
             name=run_name,
             config=config,
         )
+        self.env_step_multiplier = config.get("action_repeat", 1)
         self.per_opponent_metrics_window_size = per_opponent_metrics_window_size
         self.opponent_outcome_counts = {}
         self.opponent_outcome_queues = {}
@@ -41,6 +42,25 @@ class TrainingMonitor:
 
         self.total_heatmap = Heatmap(device="cuda")
         self.per_opponent_heatmaps = {}
+
+    def get_lowest_winrate_against_opponents(self, opponent_names: list[str]) -> float:
+        """
+        Get the lowest winrate against the specified opponents.
+        If the number of episodes against an opponent is less than window size, returns 0.
+        """
+        lowest_winrate = 1.0
+        for opponent_name in opponent_names:
+            if opponent_name in self.opponent_outcome_counts:
+                counts = self.opponent_outcome_counts[opponent_name]
+                total_episodes = sum(counts.values())
+                if total_episodes >= self.per_opponent_metrics_window_size:
+                    winrate = counts[Outcome.WIN] / total_episodes
+                    lowest_winrate = min(lowest_winrate, winrate)
+                else:
+                    return 0.0
+            else:
+                return 0.0
+        return lowest_winrate
 
     def log_training_episode(
         self,
@@ -88,6 +108,7 @@ class TrainingMonitor:
                 "train/episode_index": episode_index,
                 "train/episode_reward": episode.reward.sum(),
                 "train/episode_length": len(episode),
+                "env_step": self.env_step_multiplier * step,
             },
             step=step,
         )

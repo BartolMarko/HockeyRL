@@ -21,7 +21,11 @@ class OpponentPool:
         raise NotImplementedError("Should be implemented in child classes!")
 
     def get_opponents(self) -> list[NamedAgent]:
-        raise NotImplementedError("Should be implemented in child classes!")
+        return NotImplementedError("Should be implemented in child classes!")
+
+    def get_opponent_names(self) -> list[str]:
+        """Return the names of all opponents in the pool."""
+        return [opponent.name for opponent in self.get_opponents()]
 
 
 class OpponentPoolThompsonSampling(OpponentPool):
@@ -78,7 +82,12 @@ class OpponentPoolThompsonSampling(OpponentPool):
         self.outcome_counts[opponent.name][outcome] += 1
 
     def sample_opponent(self) -> NamedAgent:
-        """Return the opponent with highest estimated (sampled) P_loss + draw_weight * P_draw."""
+        """
+        Return the opponent with highest estimated (sampled) P_loss + draw_weight * P_draw.
+        If outcome queue is not full yet, chooses randomly among opponents with uniform probability.
+        """
+        if not self.outcome_queue.full():
+            return np.random.choice(self.opponents)
         sampled_scores = []
         for opponent in self.opponents:
             counts = self.outcome_counts[opponent.name]

@@ -12,7 +12,7 @@ from src.named_agent import StrongBot, WeakBot
 from src.episode import Episode, Outcome, Possession
 from src.named_agent import NamedAgent, SACLastYearAgent
 from src.agent_factory import create_td3_agent
-from src.environments import SparseRewardHockeyEnv
+from src.environments import DefenseModeImprovedEnv
 
 from src.TDMPC.agent import TDMPCAgent
 
@@ -168,10 +168,16 @@ class Heatmap:
         suffix: str = "",
     ) -> None:
         """Save heatmaps to wandb."""
-        fake_suffix = "temp"
-        self.save(".", title=title, suffix=fake_suffix)
-        heatmap_image_path = f"heatmaps{fake_suffix}.png"
-        wandb_run.log({f"heatmaps{suffix}": wandb.Image(heatmap_image_path)}, step=step)
+        # TODO: Possible bug when saving heatmaps to wandb?
+        try:
+            fake_suffix = "temp"
+            self.save(wandb_run.dir, title=title, suffix=fake_suffix)
+            heatmap_image_path = Path(wandb_run.dir) / f"heatmaps{fake_suffix}.png"
+            wandb_run.log(
+                {f"heatmaps{suffix}": wandb.Image(heatmap_image_path)}, step=step
+            )
+        except:  # noqa: E722
+            print(f"Failed to save heatmaps {title} to wandb.")
 
     def save(self, path: str | Path, title: str, suffix: str = "") -> None:
         """
@@ -247,12 +253,15 @@ class Evaluator:
         agent: NamedAgent,
         opponent: NamedAgent,
         render_mode: Optional[str] = None,
+        every_n_steps: int = 1,
     ) -> tuple[Episode, Optional[np.ndarray]]:
         """
         Run a single episode between the agent and opponent in the given environment.
         Returns the episode object and optionally the video frames if render_mode is 'rgb_array'.
         If render_mode is 'human', the environment will be rendered to the screen.
         If render_mode is neither, no rendering is performed and video=None is returned.
+        When every_n_steps > 1, steps are saved in episode only every_n_steps steps.
+        (used for action repeat)
         """
         obs, _ = env.reset()
         obs_opponent = env.obs_agent_two()
@@ -268,15 +277,20 @@ class Evaluator:
             env.render(mode=render_mode)
 
         while not episode.done:
-            action = agent.get_step(obs)
-            opponent_action = opponent.get_step(obs_opponent)
-            obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
-            obs_opponent = env.obs_agent_two()
+            for i in range(every_n_steps):
+                action = agent.get_step(obs)
+                opponent_action = opponent.get_step(obs_opponent)
+                obs, reward, done, _, info = env.step(
+                    np.hstack([action, opponent_action])
+                )
+                obs_opponent = env.obs_agent_two()
 
-            if render_mode == "rgb_array":
-                episode_video.append(env.render(mode=render_mode))
-            elif render_mode == "human":
-                env.render(mode=render_mode)
+                if render_mode == "rgb_array":
+                    episode_video.append(env.render(mode=render_mode))
+                elif render_mode == "human":
+                    env.render(mode=render_mode)
+                if done:
+                    break
 
             episode.add(
                 obs=obs,
@@ -514,23 +528,33 @@ if __name__ == "__main__":
     TD3_BANK_SHOT_PATH = MODELS_PATH / "td3_benchmarks" / "td3_bank_shot"
     TD3_IMPROVED_PATH = MODELS_PATH / "td3_benchmarks" / "td3_improved"
 
-    TRAINING_PATH = MODELS_PATH / "tdmpc2_mirror"
-    CHECKPOINT_FINAL = TRAINING_PATH / "final"
-    CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
-    CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
-    CHECKPOINT_1_1M_PATH = TRAINING_PATH / "checkpoint_1_1m"
-    CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
+    TRAINING_PATH_OLD = MODELS_PATH / "tdmpc2_mirror"
+    CHECKPOINT_FINAL_OLD = TRAINING_PATH_OLD / "final"
+    # CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
+    # CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
+    # CHECKPOINT_1_1M_PATH = TRAINING_PATH / "checkpoint_1_1m"
+    # CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
+    # CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
+    # CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
+    TRAINING_PATH = MODELS_PATH / "tdmpc2_action_repeat"
     CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
-    CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
-
-    env = SparseRewardHockeyEnv()
-    tdmpc_agent = TDMPCAgent(CHECKPOINT_FINAL, tdmpc=None, step=2_000_000)
-    checkpoint_400k = TDMPCAgent(
-        CHECKPOINT_400K_PATH, tdmpc=None, step=400_000, name_suffix="_self_400k"
+    CHECKPOINT_100K_PATH = TRAINING_PATH / "checkpoint_100k"
+    env = DefenseModeImprovedEnv()
+    tdmpc_agent = TDMPCAgent(
+        CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, eval_mode=True
     )
-    checkpoint_600k = TDMPCAgent(
-        CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, name_suffix="_self_600k"
+    checkpoint_100k = TDMPCAgent(
+        CHECKPOINT_100K_PATH, tdmpc=None, step=100_000, name_suffix="_self_100k"
     )
+    tdmpc_old = TDMPCAgent(
+        CHECKPOINT_FINAL_OLD, tdmpc=None, step=2_000_000, name_suffix="_old"
+    )
+    # checkpoint_400k = TDMPCAgent(
+    #     CHECKPOINT_400K_PATH, tdmpc=None, step=400_000, name_suffix="_self_400k"
+    # )
+    # checkpoint_600k = TDMPCAgent(
+    #     CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, name_suffix="_self_600k"
+    # )
     strong_bot = StrongBot()
     weak_bot = WeakBot()
     evaluator = Evaluator(device="cuda")
@@ -551,15 +575,15 @@ if __name__ == "__main__":
     )
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
-        agent=td3_improved,
-        opponents=[sac_last_year_agent],
+        agent=tdmpc_agent,
+        opponents=[strong_bot],
         num_episodes=30,
         render_mode="human",
         save_path=None,
         wandb_run=None,
         save_heatmaps=True,
-        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
-        train_step=800_000,
+        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 50, Outcome.DRAW: 20},
+        train_step=100_000,
     )
     print(results)
     # wandb_run.finish()

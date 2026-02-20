@@ -17,7 +17,7 @@ from: ubuntu:24.04
     pip install "comprl @ git+https://github.com/martius-lab/teamproject-competition-server.git#egg=comprl&subdirectory=comprl"
     
     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-    pip install gymnasium[mujoco] matplotlib numpy omegaconf opencv-python wandb[media]
+    pip install gymnasium[mujoco] matplotlib numpy omegaconf opencv-python wandb[media] colorednoise
 
     # cleanup
     apt-get clean

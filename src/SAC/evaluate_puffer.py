@@ -5,10 +5,10 @@ sys.path.append(
 import numpy as np
 from omegaconf import OmegaConf
 import time
-import helper
 from hockey import hockey_env as h_env
-import puffer_wrapper as pfw
 import imageio
+from . import helper
+from . import puffer_wrapper as pfw
 
 
 def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, episodes_per_env=None):

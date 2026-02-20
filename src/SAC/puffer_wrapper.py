@@ -42,7 +42,7 @@ def make_hockey_env(env_args=None, env_kwargs=None):
 
 
 def prob_env_left_start(step_count):
-    from helper import get_global_config_object
+    from .helper import get_global_config_object
     cfg = get_global_config_object()
     rnd = np.random.rand()
     prob = 0.5

@@ -3,9 +3,9 @@ from pathlib import Path
 import torch as T
 import torch.nn.functional as F
 import numpy as np
-from memory import get_memory_buffer
-from exploration import get_explorer
-from network import ActorNet, CriticNet
+from .memory import get_memory_buffer
+from .exploration import get_explorer
+from .network import ActorNet, CriticNet
 
 
 class EntropyManager:
@@ -210,7 +210,7 @@ class Agent:
 
     def use_most_recent_models(self):
         """Loads the most recent models from the results directory."""
-        from helper import get_latest_checkpoint
+        from .helper import get_latest_checkpoint
         results_dir = Path(__file__).resolve().parent / "results" / self.cfg.exp_name / 'models'
         best_model_dir = get_latest_checkpoint(results_dir)
         if best_model_dir is not None:

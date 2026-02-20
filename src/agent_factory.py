@@ -5,8 +5,10 @@ from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
 from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
+from src.SAC.helper import get_my_sac
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def create_td3_agent(name: str, weights_path: str, config_path: str) -> TD3:
     """Creates a TD3 agent for self-play evaluation."""
@@ -42,6 +44,11 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
             )
             tdmpc_agent.name = agent_name
             return tdmpc_agent
+        case "SAC":
+            return get_my_sac(
+                cfg_path=agent_cfg["config_path"],
+                w_folder=agent_cfg["weights_folder"]
+            )
         case "SACLastYear":
             return SACLastYearAgent(env=HockeyEnv())
         case "WeakBot":
@@ -50,3 +57,19 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
             return StrongBot()
         case _:
             raise ValueError(f"Unknown agent type: {agent_cfg['type']}")
+
+
+def test_sac_agent_factory():
+    """Test function for the SAC agent factory."""
+    config_yaml_path = "src/SAC/sac_example.yaml"
+    import yaml
+    with open(config_yaml_path, 'r') as file:
+        sac_config = yaml.safe_load(file)
+    sac_agent = agent_factory("TestSACAgent", sac_config)
+    assert isinstance(sac_agent, NamedAgent), \
+        "The created agent should be an instance of NamedAgent."
+    print("SAC agent factory test passed.")
+
+
+if __name__ == "__main__":
+    test_sac_agent_factory()

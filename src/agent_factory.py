@@ -6,6 +6,7 @@ from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def create_td3_agent(name: str, weights_path: str, config_path: str) -> TD3:
     """Creates a TD3 agent for self-play evaluation."""
@@ -16,7 +17,7 @@ def create_td3_agent(name: str, weights_path: str, config_path: str) -> TD3:
     TD3.enhance_cfg(td3_cfg, env)
 
     td3_agent = TD3(td3_cfg)
-    td3_agent.restore_state(torch.load(weights_path))
+    td3_agent.restore_state(torch.load(weights_path, map_location=device))
     td3_agent.name = name
 
     return td3_agent

@@ -182,7 +182,7 @@ def main() -> int:
         "--save-video",
         type=pathlib.Path,
         metavar="dest",
-        help="Save as MP4 video to the specified path.",
+        help="Save as GIF to the specified path.",
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output."
@@ -234,16 +234,7 @@ def main() -> int:
     )
 
     if args.save_video:
-        video = imageio.get_writer(
-            args.save_video,
-            fps=args.fps,
-            codec="mjpeg",
-            quality=10,
-            pixelformat="yuvj444p",
-        )
-        for frame in frames:
-            video.append_data(frame)
-        video.close()
+        imageio.mimsave(args.save_video, frames, fps=args.fps)
 
     return 0
 

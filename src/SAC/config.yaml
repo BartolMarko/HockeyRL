@@ -5,36 +5,33 @@ n_actions: 4
 opponent_pool:
   type: 'weighted'
 opponents:
-  - type: 'StrongBot'
-    priority: 0.05
-  - type: 'WeakBot'
-    priority: 0.05
+  - type: StrongBot
+    priority: 0.2
+  - type: WeakBot
+    priority: 0.1
   - type: PuckFollowBot
-    priority: 0.10
+    priority: 0.15
   - type: CustomAgent
+    priority: 0.2
     experiment_name: sac-v4-pink-4-step-per
-    priority: 0.10
   - type: CustomAgent
     experiment_name: sac-v0-gaussian-replay-self-play-mirror
-    priority: 0.20
+    priority: 0.2
   - type: CustomAgent
     experiment_name: sac-v4-pink-replay
-    priority: 0.10
-  - type: CustomAgent
-    experiment_name: sac-v4-pink-4-step-per-league-env-reset
-    priority: 0.20
+    priority: 0.15
 self_play:
-  - name: 'SelfPlayMgr'
-    priority: 0.3
-    max_pool_size: 20
-    activation_type: 'botwin'
-    activation_epsilon: 0.5
+  - name: SelfPlayMgr
+    priority: 0.4
+    max_pool_size: 5
+    activation_type: botwin
+    activation_epsilon: 0.8
     pooling:
-      - type: 'episode'
-        freq: 300
+    - type: episode
+      freq: 100
     sampler:
-      name: 'modified_delta_uniform'
-      delta: 0.5
+      name: pfsp
+      pfsp_p: 0.5
 num_envs: 16
 
 # rewards
@@ -68,7 +65,7 @@ explorer:
 # Munchausen RL
 use_munchausen: False
 # checkpoint-load
-load_checkpoint: sac-v4-pink-4-step-per-shaky
+load_checkpoint: sac-v4-pink-4-step-per-league-env-reset
 load_checkpoint_episode: -1
 load_checkpoint_memory: false
 
@@ -87,7 +84,7 @@ save_model_freq: 300
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-4-step-per-shaky-league2"
+exp_name: "sac-v4-pink-4-step-per-league-env-defence"
 resume: False
 save_video: True
 log_gradients: True

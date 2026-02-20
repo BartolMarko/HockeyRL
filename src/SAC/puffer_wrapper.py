@@ -42,10 +42,14 @@ def make_hockey_env(env_args=None, env_kwargs=None):
 
 
 class Float32Wrapper(gym.Wrapper):
+    # attack mode prob
+    PROB_ENV_LEFT_START = 0.3
+
     def reset(self, **kwargs):
         one_starting = kwargs.pop('one_starting', None)
-        if one_starting is None:
-            one_starting = np.random.choice([True, False])
+        if one_starting is not None:
+            print("[WARN] 'one_starting' arg is ignored in Float32Wrapper")
+        one_starting = np.random.rand() < self.PROB_ENV_LEFT_START
         kwargs['one_starting'] = one_starting
         obs, info = self.env.reset(**kwargs)
         info['obs_agent_two'] = self.obs_agent_two()
@@ -89,7 +93,8 @@ class ShakyObservationWrapper(gym.Wrapper):
 
 def wrapped_creator(*args, **kwargs):
     env = h_env.HockeyEnv()
-    env = ShakyObservationWrapper(env)
+    # disable for now
+    # env = ShakyObservationWrapper(env)
     env = Float32Wrapper(env)
     return env
 

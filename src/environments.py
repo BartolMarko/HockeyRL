@@ -23,6 +23,11 @@ LEFT_GOAL_BOTTOM_CLIPPED_Y = LEFT_GOAL_CENTER_Y - 0.9 * GOAL_Y_OFFSET
 PLAYER_SPAWN_POS = (LEFT_GOAL_X + 0.75, LEFT_GOAL_TOP_CLIPPED_Y)
 PLAYER_TARGET_POS = (LEFT_GOAL_X + 0.75, LEFT_GOAL_BOTTOM_Y)
 
+class SparseRewardHockeyEnv(h_env.HockeyEnv):
+    """Remove reward shaping from the HockeyEnv. (Remove closeness to puck reward.)"""
+
+    def get_reward(self, info: dict) -> float:
+        return self._compute_reward()
 
 class PuckTestingEnv(h_env.HockeyEnv):
     def step(self, action):

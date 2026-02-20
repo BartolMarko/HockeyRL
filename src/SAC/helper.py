@@ -11,6 +11,9 @@ from pathlib import Path
 from agent import Agent
 
 
+GLOBAL_CONFIG = None
+
+
 def get_tensor(x, device, dtype=torch.float32):
     """Converts input to a torch tensor on the specified device."""
     if isinstance(x, list):
@@ -338,9 +341,7 @@ def set_env_params(cfg, env):
 
 def load_agent_from_config(experiment_name: str, env, inference_only=False) -> Agent:
     """Load an agent from a configuration file."""
-    config_path = Path('results') / experiment_name / 'config.yaml'
-    cfg = OmegaConf.load(config_path)
-    cfg = set_env_params(cfg, env)
+    cfg = get_config_object(experiment_name)
     cfg.resume = True
     agent = Agent(cfg, inference_only=inference_only)
     return agent
@@ -349,9 +350,7 @@ def load_agent_from_config(experiment_name: str, env, inference_only=False) -> A
 def create_agent_Nth_episode(experiment_name: str, n: int, env=None,
                              resume=False, inference_only=False) -> Agent:
     """Create an agent from the N-th episode checkpoint."""
-    config_path = Path('results') / experiment_name / 'config.yaml'
-    cfg = OmegaConf.load(config_path)
-    cfg = set_env_params(cfg, env)
+    cfg = get_config_object(experiment_name)
     cfg.resume = resume
     agent = Agent(cfg, inference_only=inference_only)
     nth_checkpoint_dir = get_Nth_checkpoint(
@@ -430,6 +429,38 @@ def save_modules_on_failure(agent: Agent, save_dir: str):
     save_path.mkdir(parents=True, exist_ok=True)
     agent.save_models(save_path, memory=True)
     print(f"[INFO] Saved agent modules to {save_path} due to failure.")
+
+
+def get_config_object(experiment_name='') -> OmegaConf:
+    """
+    Returns the config object for a given experiment name.
+    If experiment_name is empty, it will look for the config in the current dir
+    """
+    if experiment_name:
+        config_path = Path('results') / experiment_name / 'config.yaml'
+    else:
+        config_path = Path('config.yaml')
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file {config_path} does not exist.")
+    cfg = OmegaConf.load(config_path)
+    env = h_env.HockeyEnv()
+    cfg = set_env_params(cfg, env)
+    return cfg
+
+
+def set_global_config_object(cfg):
+    """Sets the global config object for the current process."""
+    global GLOBAL_CONFIG
+    GLOBAL_CONFIG = cfg
+
+
+def get_global_config_object():
+    """Returns the global config object for the current process."""
+    global GLOBAL_CONFIG
+    if GLOBAL_CONFIG is None:
+        cfg = get_config_object()
+        set_global_config_object(cfg)
+    return GLOBAL_CONFIG
 
 
 if __name__ == '__main__':

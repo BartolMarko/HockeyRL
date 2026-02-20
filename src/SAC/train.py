@@ -9,7 +9,8 @@ import opponents as opp
 import os
 from pathlib import Path
 from omegaconf import OmegaConf
-from helper import Logger, set_env_params, get_resume_episode_number
+from helper import Logger, set_env_params, get_resume_episode_number, \
+        set_global_config_object
 from rewards import RewardShaper
 AVG_WINDOW_SIZE = 25
 
@@ -94,7 +95,7 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     return episode_metrics
 
 
-def train_agent(cfg, agent, env, logger, start_episode=0):
+def train_agent(cfg, agent, logger, start_episode=0):
     n_games = cfg.n_games
     eps_since_beg = start_episode
     print("[Training started] Total Episodes to run: "
@@ -124,6 +125,13 @@ def train_agent(cfg, agent, env, logger, start_episode=0):
         eval_env = h_env.HockeyEnv()
 
     for i in range(n_games):
+        if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
+            vec_env = pfw.create_vec_env(backend='serial',
+                                         num_envs=cfg.num_envs,
+                                         eval=False)
+            env = pfw.HockeyVecEnv(vec_env)
+        else:
+            env = h_env.HockeyEnv()
         opponent = opponent_pool.sample_opponent()
         metrics = run_episode(
             cfg=cfg,
@@ -273,6 +281,7 @@ if __name__ == '__main__':
         cfg = set_dry_run_params(cfg)
         env = h_env.HockeyEnv()
         cfg = set_env_params(cfg, env)
+        set_global_config_object(cfg)
         agent = Agent(cfg)
         results_dir = Path(__file__).resolve().parent / "results"
         results_dir /= cfg.exp_name
@@ -283,11 +292,6 @@ if __name__ == '__main__':
         if cfg.resume:
             start_episode = get_resume_episode_number(results_dir / 'models')
             print(f"Resume training from Episode {start_episode}.")
-        if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
-            vec_env = pfw.create_vec_env(backend='multiprocessing',
-                                         num_envs=cfg.num_envs,
-                                         eval=False)
-            env = pfw.HockeyVecEnv(vec_env)
         on_failure_dir = h.check_failure(logger, agent)
         if on_failure_dir != '':
             h.load_checkpoint_on_failure(agent, on_failure_dir)
@@ -304,7 +308,7 @@ if __name__ == '__main__':
             h.load_checkpoint(agent, ckpt_folder, ckpt_n,
                               load_memory=ckpt_memory)
 
-        train_agent(cfg, agent, env, logger, start_episode=start_episode)
+        train_agent(cfg, agent, logger, start_episode=start_episode)
     except Exception as e:
         print(f"An error occurred during training: {e}")
         if cfg.dry_run:

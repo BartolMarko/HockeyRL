@@ -41,16 +41,49 @@ def make_hockey_env(env_args=None, env_kwargs=None):
     return h_env.HockeyEnv()
 
 
-class Float32Wrapper(gym.Wrapper):
-    # attack mode prob
-    PROB_ENV_LEFT_START = 0.3
+def prob_env_left_start(step_count):
+    from helper import get_global_config_object
+    cfg = get_global_config_object()
+    rnd = np.random.rand()
+    prob = 0.5
+    if cfg.env_left_start_modes is not None:
+        # cfg.env_left_start_modes is a list
+        # [['normal'], ['custom', 0.4, 500 ], ['custom', 0.6, 1500 ], ['normal', 2000]]
+        # here the 500 steps are normal mode 0.5 prob left
+        # 500-1500 steps are 0.4 prob left
+        # 1500-2000 steps are 0.6 prob left
+        # after 2000 steps, back to normal mode 0.5 prob left
+        for idx, _mode in enumerate(cfg.env_left_start_modes):
+            if idx == 0 and len(_mode) == 1:
+                _mode.append(0)
+            if idx == len(cfg.env_left_start_modes) - 1 and len(_mode) == 1:
+                _mode.append(float('inf'))
+            if _mode[0] == 'normal':
+                assert len(_mode) == 2, \
+                        "Normal mode should have 2 elements: " \
+                        "['normal', step_start]"
+                if step_count > _mode[1]:
+                    prob = 0.5
+                    if step_count == _mode[1] + 1:
+                        print(f"[-ENV]Switching to normal env mode with prob_left=0.5"
+                              f" at step {step_count}")
+            elif _mode[0] == 'custom':
+                assert len(_mode) == 3, \
+                        "Custom mode should have 3 elements: " \
+                        "['custom', prob_left, step_start]"
+                if step_count > _mode[2]:
+                    prob = _mode[1]
+                    if step_count == _mode[2] + 1:
+                        print(f"[-ENV]Switching to custom env mode with prob_left={prob}"
+                              f" at step {step_count}")
+    return rnd < prob
 
+
+g_step_count = 0
+
+
+class Float32Wrapper(gym.Wrapper):
     def reset(self, **kwargs):
-        one_starting = kwargs.pop('one_starting', None)
-        if one_starting is not None:
-            print("[WARN] 'one_starting' arg is ignored in Float32Wrapper")
-        one_starting = np.random.rand() < self.PROB_ENV_LEFT_START
-        kwargs['one_starting'] = one_starting
         obs, info = self.env.reset(**kwargs)
         info['obs_agent_two'] = self.obs_agent_two()
         return obs.astype(np.float32), info
@@ -91,15 +124,39 @@ class ShakyObservationWrapper(gym.Wrapper):
         return obs + noise
 
 
-def wrapped_creator(*args, **kwargs):
+g_last_ep_count = 0
+
+
+class StartSideWrapper(gym.Wrapper):
+    def __init__(self, env, *args, **kwargs):
+        super().__init__(env)
+        self.args = args
+        self.kwargs = kwargs
+
+    def reset(self, **kwargs):
+        global g_last_ep_count
+        one_starting = kwargs.pop('one_starting', None)
+        if one_starting is not None:
+            print("[WARN] 'one_starting' arg is ignored in StartSideWrapper")
+        try:
+            episode_count = self.kwargs.pop('episode_count')
+            g_last_ep_count = episode_count
+        except KeyError:
+            episode_count = g_last_ep_count
+        kwargs['one_starting'] = prob_env_left_start(episode_count)
+        return self.env.reset(**kwargs)
+
+
+def wrapped_creator(args, kwargs):
     env = h_env.HockeyEnv()
     # disable for now
     # env = ShakyObservationWrapper(env)
+    env = StartSideWrapper(env, *args, **kwargs)
     env = Float32Wrapper(env)
     return env
 
 
-def wrapped_creator_test(*args, **kwargs):
+def wrapped_creator_test(args, kwargs):
     env = h_env.HockeyEnv()
     env = Float32Wrapper(env)
     return env
@@ -151,11 +208,15 @@ class HockeyVecEnv:
 
 
 def create_vec_env(backend, num_envs=4, eval=True):
+    global g_step_count
+    g_step_count += 1
     if eval:
         wrapped_creator_fn = wrapped_creator_test
     else:
         wrapped_creator_fn = wrapped_creator
-    env_creators = [wrapped_creator_fn for _ in range(num_envs)]
+    env_args = [() for _ in range(num_envs)]
+    env_kwarg = {'episode_count': g_step_count}
+    env_kwargs = [env_kwarg for _ in range(num_envs)]
     if backend == 'multiprocessing':
         backend_cls = AsyncVectorEnv
     elif backend == 'serial':
@@ -164,7 +225,10 @@ def create_vec_env(backend, num_envs=4, eval=True):
         raise ValueError(f"Unknown backend: {backend}")
 
     vec_env = backend_cls(
-        env_fns=env_creators
+        [
+            lambda: wrapped_creator_fn(env_args[i], env_kwargs[i])
+            for i in range(num_envs)
+        ]
     )
     return HockeyVecEnv(vec_env)
 

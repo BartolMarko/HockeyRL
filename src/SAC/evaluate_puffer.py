@@ -201,13 +201,14 @@ def main(args):
         elif name.lower() == 'weakbot':
             return h_env.BasicOpponent(weak=True)
         elif name.lower() == 'puckfollowbot':
-            from adversarial import create_puck_follow_bot
+            from .adversarial import create_puck_follow_bot
             return create_puck_follow_bot()
         elif name.startswith('sac'):
             return helper.load_agent_from_config(name, env)
         elif name == "oldsac":
-            from KaranhanS.load_model import get_agent
-            return get_agent(env)
+            from src.agent_factory import agent_factory
+            cfg = {'type': 'SACLastYear'}
+            return agent_factory('SACLastYear', cfg)
         elif name.startswith('td3'):
             from src.agent_factory import agent_factory
             cfg_path = name

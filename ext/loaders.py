@@ -12,11 +12,14 @@ LAST_YEAR_SAC_CHECKPOINT = (
 )
 
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def load_sac_agent_last_year(env, checkpoint_path=LAST_YEAR_SAC_CHECKPOINT) -> SACAgent:
     """
     Loads a SACAgent from a checkpoint (same as your original function).
     """
-    checkpoint = torch.load(checkpoint_path, map_location="cuda", weights_only=False)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # Try config from checkpoint
     if "config" in checkpoint:

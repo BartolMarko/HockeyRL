@@ -2,7 +2,6 @@ import torch
 from hockey.hockey_env import HockeyEnv
 
 from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
-from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
 from src.SAC.helper import get_my_sac
@@ -35,6 +34,12 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
                 config_path=agent_cfg["config_path"],
             )
         case "TDMPC":
+            if torch.cuda.is_available():
+                from src.TDMPC.agent import TDMPCAgent
+            else:
+                raise RuntimeError(
+                    "TDMPC agent requires CUDA."
+                )
             tdmpc_agent = TDMPCAgent(
                 load_dir=agent_cfg["load_dir"],
                 tdmpc=None,

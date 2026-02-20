@@ -33,10 +33,16 @@ def get_noise_types():
 
 class NoiseFactory:
     @staticmethod
-    def get_noise(noise_string, *args, **kwargs):
-        try:
-            cls = _NOISE_REGISTER[noise_string.lower()]
-        except:
-            raise ValueError(f"Unknown noise type '{noise}'")
-        return cls(*args, **kwargs)
+    def get_noise(cfg, action_dim):
+        match cfg['action_noise'].lower():
+            case 'gaussian':
+                return GaussianNoise(action_dim)
+            case 'ou':
+                return OUNoise(action_dim, theta=cfg.get('ou_theta', 0.15), dt=cfg.get('dt', 1.0))
+            case 'pink':
+                return PinkNoise(action_dim, f_min=cfg.get('pink_f_min', 0))
+            case 'zero':
+                return ZeroNoise(action_dim)
+            case _:
+                raise ValueError(f"Unknown noise type '{cfg['action_noise']}'")
 

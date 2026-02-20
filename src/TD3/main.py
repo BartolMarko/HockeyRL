@@ -58,7 +58,7 @@ def main():
 
     noise_scheduler = SchedulerFactory.get_scheduler(t_cfg['noise_scheduler']) 
 
-    noise_sampler = NoiseFactory.get_noise(t_cfg['action_noise'], action_dim=action_space.shape[0])
+    noise_sampler = NoiseFactory.get_noise(t_cfg, action_dim=action_space.shape[0])
 
     opp_scheduler = OpponentSchedulerFactory.get_scheduler(cfg, on_phase_change=noise_scheduler.reset)
 

@@ -1,4 +1,5 @@
 import csv
+import json
 from omegaconf import OmegaConf
 from pathlib import Path
 
@@ -23,6 +24,7 @@ DEFAULT_GAMES_PER_MATCH = 4
 DEFAULT_ROUNDS = 10
 DEFAULT_LOGGING_FREQUENCY = 2
 DEFAULT_CSV_RANKING_PATH = Path("tournament_ranking.csv")
+DEFAULT_JSON_HEAD_TO_HEAD_PATH = Path("head_to_head.json")
 
 
 class RatingStorage:
@@ -39,6 +41,21 @@ class RatingStorage:
         for name in agent_names:
             self._set_rating(name, self.DEFAULT_MU, self.DEFAULT_SIGMA)
         self.ranks: dict[str, int] = {}
+        self.head_to_head: dict[str, dict[str, dict[str, float]]] = {
+            name: {
+                name2: {
+                    "match_wins": 0.0,
+                    "match_losses": 0.0,
+                    "match_draws": 0.0,
+                    "episode_wins": 0.0,
+                    "episode_losses": 0.0,
+                    "episode_draws": 0.0,
+                }
+                for name2 in agent_names
+                if name2 != name
+            }
+            for name in agent_names
+        }
         self.update_ranks()
 
     def _set_rating(self, name: str, mu: float, sigma: float) -> None:
@@ -64,6 +81,7 @@ class RatingStorage:
         agent2_name: str,
         score1: float,
         score2: float,
+        draws: float,
     ) -> None:
         """Update PlackettLuce ratings after a match."""
         r1, r2 = self.ratings[agent1_name], self.ratings[agent2_name]
@@ -78,6 +96,8 @@ class RatingStorage:
 
         self._set_rating(agent1_name, p1.mu, p1.sigma)
         self._set_rating(agent2_name, p2.mu, p2.sigma)
+        self._update_head_to_head(agent1_name, agent2_name, score1, score2, draws)
+        self._update_head_to_head(agent2_name, agent1_name, score2, score1, draws)
 
     def ranked_ratings(self) -> list[tuple[str, dict[str, float]]]:
         """Return (name, rating_dict) pairs sorted by score."""
@@ -86,6 +106,24 @@ class RatingStorage:
             key=lambda item: item[1]["score"],
             reverse=True,
         )
+
+    def _update_head_to_head(
+        self,
+        agent_name: str,
+        opponent_name: str,
+        wins: float,
+        losses: float,
+        draws: float,
+    ) -> None:
+        """Update head-to-head stats after a match."""
+        record = self.head_to_head[agent_name][opponent_name]
+        record["match_wins"] += wins > losses
+        record["match_losses"] += losses > wins
+        record["match_draws"] += wins == losses
+
+        record["episode_wins"] += wins
+        record["episode_losses"] += losses
+        record["episode_draws"] += draws
 
 
 class GaussLeaderboardRater:
@@ -167,20 +205,25 @@ class Matchmaker:
             agent1 = self.agents[name1]
             agent2 = self.agents[name2]
 
-            wins1, wins2 = 0, 0
+            wins1, wins2, draws = 0, 0, 0
             for _ in range(self.games_per_match):
                 episode, _ = evaluator.run_episode(env, agent1, agent2)
                 wins1 += episode.outcome == Outcome.WIN
                 wins2 += episode.outcome == Outcome.LOSS
+                draws += episode.outcome == Outcome.DRAW
 
-            self.store.update_after_match(name1, name2, float(wins1), float(wins2))
+            print(f"{name1} vs {name2}: {wins1} - {wins2}")
+            self.store.update_after_match(
+                name1, name2, float(wins1), float(wins2), draws
+            )
         self.store.update_ranks()
 
 
-def log_to_wandb_and_csv(
+def log_to_wandb_and_locally(
     rating_store: RatingStorage,
     round_idx: int,
     csv_path: Path,
+    json_head_to_head_path: Path,
 ) -> None:
     ranking = rating_store.ranked_ratings()
     wandb_payload: dict[str, float] = {}
@@ -189,6 +232,9 @@ def log_to_wandb_and_csv(
         wandb_payload[f"sigma/{name}"] = r["sigma"]
         wandb_payload[f"score/{name}"] = r["score"]
     wandb.log(wandb_payload, step=round_idx)
+
+    with json_head_to_head_path.open("w") as fh:
+        json.dump(rating_store.head_to_head, fh, indent=4)
 
     with csv_path.open("w") as fh:
         writer = csv.writer(fh)
@@ -226,7 +272,11 @@ def main(config: OmegaConf) -> None:
         name=config.get("run_name", "tournament"),
         config=OmegaConf.to_container(config, resolve=True),
     )
+
     csv_path = Path(config.get("csv_ranking_path", DEFAULT_CSV_RANKING_PATH))
+    json_head_to_head_path = Path(
+        config.get("json_head_to_head_path", DEFAULT_JSON_HEAD_TO_HEAD_PATH)
+    )
 
     rating_storage = RatingStorage(list(agents.keys()))
     matchmaker = Matchmaker(
@@ -235,9 +285,13 @@ def main(config: OmegaConf) -> None:
     )
 
     for round_idx in range(1, num_rounds + 1):
+        print(f"ROUND {round_idx}")
         matchmaker.run_round()
         if round_idx % logging_freq == 0 or round_idx == num_rounds:
-            log_to_wandb_and_csv(rating_storage, round_idx, csv_path)
+            log_to_wandb_and_locally(
+                rating_storage, round_idx, csv_path, json_head_to_head_path
+            )
+        print("\n")
 
     wandb.finish()
 

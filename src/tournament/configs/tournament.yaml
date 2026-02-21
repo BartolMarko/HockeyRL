@@ -1,7 +1,8 @@
 run_name: "test_tournament"
-num_rounds: 10
+num_rounds: 50
 logging_frequency_rounds: 1
 csv_ranking_path: "tournament_ranking.csv"
+json_head_to_head_path: "head_to_head.json"
 
 agents:
   # TDMPC agents

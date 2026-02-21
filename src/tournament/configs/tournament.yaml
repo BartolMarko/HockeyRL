@@ -1,0 +1,32 @@
+run_name: "test_tournament"
+num_rounds: 10
+logging_frequency_rounds: 1
+csv_ranking_path: "tournament_ranking.csv"
+
+agents:
+  # TDMPC agents
+  TDMPC_action_hints_4_3M:
+    type: TDMPC
+    wandb_run_id: hyo9jii4
+    wandb_folder: checkpoint_step_4312956
+
+  # SAC agents
+  SAC_best:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
+    artifact_version: v72
+    config_path: ./models/sac_config.yaml
+
+  # TD3 agents
+  TD3_best_177k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_177000  
+  
+  # external agents
+  StrongBot:
+    type: StrongBot
+  WeakBot:
+    type: WeakBot
+  SAC_last_year:
+    type: SACLastYear

@@ -35,10 +35,9 @@ def download_agent_from_wandb(
         )
 
     elif "wandb_artifact" in agent_cfg and agent_cfg["wandb_artifact"] is not None:
-        artifact_info = agent_cfg["wandb_artifact"]
         wandb_utils.download_wandb_artifact(
-            artifact_path=artifact_info["artifact_path"],
-            artifact_version=artifact_info["artifact_version"],
+            artifact_path=agent_cfg["wandb_artifact"],
+            artifact_version=agent_cfg["artifact_version"],
             destination_folder=os.path.join(save_folder, agent_name),
         )
 
@@ -46,7 +45,7 @@ def download_agent_from_wandb(
         agent_cfg["weights_folder"] = model_folder
         print(
             f"Downloaded agent: {agent_name} from artifact:",
-            f"{artifact_info['artifact_path']}:{artifact_info['artifact_version']}",
+            f"{agent_cfg['wandb_artifact']}:{agent_cfg['artifact_version']}",
         )
 
 

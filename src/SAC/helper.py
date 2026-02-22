@@ -272,7 +272,7 @@ class Logger:
     def clear(self):
         self.data = {}
 
-    def log_git_info(self, filename='git-commit-hash.txt'):
+    def log_git_info(self, filename='src/SAC/git-commit-hash.txt'):
         commit_info = read_commit_info(filename)
         # Log git commit info as text information
         if self.tb_logger is not None:
@@ -293,7 +293,7 @@ class Logger:
             self.wandb.finish()
 
 
-def read_commit_info(filename='git-commit-hash.txt'):
+def read_commit_info(filename='src/SAC/git-commit-hash.txt'):
     """Reads git commit info from a file."""
     commit_info = {}
     try:

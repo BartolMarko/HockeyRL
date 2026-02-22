@@ -127,6 +127,8 @@ def train_agent(cfg, agent, logger, start_episode=0):
         print(f"[WARM] Replay buffer has {len(agent.memory)} samples."
               "Skipping warmup games.")
         cfg.warmup_games = 0
+        # force eval for first episode
+        last_eval_step = cfg.eval_freq
 
     if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
         v_env = pfw.create_vec_env(backend='multiprocessing',
@@ -206,7 +208,7 @@ def train_agent(cfg, agent, logger, start_episode=0):
             last_save_step = env_step
             print(f"[SAVE] Saved models at Episode {i} to {models_dir}.")
 
-        if env_step - last_eval_step >= cfg.eval_freq:
+        if abs(env_step - last_eval_step) >= cfg.eval_freq:
             agent.eval()
             last_eval_step = env_step
             _ = epfw.evaluate(cfg, agent, opponent, eval_env,

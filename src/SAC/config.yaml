@@ -28,15 +28,15 @@ self_play:
     activation_epsilon: 0.8
     pooling:
     - type: episode
-      freq: 200
+      freq: 150
     sampler:
-      name: delta_uniform
-      pfsp_p: 0.7
+      name: pfsp
+      pfsp_p: 0.5
 num_envs: 16
 env_left_start_modes:
   - [ 'normal' ]
-  - [ 'custom', 0.2, 3000 ]
-  - [ 'custom', 0.8, 4500 ]
+  - [ 'custom', 0.2, 500 ]
+  - [ 'custom', 0.8, 4000 ]
   - [ 'custom', 0.4, 7000 ]
   # - [ 'custom', 0.2, 10 ]
   # - [ 'custom', 0.8, 20 ]
@@ -72,6 +72,10 @@ explorer:
   type: pink
 # Munchausen RL
 use_munchausen: False
+# checkpoint
+load_checkpoint: sac-v4-pink-6-step-per-env-defence
+load_checkpoint_episode: -1
+load_checkpoint_memory: True
 
 # Network
 algorithm: "sac"
@@ -88,7 +92,7 @@ save_model_freq: 300
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-env-schd"
+exp_name: "sac-v4-pink-6-step-per-env-defence2"
 resume: False
 save_video: True
 log_gradients: True

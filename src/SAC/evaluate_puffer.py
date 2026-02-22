@@ -216,6 +216,10 @@ def main(args):
                 cfg_path = f"{name}.yaml"
             cfg = OmegaConf.load(cfg_path)
             return agent_factory(name, cfg)
+        elif name == 'ensemble':
+            from .ensemble import Ensemble
+            cfg = OmegaConf.load('src/SAC/ensemble.yaml')
+            return Ensemble.create_agent(cfg)
         else:
             raise ValueError(f"Unknown agent name: {name}")
 
@@ -268,6 +272,8 @@ def main(args):
         total_losses += lose
         total_draws += draw
         total_games += win + lose + draw
+        if hasattr(opponent, 'show_stats'):
+            opponent.show_stats()
 
     performance = (total_wins - total_losses) / total_games
     print(f"Overall: {agent.name} wins {total_wins}, loses {total_losses}"

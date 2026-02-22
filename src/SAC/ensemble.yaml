@@ -1,0 +1,8 @@
+method: "last-man-standing"
+agents:
+  - config_path: src/SAC/results/sac-v4-pink-4-step-per-league-env-reset/config.yaml
+    weights_folder: src/SAC/results/sac-v4-pink-4-step-per-league-env-reset/models/episode_7499
+  - config_path: src/SAC/results/sac-v4-pink-6-step-per-env-defence2/config.yaml
+    weights_folder: src/SAC/results/sac-v4-pink-6-step-per-env-defence2/models/episode_7499
+  - config_path: src/SAC/results/sac-v4-pink-4-step-per-league-shaky/config.yaml
+    weights_folder: src/SAC/results/sac-v4-pink-4-step-per-league-shaky/models/episode_7000

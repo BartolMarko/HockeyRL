@@ -32,8 +32,7 @@ class FixedEntropyManager(EntropyManager):
 
 class PhasicEntropyManager(EntropyManager):
     # TODO: needs fix
-    def __init__(self, target_h_min=-4.0, target_h_max=-1.0,
-                     max_steps_stagnant=500):
+    def __init__(self, target_h_min=-4.0, target_h_max=-1.0, max_steps_stagnant=500):
         super().__init__(target_entropy=target_h_min)
         self.target_h_min = target_h_min
         self.target_h_max = target_h_max
@@ -51,19 +50,20 @@ class PhasicEntropyManager(EntropyManager):
             self.steps_stagnant = 0
             return True
         if self.target_entropy > self.target_h_min:
-            self.target_entropy -= 1. / (self.max_steps_stagnant)
+            self.target_entropy -= 1.0 / (self.max_steps_stagnant)
         return False
 
     def id(self):
         return "phasicEntropyMgr({:.2f},{:.2f},{})".format(
-                    self.target_h_min, self.target_h_max,
-                    self.max_steps_stagnant)
+            self.target_h_min, self.target_h_max, self.max_steps_stagnant
+        )
 
 
 class SinosoidalEntropyManager(EntropyManager):
     """
     Starts a sinosoidal entropy target after a certain number of steps
     """
+
     def __init__(self, min_ent=-4, max_ent=-1, start_step=1000, period=2500):
         super().__init__(min_ent)
         self.start_step = start_step
@@ -77,7 +77,7 @@ class SinosoidalEntropyManager(EntropyManager):
         if step < self.start_step:
             return False
         # Sinosoidal variation between min_ent and max_ent
-        phase_offset = - np.pi / 2
+        phase_offset = -np.pi / 2
         phase = (step - self.start_step) / self.period * 2 * np.pi
         phase += phase_offset
         self.target_entropy = self.center_line + self.amplitude * np.sin(phase)
@@ -85,7 +85,9 @@ class SinosoidalEntropyManager(EntropyManager):
 
     def id(self):
         return "sinosoidalEntropyMgr({:.2f},{:.2f},start={},period={})".format(
-                    self.min_ent, self.max_ent, self.start_step, self.period)
+            self.min_ent, self.max_ent, self.start_step, self.period
+        )
+
 
 class Agent:
     def __init__(self, cfg, inference_only=False):
@@ -94,72 +96,99 @@ class Agent:
         self.gamma = cfg.gamma
         self.inference_only = inference_only
         if inference_only:
-            self.buffer_type = 'none'
+            self.buffer_type = "none"
             self.memory = None
         else:
-            self.buffer_type = cfg.get('buffer_type', 'replay')
+            self.buffer_type = cfg.get("buffer_type", "replay")
             self.memory = get_memory_buffer(cfg)
 
         self.batch_size = cfg.batch_size
         self.n_actions = cfg.n_actions
 
         # initialize actor and critic networks
-        self.actor = ActorNet(cfg.lr_actor, cfg.input_dims, n_actions=cfg.n_actions,
-                              hidden_size=cfg.hidden_size, max_action=[1] * cfg.n_actions)
-        self.critic_1 = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
-                              hidden_size=cfg.hidden_size)
-        self.critic_2 = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
-                              hidden_size=cfg.hidden_size)
+        self.actor = ActorNet(
+            cfg.lr_actor,
+            cfg.input_dims,
+            n_actions=cfg.n_actions,
+            hidden_size=cfg.hidden_size,
+            max_action=[1] * cfg.n_actions,
+        )
+        self.critic_1 = CriticNet(
+            cfg.lr_critic,
+            cfg.input_dims,
+            n_actions=cfg.n_actions,
+            hidden_size=cfg.hidden_size,
+        )
+        self.critic_2 = CriticNet(
+            cfg.lr_critic,
+            cfg.input_dims,
+            n_actions=cfg.n_actions,
+            hidden_size=cfg.hidden_size,
+        )
 
         # target networks
-        self.critic_1_target = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
-                              hidden_size=cfg.hidden_size)
-        self.critic_2_target = CriticNet(cfg.lr_critic, cfg.input_dims, n_actions=cfg.n_actions,
-                                hidden_size=cfg.hidden_size)
-        self.update_target_networks(method='hard')
+        self.critic_1_target = CriticNet(
+            cfg.lr_critic,
+            cfg.input_dims,
+            n_actions=cfg.n_actions,
+            hidden_size=cfg.hidden_size,
+        )
+        self.critic_2_target = CriticNet(
+            cfg.lr_critic,
+            cfg.input_dims,
+            n_actions=cfg.n_actions,
+            hidden_size=cfg.hidden_size,
+        )
+        self.update_target_networks(method="hard")
         self.tau = cfg.tau
         self.target_update_freq = cfg.target_update_freq
 
         # exploration strategy
         self.explorer = get_explorer(cfg.explorer, cfg, self)
 
-        if getattr(cfg, 'resume', False):
+        if getattr(cfg, "resume", False):
             if not self.use_most_recent_models():
                 raise ValueError
 
         # entropy coefficient
         if cfg.automatic_entropy_tuning:
-            if not hasattr(self, 'log_alpha'):
-                if hasattr(cfg, 'alpha') and cfg.alpha:
-                    self.log_alpha = T.tensor(np.log(cfg.alpha), requires_grad=True).to(self.actor.device)
+            if not hasattr(self, "log_alpha"):
+                if hasattr(cfg, "alpha") and cfg.alpha:
+                    self.log_alpha = T.tensor(np.log(cfg.alpha), requires_grad=True).to(
+                        self.actor.device
+                    )
                 else:
-                    self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor.device)
+                    self.log_alpha = T.zeros(
+                        1, requires_grad=True, device=self.actor.device
+                    )
             self.alpha_optim = T.optim.Adam([self.log_alpha], lr=cfg.lr_alpha)
-            if cfg.get('target_entropy', '') == 'phasic':
+            if cfg.get("target_entropy", "") == "phasic":
                 self.target_entropy_mgr = PhasicEntropyManager()
-            elif cfg.get('target_entropy', '') == 'sinosoidal':
+            elif cfg.get("target_entropy", "") == "sinosoidal":
                 self.target_entropy_mgr = SinosoidalEntropyManager()
             else:
                 target_entropy = -np.prod(cfg.n_actions)
-                if cfg.get('use_munchausen', False):
+                if cfg.get("use_munchausen", False):
                     target_entropy *= 0.75
                 self.target_entropy_mgr = FixedEntropyManager(target_entropy)
         else:
-            if hasattr(cfg, 'alpha') and cfg.alpha:
+            if hasattr(cfg, "alpha") and cfg.alpha:
                 self.alpha = T.tensor(cfg.alpha).to(self.actor.device)
             else:
-                print("[WARN] No alpha value specified in config for fixed alpha."
-                      "Using default alpha=0.2")
+                print(
+                    "[WARN] No alpha value specified in config for fixed alpha."
+                    "Using default alpha=0.2"
+                )
                 self.alpha = T.tensor(0.2).to(self.actor.device)
 
-        if cfg.get('use_munchausen', False):
-            assert 0.0 < cfg.munchausen_alpha <= 1.0, \
+        if cfg.get("use_munchausen", False):
+            assert 0.0 < cfg.munchausen_alpha <= 1.0, (
                 "munchausen_alpha must be in (0, 1]"
-            assert cfg.munchausen_lo_clip < 0.0, \
-                "munchausen_lo_clip must be negative"
+            )
+            assert cfg.munchausen_lo_clip < 0.0, "munchausen_lo_clip must be negative"
 
         # vectorized env support flag
-        num_envs = cfg.get('num_envs', 1)
+        num_envs = cfg.get("num_envs", 1)
         self.is_vectorized = num_envs > 1
         self.explorer.support_vec_env(num_envs)
 
@@ -175,19 +204,28 @@ class Agent:
         self.critic_2.eval()
         self.explorer.eval()
 
+    def QValues(self, obs: np.ndarray, action: np.ndarray) -> list[float]:
+        """Returns the Q-values for the given observation and action."""
+        state = T.from_numpy(obs).float().unsqueeze(0).to(self.actor.device)
+        action = T.from_numpy(action).float().unsqueeze(0).to(self.actor.device)
+        with T.no_grad():
+            q1 = self.critic_1.forward(state, action).view(-1)
+            q2 = self.critic_2.forward(state, action).view(-1)
+        return [float(q1.item()), float(q2.item())]
+
     def show_info(self):
         print("Agent Configuration:")
         print("  Algorithm: Soft Actor-Critic (SAC)")
         print(f"  Replay Buffer Type: {self.buffer_type}")
-        if self.buffer_type in ['per', 'n-step-per']:
+        if self.buffer_type in ["per", "n-step-per"]:
             print("    Prioritized Experience Replay: Enabled")
-            if self.buffer_type == 'n-step-per':
+            if self.buffer_type == "n-step-per":
                 print(f"    N-Step Returns: Enabled (n={self.cfg.n_step_buffer_n})")
         print(f"  Batch Size: {self.batch_size}")
         print(f"  Discount Factor (Gamma): {self.gamma}")
         print(f"  Target Network Update Frequency: {self.target_update_freq}")
         print(f"  Tau (Soft Update Coefficient): {self.tau}")
-        if hasattr(self, 'log_alpha'):
+        if hasattr(self, "log_alpha"):
             print("  Automatic Entropy Tuning: Enabled")
             print(f"    Initial Alpha (Entropy Coefficient): {self.get_alpha().item()}")
             print(f"    Target Entropy Manager: {self.target_entropy_mgr.id()}")
@@ -195,13 +233,17 @@ class Agent:
             print("  Automatic Entropy Tuning: Disabled")
             print(f"    Fixed Alpha (Entropy Coefficient): {self.alpha.item()}")
         print(f"  Explorer Type: {self.explorer.id()}")
-        print(f"  Vectorized Environment Support: {'Enabled' if self.is_vectorized else 'Disabled'}")
+        print(
+            f"  Vectorized Environment Support: {'Enabled' if self.is_vectorized else 'Disabled'}"
+        )
         if self.is_vectorized:
             print(f"    Number of Environments: {self.cfg.get('num_envs', 1)}")
-        if self.cfg.get('use_munchausen', False):
+        if self.cfg.get("use_munchausen", False):
             print("  Munchausen RL: Enabled")
             print(f"    Munchausen Alpha: {self.cfg.munchausen_alpha}")
-            print(f"    Munchausen Log-Prob Clipping: [{self.cfg.munchausen_lo_clip}, 0.0]")
+            print(
+                f"    Munchausen Log-Prob Clipping: [{self.cfg.munchausen_lo_clip}, 0.0]"
+            )
 
     def end_episode(self):
         self.explorer.end_episode()
@@ -211,11 +253,14 @@ class Agent:
     def use_most_recent_models(self):
         """Loads the most recent models from the results directory."""
         from .helper import get_latest_checkpoint
-        results_dir = Path(__file__).resolve().parent / "results" / self.cfg.exp_name / 'models'
+
+        results_dir = (
+            Path(__file__).resolve().parent / "results" / self.cfg.exp_name / "models"
+        )
         best_model_dir = get_latest_checkpoint(results_dir)
         if best_model_dir is not None:
             # remove till the results part
-            model_dir_striped = str(best_model_dir).split('results' + os.sep)[-1]
+            model_dir_striped = str(best_model_dir).split("results" + os.sep)[-1]
             print("[INFO] Resuming from checkpoint:", model_dir_striped)
             self.load_models(best_model_dir)
             return True
@@ -225,22 +270,30 @@ class Agent:
 
     def get_alpha(self):
         """Returns the current value of the entropy coefficient alpha."""
-        if hasattr(self, 'log_alpha'):
+        if hasattr(self, "log_alpha"):
             return self.log_alpha.exp()
         else:
             return self.alpha
 
-    def update_target_networks(self, method='soft'):
+    def update_target_networks(self, method="soft"):
         """Updates the target networks with the current critic networks' parameters."""
-        if method == 'hard':
+        if method == "hard":
             self.critic_1_target.load_state_dict(self.critic_1.state_dict())
             self.critic_2_target.load_state_dict(self.critic_2.state_dict())
-        elif method == 'soft':
-            for target_param, param in zip(self.critic_1_target.parameters(), self.critic_1.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        elif method == "soft":
+            for target_param, param in zip(
+                self.critic_1_target.parameters(), self.critic_1.parameters()
+            ):
+                target_param.data.copy_(
+                    self.tau * param.data + (1 - self.tau) * target_param.data
+                )
 
-            for target_param, param in zip(self.critic_2_target.parameters(), self.critic_2.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+            for target_param, param in zip(
+                self.critic_2_target.parameters(), self.critic_2.parameters()
+            ):
+                target_param.data.copy_(
+                    self.tau * param.data + (1 - self.tau) * target_param.data
+                )
         else:
             raise ValueError("Invalid update type. Use 'soft' or 'hard'.")
 
@@ -254,16 +307,20 @@ class Agent:
     def choose_action(self, observation, step=None, eval_mode=False):
         """Chooses an action based on the current policy (actor network)."""
         if eval_mode:
-             return self.choose_action_from_policy(observation)
+            return self.choose_action_from_policy(observation)
         warmup = (step is not None) and (step < self.cfg.warmup_games)
-        return self.explorer.choose_action(observation, agent=self, step=step, warmup=warmup)
+        return self.explorer.choose_action(
+            observation, agent=self, step=step, warmup=warmup
+        )
 
     def choose_action_batch(self, observation, step=None, eval_mode=False):
         """Batched observation version of choose_action for vectorized envs"""
         if eval_mode:
-             return self.choose_action_from_policy_batch(observation)
+            return self.choose_action_from_policy_batch(observation)
         warmup = (step is not None) and (step < self.cfg.warmup_games)
-        return self.explorer.choose_action_batch(observation, agent=self, step=step, warmup=warmup)
+        return self.explorer.choose_action_batch(
+            observation, agent=self, step=step, warmup=warmup
+        )
 
     def plan(self, observation, eval_mode=True, step=None):
         """Alias for choose_action with eval_mode defaulting to True"""
@@ -302,10 +359,12 @@ class Agent:
         """
         with T.no_grad():
             new_actions, log_probs = self.actor.sample_normal(
-                    state, reparameterize=False)
+                state, reparameterize=False
+            )
             log_policy = log_probs.view(-1)
         munchausen_term = self.cfg.munchausen_alpha * T.clamp(
-                log_policy, min=self.cfg.munchausen_lo_clip)
+            log_policy, min=self.cfg.munchausen_lo_clip
+        )
         return munchausen_term
 
     def store(self, state, action, reward, new_state, done):
@@ -316,48 +375,58 @@ class Agent:
 
     def save_models(self, folder_path, memory=False):
         """Saves the parameters of the actor and critic networks."""
-        print('[SAVE] Saving models and optimizer states...')
+        print("[SAVE] Saving models and optimizer states...")
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        file_path_actor = os.path.join(folder_path, 'actor.pth')
-        file_path_critic1 = os.path.join(folder_path, 'critic_1.pth')
-        file_path_critic2 = os.path.join(folder_path, 'critic_2.pth')
+        file_path_actor = os.path.join(folder_path, "actor.pth")
+        file_path_critic1 = os.path.join(folder_path, "critic_1.pth")
+        file_path_critic2 = os.path.join(folder_path, "critic_2.pth")
         self.actor.save(file_path_actor)
         self.critic_1.save(file_path_critic1)
         self.critic_2.save(file_path_critic2)
-        if hasattr(self, 'log_alpha'):
-            file_path_alpha = os.path.join(folder_path, 'log_alpha.pth')
+        if hasattr(self, "log_alpha"):
+            file_path_alpha = os.path.join(folder_path, "log_alpha.pth")
             T.save(self.log_alpha, file_path_alpha)
         if memory:
-            memory_filename = os.path.join(folder_path, 'buffer')
+            memory_filename = os.path.join(folder_path, "buffer")
             self.memory.save(memory_filename)
 
     def load_models(self, folder_path, memory=False):
         """Loads the parameters of the actor and critic networks."""
-        file_path_actor = os.path.join(folder_path, 'actor.pth')
+        file_path_actor = os.path.join(folder_path, "actor.pth")
         self.actor.load(file_path_actor)
-        file_path_critic1 = os.path.join(folder_path, 'critic_1.pth')
+        file_path_critic1 = os.path.join(folder_path, "critic_1.pth")
         self.critic_1.load(file_path_critic1)
-        file_path_critic2 = os.path.join(folder_path, 'critic_2.pth')
+        file_path_critic2 = os.path.join(folder_path, "critic_2.pth")
         self.critic_2.load(file_path_critic2)
-        self.update_target_networks(method='hard')
-        if hasattr(self, 'log_alpha') or self.cfg.automatic_entropy_tuning:
-            file_path_alpha = os.path.join(folder_path, 'log_alpha.pth')
+        self.update_target_networks(method="hard")
+        if hasattr(self, "log_alpha") or self.cfg.automatic_entropy_tuning:
+            file_path_alpha = os.path.join(folder_path, "log_alpha.pth")
             # check if file exists
             if os.path.exists(file_path_alpha):
-                self.log_alpha = T.load(file_path_alpha, map_location=self.actor.device, weights_only=True)
-            elif hasattr(self.cfg, 'alpha') and self.cfg.alpha:
-                self.log_alpha = T.tensor(np.log(self.cfg.alpha), requires_grad=True).to(self.actor.device)
+                self.log_alpha = T.load(
+                    file_path_alpha, map_location=self.actor.device, weights_only=True
+                )
+            elif hasattr(self.cfg, "alpha") and self.cfg.alpha:
+                self.log_alpha = T.tensor(
+                    np.log(self.cfg.alpha), requires_grad=True
+                ).to(self.actor.device)
             else:
-                print(f"[WARN] No alpha file / value found to load from at {file_path_alpha} / config yaml. Using default alpha=0.2")
-                self.log_alpha = T.tensor(np.log(0.2), requires_grad=True).to(self.actor.device)
+                print(
+                    f"[WARN] No alpha file / value found to load from at {file_path_alpha} / config yaml. Using default alpha=0.2"
+                )
+                self.log_alpha = T.tensor(np.log(0.2), requires_grad=True).to(
+                    self.actor.device
+                )
             self.log_alpha = self.log_alpha.clone().detach().requires_grad_(True)
         if memory:
-            memory_filename = os.path.join(folder_path, 'buffer')
-            if os.path.exists(memory_filename + '.npz'):
+            memory_filename = os.path.join(folder_path, "buffer")
+            if os.path.exists(memory_filename + ".npz"):
                 self.memory.load(memory_filename)
             else:
-                print(f"[WARN] No memory buffer file found to load from at {memory_filename}.")
+                print(
+                    f"[WARN] No memory buffer file found to load from at {memory_filename}."
+                )
 
     def learn(self, step=None):
         """Updates the networks (actor, critics, and alpha) based on sampled experiences."""
@@ -365,11 +434,15 @@ class Agent:
         if self.memory.mem_cntr < self.batch_size:
             return log_data
 
-        if self.buffer_type in ['per', 'n-step-per']:
-            state, action, reward, new_state, done, indices, weights = self.memory.sample_buffer(self.batch_size)
+        if self.buffer_type in ["per", "n-step-per"]:
+            state, action, reward, new_state, done, indices, weights = (
+                self.memory.sample_buffer(self.batch_size)
+            )
             weights = T.tensor(weights, dtype=T.float).to(self.actor.device)
         else:
-            state, action, reward, new_state, done = self.memory.sample_buffer(self.batch_size)
+            state, action, reward, new_state, done = self.memory.sample_buffer(
+                self.batch_size
+            )
 
         reward = T.tensor(reward, dtype=T.float).to(self.actor.device)
         done = T.tensor(done).to(self.actor.device)
@@ -379,22 +452,25 @@ class Agent:
 
         # Compute target Q-values
         with T.no_grad():
-            next_actions, next_log_probs = self.actor.sample_normal(state_, reparameterize=False)
+            next_actions, next_log_probs = self.actor.sample_normal(
+                state_, reparameterize=False
+            )
             q1_next = self.critic_1_target.forward(state_, next_actions)
             q2_next = self.critic_2_target.forward(state_, next_actions)
             q_next = T.min(q1_next, q2_next) - self.get_alpha() * next_log_probs
-            if self.buffer_type == 'n-step-per':
+            if self.buffer_type == "n-step-per":
                 # use gamma^n for skipping n-1 steps
-                q_target = reward + (self.gamma ** self.cfg.n_step_buffer_n) * \
-                                    (1 - done.float()) * q_next.view(-1)
+                q_target = reward + (self.gamma**self.cfg.n_step_buffer_n) * (
+                    1 - done.float()
+                ) * q_next.view(-1)
             else:
                 q_target = reward + self.gamma * (1 - done.float()) * q_next.view(-1)
 
-        if self.cfg.get('use_munchausen', False):
+        if self.cfg.get("use_munchausen", False):
             msac_reward = self._compute_munchausen_reward(state, action)
-            log_data.update({
-                'Metrics/munchausen_reward_mean': msac_reward.mean().item()
-            })
+            log_data.update(
+                {"Metrics/munchausen_reward_mean": msac_reward.mean().item()}
+            )
             q_target = q_target + msac_reward * (1 - done.float())
 
         # Update critics
@@ -402,10 +478,19 @@ class Agent:
         self.critic_2.optimizer.zero_grad()
         q1_old = self.critic_1.forward(state, action).view(-1)
         q2_old = self.critic_2.forward(state, action).view(-1)
-        if self.buffer_type in ['per', 'n-step-per']:
-            critic_1_loss = (0.5 * F.mse_loss(q1_old, q_target, reduction='none') * weights).mean()
-            critic_2_loss = (0.5 * F.mse_loss(q2_old, q_target, reduction='none') * weights).mean()
-            priorities = (0.5 * (T.abs(q1_old - q_target) + T.abs(q2_old - q_target))).cpu().detach().numpy()
+        if self.buffer_type in ["per", "n-step-per"]:
+            critic_1_loss = (
+                0.5 * F.mse_loss(q1_old, q_target, reduction="none") * weights
+            ).mean()
+            critic_2_loss = (
+                0.5 * F.mse_loss(q2_old, q_target, reduction="none") * weights
+            ).mean()
+            priorities = (
+                (0.5 * (T.abs(q1_old - q_target) + T.abs(q2_old - q_target)))
+                .cpu()
+                .detach()
+                .numpy()
+            )
             priorities = np.clip(priorities, 1e-6, 1000.0)
         else:
             critic_1_loss = 0.5 * F.mse_loss(q1_old, q_target)
@@ -413,8 +498,16 @@ class Agent:
         critic_loss = critic_1_loss + critic_2_loss
         critic_loss.backward()
 
-        critic1_grad_norm = sum(p.grad.norm().item() for p in self.critic_1.parameters() if p.grad is not None)
-        critic2_grad_norm = sum(p.grad.norm().item() for p in self.critic_2.parameters() if p.grad is not None)
+        critic1_grad_norm = sum(
+            p.grad.norm().item()
+            for p in self.critic_1.parameters()
+            if p.grad is not None
+        )
+        critic2_grad_norm = sum(
+            p.grad.norm().item()
+            for p in self.critic_2.parameters()
+            if p.grad is not None
+        )
 
         T.nn.utils.clip_grad_norm_(self.critic_1.parameters(), max_norm=1.0)
         T.nn.utils.clip_grad_norm_(self.critic_2.parameters(), max_norm=1.0)
@@ -427,58 +520,67 @@ class Agent:
         q1_new = self.critic_1.forward(state, actions)
         q2_new = self.critic_2.forward(state, actions)
         critic_value = T.min(q1_new, q2_new).view(-1)
-        actor_loss = (self.get_alpha().detach() * log_probs.view(-1) - critic_value).mean()
+        actor_loss = (
+            self.get_alpha().detach() * log_probs.view(-1) - critic_value
+        ).mean()
         self.actor.optimizer.zero_grad()
         actor_loss.backward()
 
-        actor_grad_norm = sum(p.grad.norm().item() for p in self.actor.parameters() if p.grad is not None)
+        actor_grad_norm = sum(
+            p.grad.norm().item() for p in self.actor.parameters() if p.grad is not None
+        )
 
         T.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0)
         self.actor.optimizer.step()
 
         # Update alpha
-        if hasattr(self, 'log_alpha'):
-            alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy_mgr.get_entropy()).detach()).mean()
+        if hasattr(self, "log_alpha"):
+            alpha_loss = -(
+                self.log_alpha
+                * (log_probs + self.target_entropy_mgr.get_entropy()).detach()
+            ).mean()
             self.alpha_optim.zero_grad()
             alpha_loss.backward()
             self.alpha_optim.step()
-            log_data.update({'Losses/alpha_loss': alpha_loss.item()})
+            log_data.update({"Losses/alpha_loss": alpha_loss.item()})
 
         # Update target networks
         if step is not None and step % self.target_update_freq == 0:
-            self.update_target_networks(method='soft')
+            self.update_target_networks(method="soft")
 
         # Update Replay Buffer priorities if using PER or N-Step-PER
-        if self.buffer_type in ['per', 'n-step-per']:
+        if self.buffer_type in ["per", "n-step-per"]:
             self.memory.update_priorities(indices, priorities)
-            log_data.update({
-                'per/avg_priority': np.mean(priorities),
-                'per/max_priority': np.max(priorities),
-                'hist:per/priority_distribution': priorities,
-                'per/mean_weight': np.mean(weights.cpu().numpy()),
-                'per/max_weight': np.max(weights.cpu().numpy()),
-            })
-        log_data.update({
-            'buffer/length': len(self.memory)
-        })
+            log_data.update(
+                {
+                    "per/avg_priority": np.mean(priorities),
+                    "per/max_priority": np.max(priorities),
+                    "hist:per/priority_distribution": priorities,
+                    "per/mean_weight": np.mean(weights.cpu().numpy()),
+                    "per/max_weight": np.max(weights.cpu().numpy()),
+                }
+            )
+        log_data.update({"buffer/length": len(self.memory)})
 
-        log_data.update({
-            'Losses/actor_loss': actor_loss.item(),
-            'Losses/critic_1_loss': critic_1_loss.item(),
-            'Losses/critic_2_loss': critic_2_loss.item(),
-            'HyperParam/alpha': self.get_alpha().item(),
-            'HyperParam/target_entropy': self.target_entropy_mgr.get_entropy(),
-            'Metrics/entropy': -log_probs.mean().item(),
-            'Metrics/q1_mean': q1_old.mean().item(),
-            'Metrics/q1_std': q1_old.std().item(),
-            'Metrics/q1_min': q1_old.min().item(),
-            'Metrics/q1_max': q1_old.max().item(),
-            'Metrics/critic1_grad_norm': critic1_grad_norm,
-            'Metrics/critic2_grad_norm': critic2_grad_norm,
-            'Metrics/actor_grad_norm': actor_grad_norm,
-            'Metrics/q_target_mean': q_target.mean().item(),
-            'Metrics/q_target_std': q_target.std().item()
-        })
+        log_data.update(
+            {
+                "Losses/actor_loss": actor_loss.item(),
+                "Losses/critic_1_loss": critic_1_loss.item(),
+                "Losses/critic_2_loss": critic_2_loss.item(),
+                "HyperParam/alpha": self.get_alpha().item(),
+                "HyperParam/target_entropy": self.target_entropy_mgr.get_entropy(),
+                "Metrics/entropy": -log_probs.mean().item(),
+                "Metrics/q1_mean": q1_old.mean().item(),
+                "Metrics/q1_std": q1_old.std().item(),
+                "Metrics/q1_min": q1_old.min().item(),
+                "Metrics/q1_max": q1_old.max().item(),
+                "Metrics/critic1_grad_norm": critic1_grad_norm,
+                "Metrics/critic2_grad_norm": critic2_grad_norm,
+                "Metrics/actor_grad_norm": actor_grad_norm,
+                "Metrics/q_target_mean": q_target.mean().item(),
+                "Metrics/q_target_std": q_target.std().item(),
+            }
+        )
         return log_data
 
     def __str__(self):
@@ -487,15 +589,16 @@ class Agent:
 
 def test_sinosoidal_entropy_manager():
     import matplotlib.pyplot as plt
+
     mgr = SinosoidalEntropyManager()
     entropies = []
     for step in range(5000):
         mgr.update(current_win_rate=0.5, current_alpha=0.01, step=step)
         entropies.append(mgr.get_entropy())
     plt.plot(entropies)
-    plt.xlabel('Step')
-    plt.ylabel('Target Entropy')
-    plt.title('Sinosoidal Entropy Manager Target Entropy Over Time')
+    plt.xlabel("Step")
+    plt.ylabel("Target Entropy")
+    plt.title("Sinosoidal Entropy Manager Target Entropy Over Time")
     plt.grid()
     plt.show()
 

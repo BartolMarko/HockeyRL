@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 import numpy as np
+import torch
 
 from src.named_agent import NamedAgent
 from src.TDMPC.tdmpc import TDMPC
@@ -39,3 +40,11 @@ class TDMPCAgent(NamedAgent):
         )
         self.t0 = False
         return action
+
+    def QValues(self, obs: np.ndarray, action: np.ndarray) -> list[float]:
+        obs = torch.from_numpy(obs).to(self.tdmpc.device).unsqueeze(0)
+        action = torch.from_numpy(action).to(self.tdmpc.device).unsqueeze(0)
+        with torch.no_grad():
+            z = self.tdmpc.encoder(obs)
+            Q_1, Q_2 = self.tdmpc.QValues(z, action)
+        return [float(Q_1.item()), float(Q_2.item())]

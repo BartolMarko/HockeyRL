@@ -92,11 +92,18 @@ class TOLD(nn.Module):
         x = torch.cat([z, a], dim=-1)
         return self._Q1(x), self._Q2(x)
 
-    def Q_min(self, z, a):
-        """Predict minimum of the two Q-values."""
+    def QValues(
+        self, z: torch.Tensor, a: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Returns the two Q-values (after applying the distributional inverse transform) for the given latent state and action."""
         Q_raw_1, Q_raw_2 = self.Q_raw(z, a)
         Q_1 = h.two_hot_inv(Q_raw_1, self.cfg)
         Q_2 = h.two_hot_inv(Q_raw_2, self.cfg)
+        return Q_1, Q_2
+
+    def Q_min(self, z, a):
+        """Predict minimum of the two Q-values."""
+        Q_1, Q_2 = self.QValues(z, a)
         return torch.min(Q_1, Q_2)
 
     def get_non_policy_optimizer_config(self):

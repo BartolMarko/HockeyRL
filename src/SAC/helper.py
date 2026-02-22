@@ -12,7 +12,7 @@ from .agent import Agent
 
 
 GLOBAL_CONFIG = None
-BASE_PATH = Path('src') / 'SAC'
+BASE_PATH = Path("src") / "SAC"
 
 
 def get_tensor(x, device, dtype=torch.float32):
@@ -27,8 +27,7 @@ def get_tensor(x, device, dtype=torch.float32):
 
 
 class HeatmapTracker:
-    def __init__(self, num_envs, x_range=(-4, 4), y_range=(-2.5, 2.5),
-                 bins=(48, 32)):
+    def __init__(self, num_envs, x_range=(-4, 4), y_range=(-2.5, 2.5), bins=(48, 32)):
         """
         Tracks agent positioning and generates a heatmap.
 
@@ -57,17 +56,20 @@ class HeatmapTracker:
         self.total_steps += n if n is not None else self.num_envs
 
     def record(self, obs, idx, idy):
-        assert self.num_envs == obs.shape[0], \
-            "Observation batch size does not match number of environments. " \
+        assert self.num_envs == obs.shape[0], (
+            "Observation batch size does not match number of environments. "
             f"Expected {self.num_envs}, got {obs.shape[0]} from {obs.shape}."
-        ix = np.clip(np.digitize(obs[:, idx], self.x_data) - 1, 0,
-                     self.bins[0] - 1)
-        iy = np.clip(np.digitize(obs[:, idy], self.y_data) - 1, 0,
-                     self.bins[1] - 1)
+        )
+        ix = np.clip(np.digitize(obs[:, idx], self.x_data) - 1, 0, self.bins[0] - 1)
+        iy = np.clip(np.digitize(obs[:, idy], self.y_data) - 1, 0, self.bins[1] - 1)
         np.add.at(self.heatmap, (ix, iy), 1)
 
-    def save_heatmap(self, filename="agent_heatmap.png",
-                     title="Agent Position Density", cmap="seismic"):
+    def save_heatmap(
+        self,
+        filename="agent_heatmap.png",
+        title="Agent Position Density",
+        cmap="seismic",
+    ):
         """
         Visualizes the accumulated histogram.
         """
@@ -78,35 +80,34 @@ class HeatmapTracker:
         self.heatmap = 2 * self.heatmap / self.total_steps
 
         plt.figure(figsize=(12, 7))
-        extent = [self.x_range[0], self.x_range[1],
-                  self.y_range[0], self.y_range[1]]
+        extent = [self.x_range[0], self.x_range[1], self.y_range[0], self.y_range[1]]
         im = plt.imshow(
             self.heatmap.T,
             extent=extent,
-            origin='lower',
+            origin="lower",
             cmap=cmap,
-            interpolation='gaussian'
+            interpolation="gaussian",
         )
 
         cbar = plt.colorbar(im)
-        cbar.set_label('Normalized # of Visits', rotation=270, labelpad=15)
+        cbar.set_label("Normalized # of Visits", rotation=270, labelpad=15)
         plt.title(title)
-        plt.xlabel('x')
-        plt.ylabel('y')
+        plt.xlabel("x")
+        plt.ylabel("y")
 
         self._draw_rink_elements()
 
-        plt.savefig(filename, bbox_inches='tight', dpi=300)
+        plt.savefig(filename, bbox_inches="tight", dpi=300)
         plt.close()
         self.reset()
 
     def _draw_rink_elements(self):
         # Center red line
-        plt.axvline(x=0, color='white', linestyle='-', linewidth=2, alpha=0.5)
+        plt.axvline(x=0, color="white", linestyle="-", linewidth=2, alpha=0.5)
 
         # Goal areas (approximate)
-        goal_l = plt.Rectangle((-4, -0.7), 0.2, 1.4, color='white', alpha=0.3)
-        goal_r = plt.Rectangle((3.8, -0.7), 0.2, 1.4, color='white', alpha=0.3)
+        goal_l = plt.Rectangle((-4, -0.7), 0.2, 1.4, color="white", alpha=0.3)
+        goal_r = plt.Rectangle((3.8, -0.7), 0.2, 1.4, color="white", alpha=0.3)
         plt.gca().add_patch(goal_l)
         plt.gca().add_patch(goal_r)
 
@@ -131,38 +132,46 @@ class Logger:
         self.cfg = cfg
         self.project_dir = project_dir
         project_dir.mkdir(parents=True, exist_ok=True)
-        self.tb_logger = SummaryWriter(project_dir / 'logs')
+        self.tb_logger = SummaryWriter(project_dir / "logs")
         self.wandb = self._init_wandb()
-        assert self.tb_logger is not None or self.wandb is not None, \
+        assert self.tb_logger is not None or self.wandb is not None, (
             "No logging method specified."
+        )
         self.data = {}
         self.agent_pos_heatmap = HeatmapTracker(cfg.num_envs)
         self.puck_pos_heatmap = HeatmapTracker(cfg.num_envs)
         self.log_config()
 
     def _init_wandb(self):
-        if self.cfg.get('use_wandb', False):
-            if os.getenv('WANDB_API_KEY') is None:
+        if self.cfg.get("use_wandb", False):
+            if os.getenv("WANDB_API_KEY") is None:
                 raise ValueError("WANDB_API_KEY environment variable not set.")
             if self.cfg.resume:
-                if self.cfg.get('wandb_run_id') is not None:
-                    os.environ['WANDB_RUN_ID'] = self.cfg.get('wandb_run_id')
-                os.environ['WANDB_RESUME'] = self.cfg.get('wandb_resume', 'allow')
-                if os.getenv('WANDB_RESUME') not in ['must', 'auto', 'allow']:
-                    raise ValueError("To resume a wandb run, set wandb_resume='must' or 'auto'.")
-                if not os.getenv('WANDB_RUN_ID'):
-                    raise ValueError("To resume a wandb run, set wandb_run_id in the config.")
+                if self.cfg.get("wandb_run_id") is not None:
+                    os.environ["WANDB_RUN_ID"] = self.cfg.get("wandb_run_id")
+                os.environ["WANDB_RESUME"] = self.cfg.get("wandb_resume", "allow")
+                if os.getenv("WANDB_RESUME") not in ["must", "auto", "allow"]:
+                    raise ValueError(
+                        "To resume a wandb run, set wandb_resume='must' or 'auto'."
+                    )
+                if not os.getenv("WANDB_RUN_ID"):
+                    raise ValueError(
+                        "To resume a wandb run, set wandb_run_id in the config."
+                    )
 
             print("[WNDB] wandb:")
-            print("[WNDB] - Project:", self.cfg.get('wandb_project'))
-            return wandb.init(project=self.cfg.get('wandb_project'),
-                              name=self.cfg.get('exp_name'),
-                              config=dict(self.cfg),
-                              monitor_gym=True, allow_val_change=True)
+            print("[WNDB] - Project:", self.cfg.get("wandb_project"))
+            return wandb.init(
+                project=self.cfg.get("wandb_project"),
+                name=self.cfg.get("exp_name"),
+                config=dict(self.cfg),
+                monitor_gym=True,
+                allow_val_change=True,
+            )
         return None
 
     def log_config(self):
-        with open(self.project_dir / "config.yaml", 'w') as f:
+        with open(self.project_dir / "config.yaml", "w") as f:
             OmegaConf.save(self.cfg, f)
 
     def add_state(self, obs):
@@ -190,23 +199,37 @@ class Logger:
         heatmap_folder = self.get_project_dir() / "heatmaps"
         heatmap_folder.mkdir(parents=True, exist_ok=True)
         heatmap_filename = heatmap_folder / f"player_positions_episode_{step}.png"
-        self.agent_pos_heatmap.save_heatmap(filename=heatmap_filename,
-                                            title=f"{heatmap_title} - Step {step}")
+        self.agent_pos_heatmap.save_heatmap(
+            filename=heatmap_filename, title=f"{heatmap_title} - Step {step}"
+        )
         if self.tb_logger is not None:
-            self.tb_logger.add_image("heatmap/" + heatmap_title,
-                                     plt.imread(heatmap_filename), dataformats='HWC')
+            self.tb_logger.add_image(
+                "heatmap/" + heatmap_title,
+                plt.imread(heatmap_filename),
+                dataformats="HWC",
+            )
         if self.wandb is not None:
-            self.wandb.log({"heatmap/" + heatmap_title: wandb.Image(str(heatmap_filename))})
+            self.wandb.log(
+                {"heatmap/" + heatmap_title: wandb.Image(str(heatmap_filename))}
+            )
 
         heatmap_title = "Puck Positions"
         heatmap_filename = heatmap_folder / f"puck_positions_episode_{step}.png"
-        self.puck_pos_heatmap.save_heatmap(filename=heatmap_filename,
-                                           title=f"{heatmap_title} - Step {step}", cmap="Greens")
+        self.puck_pos_heatmap.save_heatmap(
+            filename=heatmap_filename,
+            title=f"{heatmap_title} - Step {step}",
+            cmap="Greens",
+        )
         if self.tb_logger is not None:
-            self.tb_logger.add_image("heatmap/" + heatmap_title,
-                                     plt.imread(heatmap_filename), dataformats='HWC')
+            self.tb_logger.add_image(
+                "heatmap/" + heatmap_title,
+                plt.imread(heatmap_filename),
+                dataformats="HWC",
+            )
         if self.wandb is not None:
-            self.wandb.log({"heatmap/" + heatmap_title: wandb.Image(str(heatmap_filename))})
+            self.wandb.log(
+                {"heatmap/" + heatmap_title: wandb.Image(str(heatmap_filename))}
+            )
 
     def get_project_dir(self):
         return self.project_dir
@@ -214,7 +237,9 @@ class Logger:
     def add_model(self, agent):
         if self.wandb is not None:
             for model in agent.get_models():
-                self.wandb.watch(model, log="all", log_freq=self.cfg.get('wandb_model_log_freq', 100))
+                self.wandb.watch(
+                    model, log="all", log_freq=self.cfg.get("wandb_model_log_freq", 100)
+                )
 
     def add_scalar(self, key, value):
         if self.tb_logger is not None:
@@ -235,7 +260,7 @@ class Logger:
             self.wandb.log(metrics)
         self.data.update(metrics)
 
-    def add_historam(self, key, values, bins='auto'):
+    def add_historam(self, key, values, bins="auto"):
         if self.tb_logger is not None:
             self.tb_logger.add_histogram(key, values, bins=bins)
         if self.wandb is not None:
@@ -244,14 +269,14 @@ class Logger:
 
     def add_agent_artifacts(self, agent_state_folder: str, agent: Agent):
         if self.wandb is not None:
-            artifact = wandb.Artifact(f'agent-{self.cfg.exp_name}', type='model')
+            artifact = wandb.Artifact(f"agent-{self.cfg.exp_name}", type="model")
             artifact.add_dir(agent_state_folder)
             self.wandb.log_artifact(artifact)
 
     def add_opponent_stats(self, opponent: OpponentInPool):
         stats = {
             f"Opponent/{opponent.name}/win_rate": opponent.get_win_rate(),
-            f"Opponent/{opponent.name}/priority": opponent.priority
+            f"Opponent/{opponent.name}/priority": opponent.priority,
         }
         for key, value in stats.items():
             if self.tb_logger is not None:
@@ -272,19 +297,22 @@ class Logger:
     def clear(self):
         self.data = {}
 
-    def log_git_info(self, filename='git-commit-hash.txt'):
+    def log_git_info(self, filename="git-commit-hash.txt"):
         commit_info = read_commit_info(filename)
         # Log git commit info as text information
         if self.tb_logger is not None:
-            self.tb_logger.add_text('git-commit-hash',
-                                    commit_info['git-commit-hash'], 0)
-            self.tb_logger.add_text('git-commit-log',
-                                    commit_info['git-commit-log'], 0)
+            self.tb_logger.add_text(
+                "git-commit-hash", commit_info["git-commit-hash"], 0
+            )
+            self.tb_logger.add_text("git-commit-log", commit_info["git-commit-log"], 0)
         if self.wandb is not None:
-            self.wandb.config.update({
-                'git-commit-hash': commit_info['git-commit-hash'],
-                'git-commit-log': commit_info['git-commit-log']
-            }, allow_val_change=True)
+            self.wandb.config.update(
+                {
+                    "git-commit-hash": commit_info["git-commit-hash"],
+                    "git-commit-log": commit_info["git-commit-log"],
+                },
+                allow_val_change=True,
+            )
 
     def close(self):
         if self.tb_logger is not None:
@@ -293,41 +321,38 @@ class Logger:
             self.wandb.finish()
 
 
-def read_commit_info(filename='git-commit-hash.txt'):
+def read_commit_info(filename="git-commit-hash.txt"):
     """Reads git commit info from a file."""
     commit_info = {}
     try:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             for line in f:
-                key, value = line.strip().split(': ', 1)
+                key, value = line.strip().split(": ", 1)
                 commit_info[key] = value
     except FileNotFoundError:
-        commit_info = {
-            'git-commit-hash': 'N/A',
-            'git-commit-log': 'N/A'
-        }
+        commit_info = {"git-commit-hash": "N/A", "git-commit-log": "N/A"}
     return commit_info
 
 
-def get_resume_episode_number(models_dir, prefix='episode_'):
+def get_resume_episode_number(models_dir, prefix="episode_"):
     """Returns the latest episode number for resuming training."""
     if not os.path.exists(models_dir):
         return 0
     episode_dirs = [d for d in os.listdir(models_dir) if d.startswith(prefix)]
     if not episode_dirs:
         return 0
-    latest_episode = max(int(d.split('_')[1]) for d in episode_dirs)
+    latest_episode = max(int(d.split("_")[1]) for d in episode_dirs)
     return latest_episode
 
 
-def get_latest_checkpoint(models_dir, prefix='episode_'):
+def get_latest_checkpoint(models_dir, prefix="episode_"):
     """Returns the folder path containing the latest checkpoint."""
     latest_episode = get_resume_episode_number(models_dir, prefix)
     latest_dir = os.path.join(models_dir, f"{prefix}{latest_episode}")
     return latest_dir
 
 
-def get_Nth_checkpoint(models_dir, nth_episode, prefix='episode_'):
+def get_Nth_checkpoint(models_dir, nth_episode, prefix="episode_"):
     """Returns the folder path containing the N-th episode checkpoint."""
     nth_dir = os.path.join(models_dir, f"{prefix}{nth_episode}")
     return nth_dir
@@ -348,14 +373,16 @@ def load_agent_from_config(experiment_name: str, env, inference_only=False) -> A
     return agent
 
 
-def create_agent_Nth_episode(experiment_name: str, n: int, env=None,
-                             resume=False, inference_only=False) -> Agent:
+def create_agent_Nth_episode(
+    experiment_name: str, n: int, env=None, resume=False, inference_only=False
+) -> Agent:
     """Create an agent from the N-th episode checkpoint."""
     cfg = get_config_object(experiment_name)
     cfg.resume = resume
     agent = Agent(cfg, inference_only=inference_only)
     nth_checkpoint_dir = get_Nth_checkpoint(
-            BASE_PATH / Path('results') / experiment_name / 'models', n)
+        BASE_PATH / Path("results") / experiment_name / "models", n
+    )
     agent.load_models(nth_checkpoint_dir)
     return agent
 
@@ -363,8 +390,7 @@ def create_agent_Nth_episode(experiment_name: str, n: int, env=None,
 def load_checkpoint(agent, ckpt_folder, ckpt_n, load_memory=True):
     """Loads a checkpoint from the specified folder and episode number."""
     ckpt_dir = get_Nth_checkpoint(ckpt_folder, ckpt_n)
-    assert os.path.exists(ckpt_dir), \
-        f"Checkpoint directory {ckpt_dir} does not exist."
+    assert os.path.exists(ckpt_dir), f"Checkpoint directory {ckpt_dir} does not exist."
     agent.load_models(ckpt_dir, memory=load_memory)
 
 
@@ -372,31 +398,32 @@ def check_failure(logger: Logger, agent: Agent) -> str:
     """Checks if the previous run of the expirement failed."""
     project_dir = logger.get_project_dir()
     if not project_dir.exists():
-        return ''
+        return ""
     # check if the config file exists
-    config_path = project_dir / 'config.yaml'
+    config_path = project_dir / "config.yaml"
     if not config_path.exists():
-        return ''
+        return ""
     # check if the config file content matches the current agent config
     saved_cfg = OmegaConf.load(config_path)
     if saved_cfg != agent.cfg:
-        print("[WARN] Config file mismatch with an older experiment. "
-              "Assuming no failure.")
-        return ''
+        print(
+            "[WARN] Config file mismatch with an older experiment. Assuming no failure."
+        )
+        return ""
     # check if failure folder exists in models
-    failure_ckpt = project_dir / 'failure'
+    failure_ckpt = project_dir / "failure"
     if failure_ckpt.exists():
         print("[INFO] Detected failure from previous run. Using failure ckpt")
         return failure_ckpt
-    models_dir = project_dir / 'models'
+    models_dir = project_dir / "models"
     if not models_dir.exists():
-        return ''
+        return ""
     if len(os.listdir(models_dir)) == 0:
-        return ''
+        return ""
     latest_ckpt = get_latest_checkpoint(models_dir)
     if not os.path.exists(latest_ckpt):
         print("[WARN] No checkpoint found to load on failure.")
-        return ''
+        return ""
     return latest_ckpt
 
 
@@ -432,15 +459,15 @@ def save_modules_on_failure(agent: Agent, save_dir: str):
     print(f"[INFO] Saved agent modules to {save_path} due to failure.")
 
 
-def get_config_object(experiment_name='') -> OmegaConf:
+def get_config_object(experiment_name="") -> OmegaConf:
     """
     Returns the config object for a given experiment name.
     If experiment_name is empty, it will look for the config in the current dir
     """
     if experiment_name:
-        config_path = BASE_PATH /  Path('results') / experiment_name / 'config.yaml'
+        config_path = BASE_PATH / Path("results") / experiment_name / "config.yaml"
     else:
-        config_path = BASE_PATH / Path('config.yaml')
+        config_path = BASE_PATH / Path("config.yaml")
     if not config_path.exists():
         raise FileNotFoundError(f"Config file {config_path} does not exist.")
     cfg = OmegaConf.load(config_path)
@@ -468,6 +495,7 @@ def get_my_sac(cfg_path, w_folder) -> Agent:
     """Factory function to create a SAC agent based on the configuration.
     Used by the agent_factory"""
     from src.named_agent import NamedAgent
+
     cfg = OmegaConf.load(cfg_path)
     env = h_env.HockeyEnv()
     cfg = set_env_params(cfg, env)
@@ -488,11 +516,14 @@ def get_my_sac(cfg_path, w_folder) -> Agent:
             action = self.sac_agent.act(obs)
             return action
 
+        def QValues(self, obs: np.ndarray, action: np.ndarray) -> list[float]:
+            return self.sac_agent.QValues(obs, action)
+
     agent = SACWrapper(sac_agent)
     return agent
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # test heatmap
     env = h_env.HockeyEnv()
     heatmap_logger = HeatmapTracker()
@@ -501,10 +532,11 @@ if __name__ == '__main__':
         agent_action = env.action_space.sample()
         opponent_action = env.action_space.sample()
         obs, reward, done, truncated, info = env.step(
-                np.hstack([agent_action, opponent_action]))
+            np.hstack([agent_action, opponent_action])
+        )
         heatmap_logger.record(obs, idx=0, idy=1)
         heatmap_logger.record(obs, idx=12, idy=13)
         heatmap_logger.increment_total_steps()
         if done:
             obs = env.reset()
-    heatmap_logger.save_heatmap(filename='heatmap_test.png')
+    heatmap_logger.save_heatmap(filename="heatmap_test.png")

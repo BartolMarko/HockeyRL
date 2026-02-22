@@ -16,6 +16,10 @@ class NamedAgent(Agent):
         super().__init__()
         self.name = name
 
+    def QValues(self, obs: np.ndarray, action: np.ndarray) -> list[float]:
+        """Returns the Q-values (when multiple critics exist) for the given observation and action."""
+        raise NotImplementedError("QValues method must be implemented by subclasses.")
+
 
 class WeakBot(NamedAgent):
     def __init__(self) -> None:

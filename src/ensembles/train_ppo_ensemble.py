@@ -23,7 +23,7 @@ from src.episode import Episode
 
 torch.backends.cudnn.benchmark = True
 
-CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "ppo_ensemble_config.yaml"
+CONFIG_PATH = Path(__file__).resolve().parent / "configs" / "ppo_td3_ensemble.yaml"
 
 
 def set_seed(seed):

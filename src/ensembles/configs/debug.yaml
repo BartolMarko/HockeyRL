@@ -1,4 +1,4 @@
-run_name: ppo_ensemble
+run_name: ppo_ensemble_test
 
 # environment
 env_observation_dim: 18
@@ -14,7 +14,7 @@ max_episode_length: 251
 train_steps: 3000000
 seed: 1
 save_model: True
-save_model_freq: 50000
+save_model_freq: 750
 device: cuda
 
 # PPO hyperparams
@@ -59,11 +59,11 @@ ensemble_agents:
     wandb_folder: checkpoint_step_8000
 
 # Evaluation
-eval_freq: 25000
-eval_episodes_per_opponent: 50
-final_eval_episodes_per_opponent: 50
+eval_freq: 3000
+eval_episodes_per_opponent: 2
+final_eval_episodes_per_opponent: 2
 video_episodes_per_outcome: 30
-save_heatmaps: True
+save_heatmaps: False
 
 # Opponent pool settings
 opponent_pool: ThompsonSampling
@@ -119,8 +119,8 @@ ensemble_agents:
 # Self play
 selfplay: true
 self_removable: True
-selfplay_start_step: 50000
-selfplay_freq: 50000
+selfplay_start_step: 1000
+selfplay_freq: 1000
 add_self_winrate_soft_threshold: 0.8 
 # Add self if winrate against current opponents in pool is above this threshold
 # or if selfplay_freq steps have passed since last addition 

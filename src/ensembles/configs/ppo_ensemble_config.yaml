@@ -32,6 +32,7 @@ clip_vloss: True
 ent_coef: 0.01
 vf_coef: 0.5
 max_grad_norm: 0.5
+Q_values_normalization_factor: 10.0
 
 ensemble_agents:
   # TDMPC agents

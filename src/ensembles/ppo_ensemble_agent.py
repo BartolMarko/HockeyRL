@@ -46,6 +46,7 @@ class PPOEnsembleAgent(NamedAgent):
         extended_obs = obs.copy()
         for agent, action in zip(self.agents, agent_actions):
             q_values = agent.QValues(obs, action)
+            q_values = np.array(q_values) / self.cfg.Q_values_normalization_factor
             extended_obs = np.concatenate([extended_obs, q_values])
         return extended_obs
 

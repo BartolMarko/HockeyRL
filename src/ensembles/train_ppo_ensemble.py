@@ -44,7 +44,11 @@ def get_copy_of_self(wandb_run: wandb.Run, agent: PPOEnsembleAgent, step: int):
 
 
 def run_episode(
-    env: HockeyEnv, agent: PPOEnsembleAgent, opponent: NamedAgent, agent_repeat: int
+    env: HockeyEnv,
+    agent: PPOEnsembleAgent,
+    opponent: NamedAgent,
+    agent_repeat: int,
+    ppo_actions_counter: dict[str, int],
 ):
     obs, _ = env.reset()
     obs_opponent = env.obs_agent_two()
@@ -66,6 +70,7 @@ def run_episode(
 
         for _ in range(agent_repeat):
             action = agent.agents[ppo_action].get_step(obs)
+            ppo_actions_counter[agent.agents[ppo_action].name] += 1
             opponent_action = opponent.get_step(obs_opponent)
             obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
             obs_opponent = env.obs_agent_two()
@@ -184,8 +189,11 @@ def train(cfg):
         opponent = opponent_pool.sample_opponent()
 
         steps_played = 0
+        ppo_actions_counter = {agent.name: 0 for agent in agent.agents}
         for env in train_envs:
-            episode = run_episode(env, agent, opponent, agent.agent_repeat)
+            episode = run_episode(
+                env, agent, opponent, agent.agent_repeat, ppo_actions_counter
+            )
 
             opponent_pool.add_episode_outcome(opponent, episode.outcome)
             training_monitor.log_training_episode(
@@ -213,6 +221,11 @@ def train(cfg):
         update_duration = time.time() - update_start_time
 
         # Log training metrics
+        total_actions = sum(ppo_actions_counter.values())
+        actions_percentages = {
+            agent_name: count / max(total_actions, 1)
+            for agent_name, count in ppo_actions_counter.items()
+        }
         time_metrics = {
             "Time/train_episodes_playing": train_episodes_playing_duration,
             "Time/train_episodes_per_step": train_episodes_playing_duration
@@ -220,7 +233,9 @@ def train(cfg):
             "Time/model_update": update_duration,
         }
         train_metrics = {f"Losses/{k}": v for k, v in train_metrics.items()}
-        training_monitor.run.log({**train_metrics, **time_metrics}, step=step)
+        training_monitor.run.log(
+            {**train_metrics, **time_metrics, **actions_percentages}, step=step
+        )
 
         if cfg.save_model and (
             (step - last_save_step >= cfg.save_model_freq) or step >= cfg.train_steps

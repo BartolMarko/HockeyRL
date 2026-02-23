@@ -1,4 +1,4 @@
-run_name: ppo_diverse_ensemble_agent_repeat_3_uniform_150k_selfplay_2M
+run_name: ppo_td3_ensemble_agent_repeat_3_uniform_150k_selfplay_2M
 
 # environment
 env_observation_dim: 18
@@ -35,24 +35,15 @@ max_grad_norm: 0.5
 Q_values_normalization_factor: 10.0
 
 ensemble_agents:
-  # TDMPC agents
-  TDMPC_action_hints_4_3M:
-    type: TDMPC
-    wandb_run_id: hyo9jii4
-    wandb_folder: checkpoint_step_4312956
-
-  # SAC agents
-  SAC_best:
-    type: SAC
-    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
-    artifact_version: v72
-    config_path: ./models/sac_config.yaml
-
   # TD3 agents
   TD3_best_177k:
     type: TD3
     wandb_run_id: paaghbta
     wandb_folder: checkpoint_step_177000
+  TD3_best_136k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_136000
   TD3_defense:
     type: TD3
     wandb_run_id: 8ul0lbrg
@@ -73,7 +64,7 @@ max_num_opponents_in_pool: 10
 
 # Opponents:
 opponents:
-  # Same as in ensemble
+  # Diverse training opponents
   TDMPC_action_hints_4_3M:
     type: TDMPC
     wandb_run_id: hyo9jii4
@@ -105,6 +96,11 @@ opponents:
     removable: False
   
   # For evaluation only
+  TD3_best_163k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_163000
+    evaluate_against: True
   SAC_last_year:
     type: SACLastYear
     evaluate_against: True

@@ -1,4 +1,4 @@
-run_name: ppo_ensemble
+run_name: ppo_diverse_ensemble_agent_repeat_1
 
 # environment
 env_observation_dim: 18

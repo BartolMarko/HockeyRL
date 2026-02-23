@@ -60,9 +60,10 @@ class PPOEnsembleAgent(NamedAgent):
 
         agent_actions = self.get_agent_actions(obs)
         extended_obs = self.extend_state_with_q_values(obs, agent_actions)
-        action = self.ppo.actor_critic.get_action(
-            torch.Tensor(extended_obs).to(self.ppo.device)
-        )
+        with torch.no_grad():
+            action = self.ppo.actor_critic.get_action(
+                torch.Tensor(extended_obs).to(self.ppo.device)
+            )
         self.last_ppo_action = action.cpu().numpy().item()
         self.same_agent_counter = 1
         return agent_actions[self.last_ppo_action]

@@ -74,10 +74,13 @@ class PPO:
         self._reset_batch_storage()
 
     def act(self, obs: np.ndarray) -> int:
-        # TODO: maybe with torch.no_grad()
         obs = torch.Tensor(obs).to(self.device)
         action = self.actor_critic.get_action(obs)
         return action.cpu().numpy().item()
+
+    def episode_start(self, obs: np.ndarray):
+        self._reset_episode_storage()
+        self.episode_obs = torch.Tensor(obs).to(self.device).unsqueeze(0)
 
     def add_to_storage(
         self,
@@ -110,10 +113,16 @@ class PPO:
             self.b_values = torch.cat([self.b_values, self.episode_values])
             self._reset_episode_storage()
 
-    def update(self, global_step: int):
+    def update(self, global_step: int) -> dict[str, float]:
         if self.cfg.anneal_lr:
             self._anneal_learning_rate(global_step)
 
+        overall_losses = {
+            "loss": 0.0,
+            "pg_loss": 0.0,
+            "value_loss": 0.0,
+            "entropy_loss": 0.0,
+        }
         b_inds = np.arange(len(self.b_obs))
         minibatch_size = len(self.b_obs) // self.cfg.num_minibatches
         for epoch in range(self.cfg.update_epochs):
@@ -176,6 +185,18 @@ class PPO:
                     self.actor_critic.parameters(), self.cfg.max_grad_norm
                 )
                 self.optimizer.step()
+
+                overall_losses["loss"] += loss.item()
+                overall_losses["pg_loss"] += pg_loss.item()
+                overall_losses["value_loss"] += v_loss.item()
+                overall_losses["entropy_loss"] += entropy_loss.item()
+
+        self._reset_batch_storage()
+        average_losses = {
+            k: v / (self.cfg.update_epochs * self.cfg.num_minibatches)
+            for k, v in overall_losses.items()
+        }
+        return average_losses
 
     def _anneal_learning_rate(self, global_step: int):
         frac = 1.0 - global_step / self.cfg.num_iterations

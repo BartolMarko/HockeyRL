@@ -1,0 +1,127 @@
+run_name: ppo_ensemble
+
+# environment
+env_observation_dim: 18
+train_env_list:
+  - LeftFirstPossession
+  - RightFirstPossession
+reward_name: sparse
+reward_kwargs:
+  defense_reward_weight: 0
+max_episode_length: 251
+
+# misc
+train_steps: 3000000
+seed: 1
+save_model: True
+save_model_freq: 50000
+device: cuda
+
+# PPO hyperparams
+agent_repeat: 1
+learning_rate: 2.5e-4
+anneal_lr: True
+end_learning_rate: 5e-5
+gamma: 0.99
+gae_lambda: 0.95
+num_minibatches: 4
+update_epochs: 4
+norm_adv: True
+clip_coef: 0.2
+clip_vloss: True
+ent_coef: 0.01
+vf_coef: 0.5
+max_grad_norm: 0.5
+Q_values_normalization_factor: 10.0
+
+ensemble_agents:
+  # TDMPC agents
+  TDMPC_action_hints_4_3M:
+    type: TDMPC
+    wandb_run_id: hyo9jii4
+    wandb_folder: checkpoint_step_4312956
+
+  # SAC agents
+  SAC_best:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
+    artifact_version: v72
+    config_path: ./models/sac_config.yaml
+
+  # TD3 agents
+  TD3_best_177k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_177000
+  TD3_defense:
+    type: TD3
+    wandb_run_id: 8ul0lbrg
+    wandb_folder: checkpoint_step_8000
+
+# Evaluation
+eval_freq: 25000
+eval_episodes_per_opponent: 50
+final_eval_episodes_per_opponent: 50
+video_episodes_per_outcome: 30
+save_heatmaps: True
+
+# Opponent pool settings
+opponent_pool: ThompsonSampling
+opponent_pool_window_size: 100
+opponent_pool_draw_weight: 0.5
+max_num_opponents_in_pool: 10
+
+# Opponents:
+ensemble_agents:
+  # Same as in ensemble
+  TDMPC_action_hints_4_3M:
+    type: TDMPC
+    wandb_run_id: hyo9jii4
+    wandb_folder: checkpoint_step_4312956
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+  SAC_best:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
+    artifact_version: v72
+    config_path: ./models/sac_config.yaml
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+  TD3_best_177k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_177000
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+  TD3_defense:
+    type: TD3
+    wandb_run_id: 8ul0lbrg
+    wandb_folder: checkpoint_step_8000
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+  
+  # For evaluation only
+  SAC_last_year:
+    type: SACLastYear
+    evaluate_against: True
+  StrongBot:
+    type: StrongBot
+    evaluate_against: True
+  WeakBot:
+    type: WeakBot
+    evaluate_against: True
+  
+
+# Self play
+selfplay: true
+self_removable: True
+selfplay_start_step: 50000
+selfplay_freq: 50000
+add_self_winrate_soft_threshold: 0.8 
+# Add self if winrate against current opponents in pool is above this threshold
+# or if selfplay_freq steps have passed since last addition 
+evaluate_against_self: False

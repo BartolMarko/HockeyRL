@@ -230,7 +230,7 @@ def train(cfg):
         # Log training metrics
         total_actions = sum(ppo_actions_counter.values())
         actions_percentages = {
-            agent_name: count / max(total_actions, 1)
+            f"ActionsPercent/{agent_name}": count / max(total_actions, 1)
             for agent_name, count in ppo_actions_counter.items()
         }
         time_metrics = {

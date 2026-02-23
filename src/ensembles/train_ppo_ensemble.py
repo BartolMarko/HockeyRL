@@ -6,17 +6,20 @@ import os
 from pathlib import Path
 from omegaconf import OmegaConf
 from hockey.hockey_env import HockeyEnv
+import wandb
 
-from src.agent_factory import agent_factory
-from src.environments import environment_factory, env_reward_wrapper
+from src.named_agent import NamedAgent
+from src.agent_factory import agent_factory, create_ppo_ensemble_agent
+from src.environments import (
+    environment_factory,
+    env_reward_wrapper,
+    SparseRewardHockeyEnv,
+)
 from src.evaluation import Evaluator
 from src.opponent_pool import opponent_pool_factory
 from src.training_monitor import TrainingMonitor
-
-
-from src.TDMPC.tdmpc import TDMPC
-from src.TDMPC.helper import ReplayBuffer
-from src.TDMPC.agent import TDMPCAgent
+from src.ensembles.ppo_ensemble_agent import PPOEnsembleAgent
+from src.episode import Episode
 
 torch.backends.cudnn.benchmark = True
 
@@ -30,33 +33,53 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 
-def add_env_variables_to_config(env, cfg):
-    """Add environment-specific variables to the config."""
-    cfg.obs_dim = env.observation_space.shape[0]
-    cfg.obs_shape = env.observation_space.shape
-
-    cfg.action_dim = env.action_space.shape[0] // 2
-    cfg.bin_size = (cfg.vmax - cfg.vmin) / (cfg.num_bins - 1)
-    return cfg
-
-
-def get_copy_of_self(
-    tdmpc: TDMPC,
-    step: int,
-    cfg: OmegaConf,
-):
-    """Add the current TD-MPC agent to the opponent pool for self-play."""
-    tdmpc_copy = TDMPC(cfg)
-    tdmpc_copy.load_state_dict(tdmpc.state_dict())
-
-    self_opponent = TDMPCAgent(
-        load_dir=None,
-        tdmpc=tdmpc_copy,
-        step=step,
-        eval_mode=True,
-        name_suffix=f"_selfplay_step_{step}",
+def get_copy_of_self(wandb_run: wandb.Run, agent: PPOEnsembleAgent, step: int):
+    opponent_folder_name = f"self_opponent_step_{step}"
+    agent.save_to_wandb(wandb_run, folder_name=opponent_folder_name)
+    return create_ppo_ensemble_agent(
+        name=f"self_PPOEnsemble_step_{step}",
+        cfg=None,
+        load_dir=os.path.join(wandb_run.dir, opponent_folder_name),
     )
-    return self_opponent
+
+
+def run_episode(
+    env: HockeyEnv, agent: PPOEnsembleAgent, opponent: NamedAgent, agent_repeat: int
+):
+    obs, _ = env.reset()
+    obs_opponent = env.obs_agent_two()
+    episode = Episode(obs)
+
+    agent.ppo.episode_start(obs)
+    opponent.on_start_game(episode.id)
+
+    while not episode.done:
+        agent_actions = agent.get_agent_actions(obs)
+        extended_obs = agent.extend_state_with_q_values(obs, agent_actions)
+        with torch.no_grad():
+            ppo_action, logprob, _, value = agent.ppo.actor_critic.get_action_and_value(
+                torch.Tensor(extended_obs).to(agent.ppo.device)
+            )
+        ppo_action = ppo_action.cpu().numpy().item()
+        logprob = logprob.cpu().numpy().item()
+        value = value.cpu().numpy().item()
+
+        for _ in range(agent_repeat):
+            action = agent.agents[ppo_action].get_step(obs)
+            opponent_action = opponent.get_step(obs_opponent)
+            obs, reward, done, _, info = env.step(np.hstack([action, opponent_action]))
+            obs_opponent = env.obs_agent_two()
+
+            episode.add(obs, action, opponent_action, reward, done)
+            if done:
+                break
+
+        agent.ppo.add_to_storage(
+            obs=extended_obs, action=ppo_action, logprob=logprob, value=value, done=done
+        )
+
+    opponent.on_end_game(result=None, stats=None)
+    return episode
 
 
 def train(cfg):
@@ -64,8 +87,8 @@ def train(cfg):
     assert torch.cuda.is_available()
     set_seed(cfg.seed)
 
-    evaluation_env = HockeyEnv()
-    cfg = add_env_variables_to_config(evaluation_env, cfg)
+    agent = create_ppo_ensemble_agent(name="PPOEnsemble", cfg=cfg)
+    evaluation_env = SparseRewardHockeyEnv()
     train_envs = []
     for env_name in cfg.train_env_list:
         current_env = environment_factory(env_name)
@@ -104,7 +127,6 @@ def train(cfg):
         max_num_opponents=cfg.get("max_num_opponents_in_pool", 10),
     )
 
-    tdmpc, buffer = TDMPC(cfg), ReplayBuffer(cfg)
     evaluator = Evaluator(device=cfg.device)
     training_monitor = TrainingMonitor(
         run_name=cfg.run_name,
@@ -112,16 +134,14 @@ def train(cfg):
     )
 
     # Run training
-    action_repeat = cfg.get("action_repeat", 1)
     selfplay = cfg.get("selfplay", False)
     selfplay_start_step = cfg.get("selfplay_start_step", 0)
     evaluate_against_self = cfg.get("evaluate_against_self", False)
-    mirror_episodes = cfg.get("mirror_episodes", False)
     soft_winrate_threshold = cfg.get("add_self_winrate_soft_threshold", 200.0)
     # If no threshold given, only add self at fixed intervals
 
     episode_idx, step = 0, 0
-    last_update_step, last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0, 0
+    last_eval_step, last_save_step, last_selfplay_step = 0, 0, 0
     while step < cfg.train_steps:
         current_winrate_against_pool = (
             training_monitor.get_lowest_winrate_against_opponents(
@@ -150,34 +170,22 @@ def train(cfg):
             )
         ):
             opponent_pool.add_opponent(
-                get_copy_of_self(tdmpc, step, cfg),
+                get_copy_of_self(training_monitor.run, agent, step),
                 removable=cfg.get("self_removable", True),
             )
             if evaluate_against_self:
-                evaluation_opponents.append(get_copy_of_self(tdmpc, step, cfg))
+                evaluation_opponents.append(
+                    get_copy_of_self(training_monitor.run, agent, step)
+                )
             last_selfplay_step = step
             print(f"Added self-play agent to opponent pool at step {step}.")
 
         train_episodes_playing_start_time = time.time()
-        agent = TDMPCAgent(
-            load_dir=None,
-            tdmpc=tdmpc,
-            step=step,
-            eval_mode=False,
-            name_suffix=f"_step_{step}",
-        )
         opponent = opponent_pool.sample_opponent()
 
         steps_played = 0
         for env in train_envs:
-            episode, _ = evaluator.run_episode(
-                env,
-                agent,
-                opponent,
-                render_mode=None,
-                every_n_steps=action_repeat,
-            )
-            buffer += episode
+            episode = run_episode(env, agent, opponent, agent.agent_repeat)
 
             opponent_pool.add_episode_outcome(opponent, episode.outcome)
             training_monitor.log_training_episode(
@@ -195,25 +203,13 @@ def train(cfg):
                 sep=" ",
             )
 
-            if mirror_episodes:
-                episode.mirror()
-                buffer += episode
-                step += len(episode)
-                episode_idx += 1
-
         train_episodes_playing_duration = (
             time.time() - train_episodes_playing_start_time
         )
 
         # Update model
         update_start_time = time.time()
-        train_metrics = {}
-        num_updates = 0
-        if step >= cfg.seed_steps:
-            num_updates = step - last_update_step
-            last_update_step = step
-            for i in range(num_updates):
-                train_metrics.update(tdmpc.update(buffer, last_update_step + i))
+        train_metrics = agent.ppo.update(global_step=step)
         update_duration = time.time() - update_start_time
 
         # Log training metrics
@@ -222,8 +218,6 @@ def train(cfg):
             "Time/train_episodes_per_step": train_episodes_playing_duration
             / max(steps_played, 1),
             "Time/model_update": update_duration,
-            "Time/model_updates_per_episode_step": update_duration
-            / max(num_updates, 1),
         }
         train_metrics = {f"Losses/{k}": v for k, v in train_metrics.items()}
         training_monitor.run.log({**train_metrics, **time_metrics}, step=step)
@@ -231,7 +225,9 @@ def train(cfg):
         if cfg.save_model and (
             (step - last_save_step >= cfg.save_model_freq) or step >= cfg.train_steps
         ):
-            tdmpc.save_to_wandb(training_monitor.run, step=step)
+            agent.save_to_wandb(
+                training_monitor.run, folder_name=f"checkpoint_step_{step}"
+            )
             last_save_step = step
 
         # Evaluate agent periodically
@@ -241,8 +237,6 @@ def train(cfg):
             save_episodes_per_outcome = (
                 cfg.video_episodes_per_outcome if final_evaluation else 0
             )
-
-            agent.eval_mode = True
             evaluator.evaluate_agent_and_save_metrics(
                 evaluation_env,
                 agent,

@@ -33,6 +33,30 @@ ent_coef: 0.01
 vf_coef: 0.5
 max_grad_norm: 0.5
 
+ensemble_agents:
+  # TDMPC agents
+  TDMPC_action_hints_4_3M:
+    type: TDMPC
+    wandb_run_id: hyo9jii4
+    wandb_folder: checkpoint_step_4312956
+
+  # SAC agents
+  SAC_best:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
+    artifact_version: v72
+    config_path: ./models/sac_config.yaml
+
+  # TD3 agents
+  TD3_best_177k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_177000
+  TD3_defense:
+    type: TD3
+    wandb_run_id: 8ul0lbrg
+    wandb_folder: checkpoint_step_8000
+
 # Evaluation
 eval_freq: 25000
 eval_episodes_per_opponent: 50
@@ -47,47 +71,55 @@ opponent_pool_draw_weight: 0.5
 max_num_opponents_in_pool: 10
 
 # Opponents:
-opponents:
-  TD3_faker:
-    type: TD3
-    weights_path: ./models/td3_benchmarks/td3_faker/model.pt
-    config_path: ./models/td3_benchmarks/td3_faker/config.yaml
+ensemble_agents:
+  # Same as in ensemble
+  TDMPC_action_hints_4_3M:
+    type: TDMPC
+    wandb_run_id: hyo9jii4
+    wandb_folder: checkpoint_step_4312956
+    train_start_step: 0
     evaluate_against: True
-    train_start_step: 2000000
     removable: False
-  TD3_bank_shot:
-    type: TD3
-    weights_path: ./models/td3_benchmarks/td3_bank_shot/model.pth
-    config_path: ./models/td3_benchmarks/td3_bank_shot/config.yaml
+  SAC_best:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
+    artifact_version: v72
+    config_path: ./models/sac_config.yaml
+    train_start_step: 0
     evaluate_against: True
-    train_start_step: 2000000
     removable: False
-  TD3_163k_improved:
+  TD3_best_177k:
     type: TD3
-    weights_path: ./models/td3_benchmarks/td3_163k_improved/model.pt
-    config_path: ./models/td3_benchmarks/td3_163k_improved/config.yaml
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_177000
+    train_start_step: 0
     evaluate_against: True
-    train_start_step: 2000000
     removable: False
+  TD3_defense:
+    type: TD3
+    wandb_run_id: 8ul0lbrg
+    wandb_folder: checkpoint_step_8000
+    train_start_step: 0
+    evaluate_against: True
+    removable: False
+  
+  # For evaluation only
   SAC_last_year:
     type: SACLastYear
     evaluate_against: True
   StrongBot:
     type: StrongBot
-    train_start_step: 0
     evaluate_against: True
-    removable: False
   WeakBot:
     type: WeakBot
-    train_start_step: 0
     evaluate_against: True
-    removable: False
+  
 
 # Self play
 selfplay: true
 self_removable: True
-selfplay_start_step: 100000
-selfplay_freq: 100000
+selfplay_start_step: 50000
+selfplay_freq: 50000
 add_self_winrate_soft_threshold: 0.8 
 # Add self if winrate against current opponents in pool is above this threshold
 # or if selfplay_freq steps have passed since last addition 

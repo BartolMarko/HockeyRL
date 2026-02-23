@@ -1,4 +1,4 @@
-dry_run: False
+dry_run: True
 
 # Environment
 n_actions: 4
@@ -6,46 +6,51 @@ opponent_pool:
   type: 'weighted'
 opponents:
   - type: StrongBot
-    priority: 0.2
+    priority: 0.15
   - type: WeakBot
     priority: 0.1
   - type: PuckFollowBot
     priority: 0.15
   - type: CustomAgent
-    priority: 0.2
     experiment_name: sac-v4-pink-4-step-per
+    priority: 0.2
   - type: CustomAgent
     experiment_name: sac-v0-gaussian-replay-self-play-mirror
     priority: 0.2
   - type: CustomAgent
-    experiment_name: sac-v4-pink-replay
+    experiment_name: sac-v4-pink-4-step-per-league-env-reset
+    priority: 0.2
+  - type: CustomAgent
+    experiment_name: sac-v4-pink-4-step-per-league-env-defence
+    priority: 0.15
+  - type: CustomAgent
+    experiment_name: sac-v4-pink-6-step-per-env-defence
     priority: 0.15
 self_play:
   - name: SelfPlayMgr
-    priority: 0.8
+    priority: 0.5
     max_pool_size: 10
     activation_type: botwin
-    activation_epsilon: 0.8
+    activation_epsilon: 0.85
     pooling:
     - type: episode
-      freq: 150
+      freq: 120
     sampler:
       name: pfsp
-      pfsp_p: 0.5
+      pfsp_p: 0.6
 num_envs: 16
 env_left_start_modes:
-  - [ 'normal' ]
-  - [ 'custom', 0.2, 500 ]
-  - [ 'custom', 0.8, 4000 ]
-  - [ 'custom', 0.4, 7000 ]
-  # - [ 'custom', 0.2, 10 ]
-  # - [ 'custom', 0.8, 20 ]
-  # - [ 'custom', 0.4, 30 ]
-
+  - [ 'normal', 2500 ]
+  - [ 'custom', 0.2, 4000 ]
+  - [ 'normal', 6000 ]
+  - [ 'custom', 0.8, 8000 ]
+  - [ 'normal' , 9000 ]
+  - [ 'custom', 0.3, 10000 ]
+  - [ 'normal' , 11000 ]
 # rewards
-reward_transform: "v4"
+reward_transform: "v5"
 still_puck_penalty: 0.005
-draw_penalty: 3
+draw_penalty: 5
 
 # Buffers
 buffer_type: "n-step-per"
@@ -54,7 +59,7 @@ upside_down: True
 n_step_buffer_n: 6
 
 # Training
-n_games: 7500
+n_games: 13000
 warmup_games: 300
 learn_steps_per_episode: 1
 batch_size: 1024
@@ -72,14 +77,10 @@ explorer:
   type: pink
 # Munchausen RL
 use_munchausen: False
-# checkpoint
-load_checkpoint: sac-v4-pink-6-step-per-env-defence
-load_checkpoint_episode: -1
-load_checkpoint_memory: True
 
 # Network
 algorithm: "sac"
-hidden_size: 512
+hidden_size: 1024
 
 # Evaluation
 eval_freq: 250
@@ -92,7 +93,7 @@ save_model_freq: 300
 # Logging
 use_wandb: True
 wandb_project: "hockey-rl"
-exp_name: "sac-v4-pink-6-step-per-env-defence2"
+exp_name: "sac-v5"
 resume: False
 save_video: True
 log_gradients: True

@@ -90,7 +90,7 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
 def find_best_agents(exp_name='all', server='tcml1'):
     cmd = f'ssh {server} "ls ~ | grep SAC"'
     sac_folders = os.popen(cmd).read().strip().split('\n')
-    sac_folders.extend(["src1/src/SAC"])
+    sac_folders.extend(["src1/src/SAC", "src2/src/SAC"])
     all_agents = {'opponents': []}
     if exp_name == 'all':
         for sac_folder in sac_folders:

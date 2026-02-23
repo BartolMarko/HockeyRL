@@ -72,7 +72,7 @@ opponent_pool_draw_weight: 0.5
 max_num_opponents_in_pool: 10
 
 # Opponents:
-ensemble_agents:
+opponents:
   # Same as in ensemble
   TDMPC_action_hints_4_3M:
     type: TDMPC

@@ -1,12 +1,15 @@
 import torch
 from hockey.hockey_env import HockeyEnv
 import os
+from omegaconf import OmegaConf
+from pathlib import Path
 
 from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
 from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
 from src.SAC.helper import get_my_sac
+from src.ensembles import ppo_ensemble_agent
 from src import wandb_utils
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,6 +65,36 @@ def create_td3_agent(name: str, weights_path: str, config_path: str) -> TD3:
     td3_agent.name = name
 
     return td3_agent
+
+
+def create_ppo_ensemble_agent(
+    name: str, cfg: OmegaConf = None, load_dir: str | Path = None
+) -> ppo_ensemble_agent.PPOEnsembleAgent:
+    """
+    Creates a PPO ensemble agent.
+    If config is provided, creates initial agent from config.
+    If load_dir is provided, loads agent from the specified directory.
+    """
+    if load_dir is not None:
+        cfg_path = Path(load_dir) / ppo_ensemble_agent.CONFIG_FILE
+        with open(cfg_path, "r") as f:
+            cfg = OmegaConf.load(f)
+
+    agents = []
+    for agent_name, agent_cfg in cfg.ensemble_agents:
+        agent = agent_factory(agent_name, agent_cfg)
+        agents.append(agent)
+
+    ensemble = ppo_ensemble_agent.PPOEnsembleAgent(
+        cfg=cfg, agents=agents, name_suffix=""
+    )
+    if load_dir is not None:
+        weights_path = Path(load_dir) / ppo_ensemble_agent.ACTOR_CRITIC_FILE
+        ensemble.ppo.actor_critic.load_state_dict(
+            torch.load(weights_path, map_location=device)
+        )
+    ensemble.name = name
+    return ensemble
 
 
 def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:

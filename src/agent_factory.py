@@ -22,11 +22,12 @@ def download_agent_from_wandb(
 ) -> None:
     """Downloads agent from wandb if wandb information is provided in the agent configuration."""
     if "wandb_run_id" in agent_cfg and "wandb_folder" in agent_cfg:
-        wandb_utils.download_wandb_folder(
-            run_id=agent_cfg["wandb_run_id"],
-            wandb_folder=agent_cfg["wandb_folder"],
-            destination_folder=os.path.join(save_folder, agent_name),
-        )
+        if agent_name not in os.listdir(save_folder):
+            wandb_utils.download_wandb_folder(
+                run_id=agent_cfg["wandb_run_id"],
+                wandb_folder=agent_cfg["wandb_folder"],
+                destination_folder=os.path.join(save_folder, agent_name),
+            )
 
         model_folder = os.path.join(save_folder, agent_name, agent_cfg["wandb_folder"])
         agent_cfg["load_dir"] = model_folder
@@ -38,11 +39,12 @@ def download_agent_from_wandb(
         )
 
     elif "wandb_artifact" in agent_cfg and agent_cfg["wandb_artifact"] is not None:
-        wandb_utils.download_wandb_artifact(
-            artifact_path=agent_cfg["wandb_artifact"],
-            artifact_version=agent_cfg["artifact_version"],
-            destination_folder=os.path.join(save_folder, agent_name),
-        )
+        if agent_name not in os.listdir(save_folder):
+            wandb_utils.download_wandb_artifact(
+                artifact_path=agent_cfg["wandb_artifact"],
+                artifact_version=agent_cfg["artifact_version"],
+                destination_folder=os.path.join(save_folder, agent_name),
+            )
 
         model_folder = os.path.join(save_folder, agent_name)
         agent_cfg["weights_folder"] = model_folder
@@ -81,7 +83,7 @@ def create_ppo_ensemble_agent(
             cfg = OmegaConf.load(f)
 
     agents = []
-    for agent_name, agent_cfg in cfg.ensemble_agents:
+    for agent_name, agent_cfg in cfg.ensemble_agents.items():
         agent = agent_factory(agent_name, agent_cfg)
         agents.append(agent)
 

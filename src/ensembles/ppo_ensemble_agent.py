@@ -30,6 +30,12 @@ class PPOEnsembleAgent(NamedAgent):
     def on_start_game(self, game_id):
         self.same_agent_counter = self.agent_repeat
         self.last_ppo_action = None
+        for agent in self.agents:
+            agent.on_start_game(game_id)
+
+    def on_end_game(self, result, stats):
+        for agent in self.agents:
+            agent.on_end_game(result, stats)
 
     def get_agent_actions(self, obs: np.ndarray) -> list[np.ndarray]:
         """Gets actions from all ensemble agents for the given observation."""

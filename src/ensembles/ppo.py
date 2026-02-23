@@ -78,16 +78,13 @@ class PPO:
         action = self.actor_critic.get_action(obs)
         return action.cpu().numpy().item()
 
-    def episode_start(self, obs: np.ndarray):
-        self._reset_episode_storage()
-        self.episode_obs = torch.Tensor(obs).to(self.device).unsqueeze(0)
-
     def add_to_storage(
         self,
         obs: np.ndarray,
         action: int,
         logprob: float,
         value: float,
+        reward: float,
         done: bool,
     ):
         if not done:
@@ -102,6 +99,9 @@ class PPO:
         )
         self.episode_values = torch.cat(
             [self.episode_values, torch.Tensor([value]).to(self.device)]
+        )
+        self.episode_rewards = torch.cat(
+            [self.episode_rewards, torch.Tensor([reward]).to(self.device)]
         )
         if done:
             returns, advantages = self._calculate_episode_returns_and_advantages()
@@ -199,7 +199,7 @@ class PPO:
         return average_losses
 
     def _anneal_learning_rate(self, global_step: int):
-        frac = 1.0 - global_step / self.cfg.num_iterations
+        frac = 1.0 - global_step / self.cfg.train_steps
         lrnow = self.cfg.end_learning_rate + frac * (
             self.cfg.learning_rate - self.cfg.end_learning_rate
         )
@@ -229,6 +229,7 @@ class PPO:
         self.episode_logprobs = torch.zeros((0,)).to(self.device)
         self.episode_actions = torch.zeros((0, 1)).to(self.device)
         self.episode_values = torch.zeros((0,)).to(self.device)
+        self.episode_rewards = torch.zeros((0,)).to(self.device)
 
     def _reset_batch_storage(self):
         self.b_obs = torch.zeros((0, self.observation_dim)).to(self.device)

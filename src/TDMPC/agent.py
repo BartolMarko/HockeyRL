@@ -42,9 +42,9 @@ class TDMPCAgent(NamedAgent):
         return action
 
     def QValues(self, obs: np.ndarray, action: np.ndarray) -> list[float]:
-        obs = torch.from_numpy(obs).to(self.tdmpc.device).unsqueeze(0)
-        action = torch.from_numpy(action).to(self.tdmpc.device).unsqueeze(0)
+        obs = torch.from_numpy(obs).float().to(self.tdmpc.device).unsqueeze(0)
+        action = torch.from_numpy(action).float().to(self.tdmpc.device).unsqueeze(0)
         with torch.no_grad():
-            z = self.tdmpc.encoder(obs)
-            Q_1, Q_2 = self.tdmpc.QValues(z, action)
+            z = self.tdmpc.model.encode(obs)
+            Q_1, Q_2 = self.tdmpc.model.QValues(z, action)
         return [float(Q_1.item()), float(Q_2.item())]

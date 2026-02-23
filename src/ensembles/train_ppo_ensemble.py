@@ -54,8 +54,8 @@ def run_episode(
     obs_opponent = env.obs_agent_two()
     episode = Episode(obs)
 
-    agent.ppo.episode_start(obs)
-    opponent.on_start_game(episode.id)
+    agent.on_start_game(game_id=None)
+    opponent.on_start_game(game_id=None)
 
     while not episode.done:
         agent_actions = agent.get_agent_actions(obs)
@@ -68,7 +68,7 @@ def run_episode(
         logprob = logprob.cpu().numpy().item()
         value = value.cpu().numpy().item()
 
-        for _ in range(agent_repeat):
+        for i in range(agent_repeat):
             action = agent.agents[ppo_action].get_step(obs)
             ppo_actions_counter[agent.agents[ppo_action].name] += 1
             opponent_action = opponent.get_step(obs_opponent)
@@ -80,7 +80,14 @@ def run_episode(
                 break
 
         agent.ppo.add_to_storage(
-            obs=extended_obs, action=ppo_action, logprob=logprob, value=value, done=done
+            obs=extended_obs,
+            action=ppo_action,
+            logprob=logprob,
+            value=value,
+            reward=reward,
+            # Only works for sparse reward or agent_repeat=1
+            # But PPO will be trained with only sparse
+            done=done,
         )
 
     opponent.on_end_game(result=None, stats=None)

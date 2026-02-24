@@ -1,0 +1,4852 @@
+{
+    "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 21.0,
+            "match_losses": 0.0,
+            "match_draws": 37.0,
+            "episode_wins": 138.0,
+            "episode_losses": 93.0,
+            "episode_draws": 1.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 15.0,
+            "match_losses": 4.0,
+            "match_draws": 50.0,
+            "episode_wins": 149.0,
+            "episode_losses": 127.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 13.0,
+            "match_losses": 19.0,
+            "match_draws": 29.0,
+            "episode_wins": 115.0,
+            "episode_losses": 122.0,
+            "episode_draws": 7.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 37.0,
+            "match_losses": 6.0,
+            "match_draws": 23.0,
+            "episode_wins": 155.0,
+            "episode_losses": 92.0,
+            "episode_draws": 17.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 47.0,
+            "match_losses": 14.0,
+            "match_draws": 22.0,
+            "episode_wins": 199.0,
+            "episode_losses": 112.0,
+            "episode_draws": 21.0
+        },
+        "td3_defense": {
+            "match_wins": 44.0,
+            "match_losses": 2.0,
+            "match_draws": 17.0,
+            "episode_wins": 64.0,
+            "episode_losses": 5.0,
+            "episode_draws": 183.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 28.0,
+            "match_losses": 10.0,
+            "match_draws": 34.0,
+            "episode_wins": 160.0,
+            "episode_losses": 121.0,
+            "episode_draws": 7.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 29.0,
+            "match_losses": 33.0,
+            "match_draws": 15.0,
+            "episode_wins": 119.0,
+            "episode_losses": 119.0,
+            "episode_draws": 70.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 12.0,
+            "match_losses": 35.0,
+            "match_draws": 11.0,
+            "episode_wins": 70.0,
+            "episode_losses": 134.0,
+            "episode_draws": 28.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 16.0,
+            "match_losses": 38.0,
+            "match_draws": 19.0,
+            "episode_wins": 102.0,
+            "episode_losses": 148.0,
+            "episode_draws": 42.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 14.0,
+            "match_losses": 32.0,
+            "match_draws": 11.0,
+            "episode_wins": 70.0,
+            "episode_losses": 110.0,
+            "episode_draws": 48.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 21.0,
+            "match_losses": 24.0,
+            "match_draws": 15.0,
+            "episode_wins": 98.0,
+            "episode_losses": 112.0,
+            "episode_draws": 30.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 22.0,
+            "match_losses": 32.0,
+            "match_draws": 21.0,
+            "episode_wins": 123.0,
+            "episode_losses": 140.0,
+            "episode_draws": 37.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 18.0,
+            "match_losses": 25.0,
+            "match_draws": 17.0,
+            "episode_wins": 76.0,
+            "episode_losses": 84.0,
+            "episode_draws": 80.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 49.0,
+            "match_losses": 3.0,
+            "match_draws": 6.0,
+            "episode_wins": 164.0,
+            "episode_losses": 49.0,
+            "episode_draws": 19.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 46.0,
+            "match_losses": 5.0,
+            "match_draws": 6.0,
+            "episode_wins": 132.0,
+            "episode_losses": 45.0,
+            "episode_draws": 51.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 49.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 93.0,
+            "episode_losses": 2.0,
+            "episode_draws": 109.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 58.0,
+            "match_losses": 2.0,
+            "match_draws": 5.0,
+            "episode_wins": 179.0,
+            "episode_losses": 36.0,
+            "episode_draws": 45.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 51.0,
+            "match_losses": 3.0,
+            "match_draws": 10.0,
+            "episode_wins": 182.0,
+            "episode_losses": 61.0,
+            "episode_draws": 13.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 45.0,
+            "match_losses": 2.0,
+            "match_draws": 9.0,
+            "episode_wins": 151.0,
+            "episode_losses": 44.0,
+            "episode_draws": 29.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 35.0,
+            "match_losses": 13.0,
+            "match_draws": 10.0,
+            "episode_wins": 117.0,
+            "episode_losses": 64.0,
+            "episode_draws": 51.0
+        },
+        "StrongBot": {
+            "match_wins": 44.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 166.0,
+            "episode_losses": 3.0,
+            "episode_draws": 7.0
+        },
+        "WeakBot": {
+            "match_wins": 50.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 194.0,
+            "episode_losses": 2.0,
+            "episode_draws": 4.0
+        },
+        "SAC_last_year": {
+            "match_wins": 52.0,
+            "match_losses": 11.0,
+            "match_draws": 12.0,
+            "episode_wins": 199.0,
+            "episode_losses": 76.0,
+            "episode_draws": 25.0
+        }
+    },
+    "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 0.0,
+            "match_losses": 21.0,
+            "match_draws": 37.0,
+            "episode_wins": 93.0,
+            "episode_losses": 138.0,
+            "episode_draws": 1.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 22.0,
+            "match_losses": 9.0,
+            "match_draws": 28.0,
+            "episode_wins": 132.0,
+            "episode_losses": 102.0,
+            "episode_draws": 2.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 15.0,
+            "match_losses": 22.0,
+            "match_draws": 14.0,
+            "episode_wins": 83.0,
+            "episode_losses": 105.0,
+            "episode_draws": 16.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 31.0,
+            "match_losses": 10.0,
+            "match_draws": 26.0,
+            "episode_wins": 156.0,
+            "episode_losses": 102.0,
+            "episode_draws": 10.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 6.0,
+            "match_losses": 43.0,
+            "match_draws": 17.0,
+            "episode_wins": 81.0,
+            "episode_losses": 181.0,
+            "episode_draws": 2.0
+        },
+        "td3_defense": {
+            "match_wins": 47.0,
+            "match_losses": 0.0,
+            "match_draws": 1.0,
+            "episode_wins": 98.0,
+            "episode_losses": 3.0,
+            "episode_draws": 91.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 24.0,
+            "match_losses": 14.0,
+            "match_draws": 29.0,
+            "episode_wins": 150.0,
+            "episode_losses": 115.0,
+            "episode_draws": 3.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 16.0,
+            "match_losses": 14.0,
+            "match_draws": 35.0,
+            "episode_wins": 132.0,
+            "episode_losses": 125.0,
+            "episode_draws": 3.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 12.0,
+            "match_losses": 16.0,
+            "match_draws": 23.0,
+            "episode_wins": 96.0,
+            "episode_losses": 105.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 1.0,
+            "match_losses": 23.0,
+            "match_draws": 21.0,
+            "episode_wins": 61.0,
+            "episode_losses": 119.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 6.0,
+            "match_losses": 35.0,
+            "match_draws": 12.0,
+            "episode_wins": 67.0,
+            "episode_losses": 145.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 9.0,
+            "match_losses": 31.0,
+            "match_draws": 29.0,
+            "episode_wins": 110.0,
+            "episode_losses": 164.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 4.0,
+            "match_losses": 40.0,
+            "match_draws": 26.0,
+            "episode_wins": 89.0,
+            "episode_losses": 191.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 3.0,
+            "match_losses": 53.0,
+            "match_draws": 13.0,
+            "episode_wins": 66.0,
+            "episode_losses": 210.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 59.0,
+            "match_losses": 3.0,
+            "match_draws": 7.0,
+            "episode_wins": 213.0,
+            "episode_losses": 51.0,
+            "episode_draws": 12.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 11.0,
+            "match_losses": 23.0,
+            "match_draws": 27.0,
+            "episode_wins": 106.0,
+            "episode_losses": 137.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 61.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 126.0,
+            "episode_losses": 3.0,
+            "episode_draws": 123.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 12.0,
+            "match_losses": 19.0,
+            "match_draws": 30.0,
+            "episode_wins": 111.0,
+            "episode_losses": 130.0,
+            "episode_draws": 3.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 11.0,
+            "match_losses": 23.0,
+            "match_draws": 39.0,
+            "episode_wins": 125.0,
+            "episode_losses": 164.0,
+            "episode_draws": 3.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 26.0,
+            "match_losses": 17.0,
+            "match_draws": 31.0,
+            "episode_wins": 157.0,
+            "episode_losses": 138.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 45.0,
+            "match_losses": 4.0,
+            "match_draws": 14.0,
+            "episode_wins": 171.0,
+            "episode_losses": 66.0,
+            "episode_draws": 15.0
+        },
+        "StrongBot": {
+            "match_wins": 74.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 284.0,
+            "episode_losses": 10.0,
+            "episode_draws": 2.0
+        },
+        "WeakBot": {
+            "match_wins": 68.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 265.0,
+            "episode_losses": 6.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 37.0,
+            "match_losses": 4.0,
+            "match_draws": 25.0,
+            "episode_wins": 178.0,
+            "episode_losses": 85.0,
+            "episode_draws": 1.0
+        }
+    },
+    "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 4.0,
+            "match_losses": 15.0,
+            "match_draws": 50.0,
+            "episode_wins": 127.0,
+            "episode_losses": 149.0,
+            "episode_draws": 0.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 9.0,
+            "match_losses": 22.0,
+            "match_draws": 28.0,
+            "episode_wins": 102.0,
+            "episode_losses": 132.0,
+            "episode_draws": 2.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 43.0,
+            "match_losses": 8.0,
+            "match_draws": 12.0,
+            "episode_wins": 162.0,
+            "episode_losses": 67.0,
+            "episode_draws": 23.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 38.0,
+            "match_losses": 11.0,
+            "match_draws": 25.0,
+            "episode_wins": 181.0,
+            "episode_losses": 106.0,
+            "episode_draws": 9.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 12.0,
+            "match_losses": 28.0,
+            "match_draws": 20.0,
+            "episode_wins": 91.0,
+            "episode_losses": 145.0,
+            "episode_draws": 4.0
+        },
+        "td3_defense": {
+            "match_wins": 55.0,
+            "match_losses": 2.0,
+            "match_draws": 7.0,
+            "episode_wins": 98.0,
+            "episode_losses": 6.0,
+            "episode_draws": 152.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 31.0,
+            "match_losses": 12.0,
+            "match_draws": 30.0,
+            "episode_wins": 164.0,
+            "episode_losses": 117.0,
+            "episode_draws": 11.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 18.0,
+            "match_losses": 13.0,
+            "match_draws": 33.0,
+            "episode_wins": 130.0,
+            "episode_losses": 120.0,
+            "episode_draws": 6.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 30.0,
+            "match_losses": 16.0,
+            "match_draws": 21.0,
+            "episode_wins": 140.0,
+            "episode_losses": 113.0,
+            "episode_draws": 15.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 5.0,
+            "match_losses": 29.0,
+            "match_draws": 28.0,
+            "episode_wins": 93.0,
+            "episode_losses": 155.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 7.0,
+            "match_losses": 44.0,
+            "match_draws": 25.0,
+            "episode_wins": 99.0,
+            "episode_losses": 203.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 7.0,
+            "match_losses": 26.0,
+            "match_draws": 22.0,
+            "episode_wins": 85.0,
+            "episode_losses": 135.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 24.0,
+            "match_losses": 28.0,
+            "match_draws": 16.0,
+            "episode_wins": 123.0,
+            "episode_losses": 146.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 11.0,
+            "match_losses": 34.0,
+            "match_draws": 24.0,
+            "episode_wins": 109.0,
+            "episode_losses": 167.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 56.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 201.0,
+            "episode_losses": 25.0,
+            "episode_draws": 6.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 16.0,
+            "match_losses": 11.0,
+            "match_draws": 28.0,
+            "episode_wins": 116.0,
+            "episode_losses": 103.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 49.0,
+            "match_losses": 0.0,
+            "match_draws": 4.0,
+            "episode_wins": 103.0,
+            "episode_losses": 4.0,
+            "episode_draws": 105.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 34.0,
+            "match_losses": 6.0,
+            "match_draws": 11.0,
+            "episode_wins": 136.0,
+            "episode_losses": 61.0,
+            "episode_draws": 7.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 14.0,
+            "match_losses": 13.0,
+            "match_draws": 35.0,
+            "episode_wins": 126.0,
+            "episode_losses": 121.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 45.0,
+            "match_losses": 6.0,
+            "match_draws": 16.0,
+            "episode_wins": 193.0,
+            "episode_losses": 75.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 34.0,
+            "match_losses": 7.0,
+            "match_draws": 32.0,
+            "episode_wins": 175.0,
+            "episode_losses": 114.0,
+            "episode_draws": 3.0
+        },
+        "StrongBot": {
+            "match_wins": 45.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 173.0,
+            "episode_losses": 2.0,
+            "episode_draws": 5.0
+        },
+        "WeakBot": {
+            "match_wins": 51.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 202.0,
+            "episode_losses": 0.0,
+            "episode_draws": 2.0
+        },
+        "SAC_last_year": {
+            "match_wins": 70.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 268.0,
+            "episode_losses": 20.0,
+            "episode_draws": 0.0
+        }
+    },
+    "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 19.0,
+            "match_losses": 13.0,
+            "match_draws": 29.0,
+            "episode_wins": 122.0,
+            "episode_losses": 115.0,
+            "episode_draws": 7.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 22.0,
+            "match_losses": 15.0,
+            "match_draws": 14.0,
+            "episode_wins": 105.0,
+            "episode_losses": 83.0,
+            "episode_draws": 16.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 8.0,
+            "match_losses": 43.0,
+            "match_draws": 12.0,
+            "episode_wins": 67.0,
+            "episode_losses": 162.0,
+            "episode_draws": 23.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 26.0,
+            "match_losses": 21.0,
+            "match_draws": 10.0,
+            "episode_wins": 104.0,
+            "episode_losses": 79.0,
+            "episode_draws": 45.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 11.0,
+            "match_losses": 35.0,
+            "match_draws": 15.0,
+            "episode_wins": 86.0,
+            "episode_losses": 151.0,
+            "episode_draws": 7.0
+        },
+        "td3_defense": {
+            "match_wins": 42.0,
+            "match_losses": 3.0,
+            "match_draws": 19.0,
+            "episode_wins": 63.0,
+            "episode_losses": 7.0,
+            "episode_draws": 186.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 41.0,
+            "match_losses": 13.0,
+            "match_draws": 18.0,
+            "episode_wins": 165.0,
+            "episode_losses": 102.0,
+            "episode_draws": 21.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 12.0,
+            "match_losses": 43.0,
+            "match_draws": 9.0,
+            "episode_wins": 81.0,
+            "episode_losses": 164.0,
+            "episode_draws": 11.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 6.0,
+            "match_losses": 48.0,
+            "match_draws": 13.0,
+            "episode_wins": 66.0,
+            "episode_losses": 183.0,
+            "episode_draws": 19.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 12.0,
+            "match_losses": 20.0,
+            "match_draws": 18.0,
+            "episode_wins": 87.0,
+            "episode_losses": 111.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 19.0,
+            "match_losses": 24.0,
+            "match_draws": 29.0,
+            "episode_wins": 137.0,
+            "episode_losses": 149.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 21.0,
+            "match_losses": 26.0,
+            "match_draws": 25.0,
+            "episode_wins": 136.0,
+            "episode_losses": 146.0,
+            "episode_draws": 6.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 29.0,
+            "match_losses": 27.0,
+            "match_draws": 19.0,
+            "episode_wins": 137.0,
+            "episode_losses": 138.0,
+            "episode_draws": 25.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 14.0,
+            "match_losses": 21.0,
+            "match_draws": 29.0,
+            "episode_wins": 115.0,
+            "episode_losses": 141.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 11.0,
+            "match_losses": 27.0,
+            "match_draws": 20.0,
+            "episode_wins": 83.0,
+            "episode_losses": 120.0,
+            "episode_draws": 29.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 30.0,
+            "match_losses": 20.0,
+            "match_draws": 28.0,
+            "episode_wins": 162.0,
+            "episode_losses": 140.0,
+            "episode_draws": 10.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 63.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 128.0,
+            "episode_losses": 2.0,
+            "episode_draws": 130.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 28.0,
+            "match_losses": 15.0,
+            "match_draws": 15.0,
+            "episode_wins": 123.0,
+            "episode_losses": 97.0,
+            "episode_draws": 12.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 26.0,
+            "match_losses": 17.0,
+            "match_draws": 20.0,
+            "episode_wins": 131.0,
+            "episode_losses": 113.0,
+            "episode_draws": 8.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 24.0,
+            "match_losses": 9.0,
+            "match_draws": 13.0,
+            "episode_wins": 113.0,
+            "episode_losses": 67.0,
+            "episode_draws": 4.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 51.0,
+            "match_losses": 2.0,
+            "match_draws": 16.0,
+            "episode_wins": 197.0,
+            "episode_losses": 71.0,
+            "episode_draws": 8.0
+        },
+        "StrongBot": {
+            "match_wins": 53.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 207.0,
+            "episode_losses": 2.0,
+            "episode_draws": 3.0
+        },
+        "WeakBot": {
+            "match_wins": 53.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 206.0,
+            "episode_losses": 5.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 30.0,
+            "match_losses": 23.0,
+            "match_draws": 21.0,
+            "episode_wins": 154.0,
+            "episode_losses": 136.0,
+            "episode_draws": 6.0
+        }
+    },
+    "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 6.0,
+            "match_losses": 37.0,
+            "match_draws": 23.0,
+            "episode_wins": 92.0,
+            "episode_losses": 155.0,
+            "episode_draws": 17.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 10.0,
+            "match_losses": 31.0,
+            "match_draws": 26.0,
+            "episode_wins": 102.0,
+            "episode_losses": 156.0,
+            "episode_draws": 10.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 11.0,
+            "match_losses": 38.0,
+            "match_draws": 25.0,
+            "episode_wins": 106.0,
+            "episode_losses": 181.0,
+            "episode_draws": 9.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 21.0,
+            "match_losses": 26.0,
+            "match_draws": 10.0,
+            "episode_wins": 79.0,
+            "episode_losses": 104.0,
+            "episode_draws": 45.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 6.0,
+            "match_losses": 35.0,
+            "match_draws": 10.0,
+            "episode_wins": 51.0,
+            "episode_losses": 131.0,
+            "episode_draws": 22.0
+        },
+        "td3_defense": {
+            "match_wins": 53.0,
+            "match_losses": 7.0,
+            "match_draws": 11.0,
+            "episode_wins": 110.0,
+            "episode_losses": 19.0,
+            "episode_draws": 155.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 21.0,
+            "match_losses": 22.0,
+            "match_draws": 16.0,
+            "episode_wins": 105.0,
+            "episode_losses": 109.0,
+            "episode_draws": 22.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 10.0,
+            "match_losses": 33.0,
+            "match_draws": 3.0,
+            "episode_wins": 49.0,
+            "episode_losses": 121.0,
+            "episode_draws": 14.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 10.0,
+            "match_losses": 34.0,
+            "match_draws": 7.0,
+            "episode_wins": 56.0,
+            "episode_losses": 121.0,
+            "episode_draws": 27.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 12.0,
+            "match_losses": 37.0,
+            "match_draws": 19.0,
+            "episode_wins": 96.0,
+            "episode_losses": 171.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 18.0,
+            "match_losses": 13.0,
+            "match_draws": 23.0,
+            "episode_wins": 112.0,
+            "episode_losses": 100.0,
+            "episode_draws": 4.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 11.0,
+            "match_losses": 21.0,
+            "match_draws": 24.0,
+            "episode_wins": 101.0,
+            "episode_losses": 122.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 17.0,
+            "match_losses": 25.0,
+            "match_draws": 23.0,
+            "episode_wins": 111.0,
+            "episode_losses": 137.0,
+            "episode_draws": 12.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 15.0,
+            "match_losses": 37.0,
+            "match_draws": 15.0,
+            "episode_wins": 92.0,
+            "episode_losses": 143.0,
+            "episode_draws": 33.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 49.0,
+            "match_losses": 6.0,
+            "match_draws": 6.0,
+            "episode_wins": 125.0,
+            "episode_losses": 45.0,
+            "episode_draws": 74.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 17.0,
+            "match_losses": 36.0,
+            "match_draws": 25.0,
+            "episode_wins": 120.0,
+            "episode_losses": 170.0,
+            "episode_draws": 22.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 70.0,
+            "match_losses": 0.0,
+            "match_draws": 3.0,
+            "episode_wins": 144.0,
+            "episode_losses": 4.0,
+            "episode_draws": 144.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 17.0,
+            "match_losses": 25.0,
+            "match_draws": 25.0,
+            "episode_wins": 110.0,
+            "episode_losses": 128.0,
+            "episode_draws": 30.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 9.0,
+            "match_losses": 24.0,
+            "match_draws": 24.0,
+            "episode_wins": 91.0,
+            "episode_losses": 134.0,
+            "episode_draws": 3.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 21.0,
+            "match_losses": 27.0,
+            "match_draws": 27.0,
+            "episode_wins": 139.0,
+            "episode_losses": 153.0,
+            "episode_draws": 8.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 42.0,
+            "match_losses": 5.0,
+            "match_draws": 16.0,
+            "episode_wins": 153.0,
+            "episode_losses": 68.0,
+            "episode_draws": 31.0
+        },
+        "StrongBot": {
+            "match_wins": 57.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 214.0,
+            "episode_losses": 14.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 60.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 228.0,
+            "episode_losses": 3.0,
+            "episode_draws": 9.0
+        },
+        "SAC_last_year": {
+            "match_wins": 34.0,
+            "match_losses": 15.0,
+            "match_draws": 18.0,
+            "episode_wins": 144.0,
+            "episode_losses": 94.0,
+            "episode_draws": 30.0
+        }
+    },
+    "td3_self_play_rollout_5_mirroring_15M_157k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 14.0,
+            "match_losses": 47.0,
+            "match_draws": 22.0,
+            "episode_wins": 112.0,
+            "episode_losses": 199.0,
+            "episode_draws": 21.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 43.0,
+            "match_losses": 6.0,
+            "match_draws": 17.0,
+            "episode_wins": 181.0,
+            "episode_losses": 81.0,
+            "episode_draws": 2.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 28.0,
+            "match_losses": 12.0,
+            "match_draws": 20.0,
+            "episode_wins": 145.0,
+            "episode_losses": 91.0,
+            "episode_draws": 4.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 35.0,
+            "match_losses": 11.0,
+            "match_draws": 15.0,
+            "episode_wins": 151.0,
+            "episode_losses": 86.0,
+            "episode_draws": 7.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 35.0,
+            "match_losses": 6.0,
+            "match_draws": 10.0,
+            "episode_wins": 131.0,
+            "episode_losses": 51.0,
+            "episode_draws": 22.0
+        },
+        "td3_defense": {
+            "match_wins": 38.0,
+            "match_losses": 0.0,
+            "match_draws": 7.0,
+            "episode_wins": 67.0,
+            "episode_losses": 10.0,
+            "episode_draws": 103.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 24.0,
+            "match_losses": 24.0,
+            "match_draws": 14.0,
+            "episode_wins": 110.0,
+            "episode_losses": 108.0,
+            "episode_draws": 30.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 22.0,
+            "match_losses": 30.0,
+            "match_draws": 33.0,
+            "episode_wins": 149.0,
+            "episode_losses": 174.0,
+            "episode_draws": 17.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 25.0,
+            "match_losses": 33.0,
+            "match_draws": 20.0,
+            "episode_wins": 133.0,
+            "episode_losses": 159.0,
+            "episode_draws": 20.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 25.0,
+            "match_losses": 25.0,
+            "match_draws": 31.0,
+            "episode_wins": 148.0,
+            "episode_losses": 153.0,
+            "episode_draws": 23.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 35.0,
+            "match_losses": 23.0,
+            "match_draws": 28.0,
+            "episode_wins": 184.0,
+            "episode_losses": 150.0,
+            "episode_draws": 10.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 21.0,
+            "match_losses": 18.0,
+            "match_draws": 24.0,
+            "episode_wins": 127.0,
+            "episode_losses": 123.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 30.0,
+            "match_losses": 16.0,
+            "match_draws": 21.0,
+            "episode_wins": 146.0,
+            "episode_losses": 119.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 20.0,
+            "match_losses": 25.0,
+            "match_draws": 28.0,
+            "episode_wins": 136.0,
+            "episode_losses": 148.0,
+            "episode_draws": 8.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 41.0,
+            "match_losses": 2.0,
+            "match_draws": 3.0,
+            "episode_wins": 139.0,
+            "episode_losses": 26.0,
+            "episode_draws": 19.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 58.0,
+            "match_losses": 5.0,
+            "match_draws": 6.0,
+            "episode_wins": 187.0,
+            "episode_losses": 54.0,
+            "episode_draws": 35.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 38.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 75.0,
+            "episode_losses": 0.0,
+            "episode_draws": 77.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 48.0,
+            "match_losses": 1.0,
+            "match_draws": 3.0,
+            "episode_wins": 159.0,
+            "episode_losses": 23.0,
+            "episode_draws": 26.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 41.0,
+            "match_losses": 3.0,
+            "match_draws": 15.0,
+            "episode_wins": 173.0,
+            "episode_losses": 58.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 62.0,
+            "match_losses": 1.0,
+            "match_draws": 8.0,
+            "episode_wins": 237.0,
+            "episode_losses": 45.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 50.0,
+            "match_losses": 1.0,
+            "match_draws": 1.0,
+            "episode_wins": 173.0,
+            "episode_losses": 18.0,
+            "episode_draws": 17.0
+        },
+        "StrongBot": {
+            "match_wins": 63.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 247.0,
+            "episode_losses": 4.0,
+            "episode_draws": 1.0
+        },
+        "WeakBot": {
+            "match_wins": 34.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 130.0,
+            "episode_losses": 1.0,
+            "episode_draws": 5.0
+        },
+        "SAC_last_year": {
+            "match_wins": 28.0,
+            "match_losses": 14.0,
+            "match_draws": 23.0,
+            "episode_wins": 145.0,
+            "episode_losses": 114.0,
+            "episode_draws": 1.0
+        }
+    },
+    "td3_defense": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 2.0,
+            "match_losses": 44.0,
+            "match_draws": 17.0,
+            "episode_wins": 5.0,
+            "episode_losses": 64.0,
+            "episode_draws": 183.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 0.0,
+            "match_losses": 47.0,
+            "match_draws": 1.0,
+            "episode_wins": 3.0,
+            "episode_losses": 98.0,
+            "episode_draws": 91.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 2.0,
+            "match_losses": 55.0,
+            "match_draws": 7.0,
+            "episode_wins": 6.0,
+            "episode_losses": 98.0,
+            "episode_draws": 152.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 3.0,
+            "match_losses": 42.0,
+            "match_draws": 19.0,
+            "episode_wins": 7.0,
+            "episode_losses": 63.0,
+            "episode_draws": 186.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 7.0,
+            "match_losses": 53.0,
+            "match_draws": 11.0,
+            "episode_wins": 19.0,
+            "episode_losses": 110.0,
+            "episode_draws": 155.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 0.0,
+            "match_losses": 38.0,
+            "match_draws": 7.0,
+            "episode_wins": 10.0,
+            "episode_losses": 67.0,
+            "episode_draws": 103.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 4.0,
+            "match_losses": 40.0,
+            "match_draws": 13.0,
+            "episode_wins": 14.0,
+            "episode_losses": 71.0,
+            "episode_draws": 143.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 3.0,
+            "match_losses": 35.0,
+            "match_draws": 6.0,
+            "episode_wins": 8.0,
+            "episode_losses": 69.0,
+            "episode_draws": 99.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 0.0,
+            "match_losses": 46.0,
+            "match_draws": 7.0,
+            "episode_wins": 3.0,
+            "episode_losses": 88.0,
+            "episode_draws": 121.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 4.0,
+            "match_losses": 39.0,
+            "match_draws": 12.0,
+            "episode_wins": 18.0,
+            "episode_losses": 93.0,
+            "episode_draws": 109.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 3.0,
+            "match_losses": 50.0,
+            "match_draws": 6.0,
+            "episode_wins": 21.0,
+            "episode_losses": 107.0,
+            "episode_draws": 108.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 3.0,
+            "match_losses": 37.0,
+            "match_draws": 7.0,
+            "episode_wins": 12.0,
+            "episode_losses": 84.0,
+            "episode_draws": 92.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 0.0,
+            "match_losses": 58.0,
+            "match_draws": 3.0,
+            "episode_wins": 8.0,
+            "episode_losses": 119.0,
+            "episode_draws": 117.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 2.0,
+            "match_losses": 42.0,
+            "match_draws": 7.0,
+            "episode_wins": 14.0,
+            "episode_losses": 105.0,
+            "episode_draws": 85.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 34.0,
+            "match_losses": 11.0,
+            "match_draws": 26.0,
+            "episode_wins": 55.0,
+            "episode_losses": 27.0,
+            "episode_draws": 202.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 10.0,
+            "match_losses": 13.0,
+            "match_draws": 42.0,
+            "episode_wins": 18.0,
+            "episode_losses": 23.0,
+            "episode_draws": 219.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 14.0,
+            "match_losses": 7.0,
+            "match_draws": 53.0,
+            "episode_wins": 19.0,
+            "episode_losses": 10.0,
+            "episode_draws": 267.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 1.0,
+            "match_losses": 54.0,
+            "match_draws": 14.0,
+            "episode_wins": 1.0,
+            "episode_losses": 82.0,
+            "episode_draws": 193.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 15.0,
+            "match_losses": 14.0,
+            "match_draws": 40.0,
+            "episode_wins": 21.0,
+            "episode_losses": 22.0,
+            "episode_draws": 233.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 11.0,
+            "match_losses": 15.0,
+            "match_draws": 29.0,
+            "episode_wins": 17.0,
+            "episode_losses": 22.0,
+            "episode_draws": 181.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 6.0,
+            "match_losses": 53.0,
+            "match_draws": 13.0,
+            "episode_wins": 31.0,
+            "episode_losses": 115.0,
+            "episode_draws": 142.0
+        },
+        "StrongBot": {
+            "match_wins": 39.0,
+            "match_losses": 4.0,
+            "match_draws": 39.0,
+            "episode_wins": 55.0,
+            "episode_losses": 7.0,
+            "episode_draws": 266.0
+        },
+        "WeakBot": {
+            "match_wins": 39.0,
+            "match_losses": 4.0,
+            "match_draws": 53.0,
+            "episode_wins": 47.0,
+            "episode_losses": 5.0,
+            "episode_draws": 332.0
+        },
+        "SAC_last_year": {
+            "match_wins": 2.0,
+            "match_losses": 66.0,
+            "match_draws": 7.0,
+            "episode_wins": 13.0,
+            "episode_losses": 161.0,
+            "episode_draws": 126.0
+        }
+    },
+    "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 10.0,
+            "match_losses": 28.0,
+            "match_draws": 34.0,
+            "episode_wins": 121.0,
+            "episode_losses": 160.0,
+            "episode_draws": 7.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 14.0,
+            "match_losses": 24.0,
+            "match_draws": 29.0,
+            "episode_wins": 115.0,
+            "episode_losses": 150.0,
+            "episode_draws": 3.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 12.0,
+            "match_losses": 31.0,
+            "match_draws": 30.0,
+            "episode_wins": 117.0,
+            "episode_losses": 164.0,
+            "episode_draws": 11.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 13.0,
+            "match_losses": 41.0,
+            "match_draws": 18.0,
+            "episode_wins": 102.0,
+            "episode_losses": 165.0,
+            "episode_draws": 21.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 22.0,
+            "match_losses": 21.0,
+            "match_draws": 16.0,
+            "episode_wins": 109.0,
+            "episode_losses": 105.0,
+            "episode_draws": 22.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 24.0,
+            "match_losses": 24.0,
+            "match_draws": 14.0,
+            "episode_wins": 108.0,
+            "episode_losses": 110.0,
+            "episode_draws": 30.0
+        },
+        "td3_defense": {
+            "match_wins": 40.0,
+            "match_losses": 4.0,
+            "match_draws": 13.0,
+            "episode_wins": 71.0,
+            "episode_losses": 14.0,
+            "episode_draws": 143.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 12.0,
+            "match_losses": 39.0,
+            "match_draws": 16.0,
+            "episode_wins": 89.0,
+            "episode_losses": 155.0,
+            "episode_draws": 24.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 8.0,
+            "match_losses": 44.0,
+            "match_draws": 12.0,
+            "episode_wins": 63.0,
+            "episode_losses": 164.0,
+            "episode_draws": 29.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 13.0,
+            "match_losses": 24.0,
+            "match_draws": 26.0,
+            "episode_wins": 109.0,
+            "episode_losses": 142.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 22.0,
+            "match_losses": 15.0,
+            "match_draws": 32.0,
+            "episode_wins": 143.0,
+            "episode_losses": 126.0,
+            "episode_draws": 7.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 16.0,
+            "match_losses": 21.0,
+            "match_draws": 19.0,
+            "episode_wins": 101.0,
+            "episode_losses": 120.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 9.0,
+            "match_losses": 27.0,
+            "match_draws": 26.0,
+            "episode_wins": 102.0,
+            "episode_losses": 144.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 16.0,
+            "match_losses": 31.0,
+            "match_draws": 25.0,
+            "episode_wins": 126.0,
+            "episode_losses": 155.0,
+            "episode_draws": 7.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 61.0,
+            "match_losses": 4.0,
+            "match_draws": 3.0,
+            "episode_wins": 202.0,
+            "episode_losses": 32.0,
+            "episode_draws": 38.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 36.0,
+            "match_losses": 10.0,
+            "match_draws": 15.0,
+            "episode_wins": 143.0,
+            "episode_losses": 85.0,
+            "episode_draws": 16.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 51.0,
+            "match_losses": 0.0,
+            "match_draws": 1.0,
+            "episode_wins": 104.0,
+            "episode_losses": 1.0,
+            "episode_draws": 103.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 36.0,
+            "match_losses": 13.0,
+            "match_draws": 21.0,
+            "episode_wins": 163.0,
+            "episode_losses": 99.0,
+            "episode_draws": 18.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 41.0,
+            "match_losses": 1.0,
+            "match_draws": 12.0,
+            "episode_wins": 155.0,
+            "episode_losses": 52.0,
+            "episode_draws": 9.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 32.0,
+            "match_losses": 6.0,
+            "match_draws": 13.0,
+            "episode_wins": 134.0,
+            "episode_losses": 60.0,
+            "episode_draws": 10.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 37.0,
+            "match_losses": 2.0,
+            "match_draws": 8.0,
+            "episode_wins": 145.0,
+            "episode_losses": 36.0,
+            "episode_draws": 7.0
+        },
+        "StrongBot": {
+            "match_wins": 68.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 265.0,
+            "episode_losses": 3.0,
+            "episode_draws": 4.0
+        },
+        "WeakBot": {
+            "match_wins": 62.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 241.0,
+            "episode_losses": 2.0,
+            "episode_draws": 5.0
+        },
+        "SAC_last_year": {
+            "match_wins": 54.0,
+            "match_losses": 0.0,
+            "match_draws": 8.0,
+            "episode_wins": 203.0,
+            "episode_losses": 40.0,
+            "episode_draws": 5.0
+        }
+    },
+    "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 33.0,
+            "match_losses": 29.0,
+            "match_draws": 15.0,
+            "episode_wins": 119.0,
+            "episode_losses": 119.0,
+            "episode_draws": 70.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 14.0,
+            "match_losses": 16.0,
+            "match_draws": 35.0,
+            "episode_wins": 125.0,
+            "episode_losses": 132.0,
+            "episode_draws": 3.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 13.0,
+            "match_losses": 18.0,
+            "match_draws": 33.0,
+            "episode_wins": 120.0,
+            "episode_losses": 130.0,
+            "episode_draws": 6.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 43.0,
+            "match_losses": 12.0,
+            "match_draws": 9.0,
+            "episode_wins": 164.0,
+            "episode_losses": 81.0,
+            "episode_draws": 11.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 33.0,
+            "match_losses": 10.0,
+            "match_draws": 3.0,
+            "episode_wins": 121.0,
+            "episode_losses": 49.0,
+            "episode_draws": 14.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 30.0,
+            "match_losses": 22.0,
+            "match_draws": 33.0,
+            "episode_wins": 174.0,
+            "episode_losses": 149.0,
+            "episode_draws": 17.0
+        },
+        "td3_defense": {
+            "match_wins": 35.0,
+            "match_losses": 3.0,
+            "match_draws": 6.0,
+            "episode_wins": 69.0,
+            "episode_losses": 8.0,
+            "episode_draws": 99.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 39.0,
+            "match_losses": 12.0,
+            "match_draws": 16.0,
+            "episode_wins": 155.0,
+            "episode_losses": 89.0,
+            "episode_draws": 24.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 13.0,
+            "match_losses": 68.0,
+            "match_draws": 17.0,
+            "episode_wins": 100.0,
+            "episode_losses": 240.0,
+            "episode_draws": 52.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 33.0,
+            "match_losses": 23.0,
+            "match_draws": 25.0,
+            "episode_wins": 180.0,
+            "episode_losses": 141.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 33.0,
+            "match_losses": 14.0,
+            "match_draws": 22.0,
+            "episode_wins": 157.0,
+            "episode_losses": 115.0,
+            "episode_draws": 4.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 21.0,
+            "match_losses": 27.0,
+            "match_draws": 23.0,
+            "episode_wins": 135.0,
+            "episode_losses": 146.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 20.0,
+            "match_losses": 18.0,
+            "match_draws": 22.0,
+            "episode_wins": 121.0,
+            "episode_losses": 108.0,
+            "episode_draws": 11.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 23.0,
+            "match_losses": 32.0,
+            "match_draws": 16.0,
+            "episode_wins": 124.0,
+            "episode_losses": 141.0,
+            "episode_draws": 19.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 49.0,
+            "match_losses": 3.0,
+            "match_draws": 5.0,
+            "episode_wins": 164.0,
+            "episode_losses": 45.0,
+            "episode_draws": 19.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 54.0,
+            "match_losses": 0.0,
+            "match_draws": 6.0,
+            "episode_wins": 185.0,
+            "episode_losses": 41.0,
+            "episode_draws": 14.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 52.0,
+            "match_losses": 0.0,
+            "match_draws": 3.0,
+            "episode_wins": 108.0,
+            "episode_losses": 3.0,
+            "episode_draws": 109.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 38.0,
+            "match_losses": 0.0,
+            "match_draws": 5.0,
+            "episode_wins": 130.0,
+            "episode_losses": 35.0,
+            "episode_draws": 7.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 18.0,
+            "match_losses": 4.0,
+            "match_draws": 37.0,
+            "episode_wins": 132.0,
+            "episode_losses": 102.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 51.0,
+            "match_losses": 1.0,
+            "match_draws": 5.0,
+            "episode_wins": 186.0,
+            "episode_losses": 36.0,
+            "episode_draws": 6.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 56.0,
+            "match_losses": 3.0,
+            "match_draws": 3.0,
+            "episode_wins": 197.0,
+            "episode_losses": 40.0,
+            "episode_draws": 11.0
+        },
+        "StrongBot": {
+            "match_wins": 50.0,
+            "match_losses": 0.0,
+            "match_draws": 1.0,
+            "episode_wins": 196.0,
+            "episode_losses": 5.0,
+            "episode_draws": 3.0
+        },
+        "WeakBot": {
+            "match_wins": 49.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 193.0,
+            "episode_losses": 1.0,
+            "episode_draws": 2.0
+        },
+        "SAC_last_year": {
+            "match_wins": 41.0,
+            "match_losses": 7.0,
+            "match_draws": 7.0,
+            "episode_wins": 145.0,
+            "episode_losses": 59.0,
+            "episode_draws": 16.0
+        }
+    },
+    "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 35.0,
+            "match_losses": 12.0,
+            "match_draws": 11.0,
+            "episode_wins": 134.0,
+            "episode_losses": 70.0,
+            "episode_draws": 28.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 16.0,
+            "match_losses": 12.0,
+            "match_draws": 23.0,
+            "episode_wins": 105.0,
+            "episode_losses": 96.0,
+            "episode_draws": 3.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 16.0,
+            "match_losses": 30.0,
+            "match_draws": 21.0,
+            "episode_wins": 113.0,
+            "episode_losses": 140.0,
+            "episode_draws": 15.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 48.0,
+            "match_losses": 6.0,
+            "match_draws": 13.0,
+            "episode_wins": 183.0,
+            "episode_losses": 66.0,
+            "episode_draws": 19.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 34.0,
+            "match_losses": 10.0,
+            "match_draws": 7.0,
+            "episode_wins": 121.0,
+            "episode_losses": 56.0,
+            "episode_draws": 27.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 33.0,
+            "match_losses": 25.0,
+            "match_draws": 20.0,
+            "episode_wins": 159.0,
+            "episode_losses": 133.0,
+            "episode_draws": 20.0
+        },
+        "td3_defense": {
+            "match_wins": 46.0,
+            "match_losses": 0.0,
+            "match_draws": 7.0,
+            "episode_wins": 88.0,
+            "episode_losses": 3.0,
+            "episode_draws": 121.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 44.0,
+            "match_losses": 8.0,
+            "match_draws": 12.0,
+            "episode_wins": 164.0,
+            "episode_losses": 63.0,
+            "episode_draws": 29.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 68.0,
+            "match_losses": 13.0,
+            "match_draws": 17.0,
+            "episode_wins": 240.0,
+            "episode_losses": 100.0,
+            "episode_draws": 52.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 46.0,
+            "match_losses": 8.0,
+            "match_draws": 20.0,
+            "episode_wins": 197.0,
+            "episode_losses": 90.0,
+            "episode_draws": 9.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 47.0,
+            "match_losses": 8.0,
+            "match_draws": 11.0,
+            "episode_wins": 185.0,
+            "episode_losses": 70.0,
+            "episode_draws": 9.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 35.0,
+            "match_losses": 11.0,
+            "match_draws": 35.0,
+            "episode_wins": 187.0,
+            "episode_losses": 132.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 58.0,
+            "match_losses": 19.0,
+            "match_draws": 19.0,
+            "episode_wins": 190.0,
+            "episode_losses": 106.0,
+            "episode_draws": 88.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 38.0,
+            "match_losses": 16.0,
+            "match_draws": 21.0,
+            "episode_wins": 165.0,
+            "episode_losses": 120.0,
+            "episode_draws": 15.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 50.0,
+            "match_losses": 1.0,
+            "match_draws": 3.0,
+            "episode_wins": 150.0,
+            "episode_losses": 19.0,
+            "episode_draws": 47.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 52.0,
+            "match_losses": 2.0,
+            "match_draws": 3.0,
+            "episode_wins": 175.0,
+            "episode_losses": 35.0,
+            "episode_draws": 18.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 39.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 78.0,
+            "episode_losses": 0.0,
+            "episode_draws": 78.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 67.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 235.0,
+            "episode_losses": 25.0,
+            "episode_draws": 16.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 45.0,
+            "match_losses": 1.0,
+            "match_draws": 7.0,
+            "episode_wins": 174.0,
+            "episode_losses": 34.0,
+            "episode_draws": 4.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 43.0,
+            "match_losses": 3.0,
+            "match_draws": 6.0,
+            "episode_wins": 156.0,
+            "episode_losses": 40.0,
+            "episode_draws": 12.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 65.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 228.0,
+            "episode_losses": 20.0,
+            "episode_draws": 20.0
+        },
+        "StrongBot": {
+            "match_wins": 38.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 148.0,
+            "episode_losses": 3.0,
+            "episode_draws": 1.0
+        },
+        "WeakBot": {
+            "match_wins": 45.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 175.0,
+            "episode_losses": 2.0,
+            "episode_draws": 3.0
+        },
+        "SAC_last_year": {
+            "match_wins": 49.0,
+            "match_losses": 1.0,
+            "match_draws": 7.0,
+            "episode_wins": 182.0,
+            "episode_losses": 41.0,
+            "episode_draws": 5.0
+        }
+    },
+    "tdmpc2_action_hints_droupout_0_01_3M": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 38.0,
+            "match_losses": 16.0,
+            "match_draws": 19.0,
+            "episode_wins": 148.0,
+            "episode_losses": 102.0,
+            "episode_draws": 42.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 23.0,
+            "match_losses": 1.0,
+            "match_draws": 21.0,
+            "episode_wins": 119.0,
+            "episode_losses": 61.0,
+            "episode_draws": 0.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 29.0,
+            "match_losses": 5.0,
+            "match_draws": 28.0,
+            "episode_wins": 155.0,
+            "episode_losses": 93.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 20.0,
+            "match_losses": 12.0,
+            "match_draws": 18.0,
+            "episode_wins": 111.0,
+            "episode_losses": 87.0,
+            "episode_draws": 2.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 37.0,
+            "match_losses": 12.0,
+            "match_draws": 19.0,
+            "episode_wins": 171.0,
+            "episode_losses": 96.0,
+            "episode_draws": 5.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 25.0,
+            "match_losses": 25.0,
+            "match_draws": 31.0,
+            "episode_wins": 153.0,
+            "episode_losses": 148.0,
+            "episode_draws": 23.0
+        },
+        "td3_defense": {
+            "match_wins": 39.0,
+            "match_losses": 4.0,
+            "match_draws": 12.0,
+            "episode_wins": 93.0,
+            "episode_losses": 18.0,
+            "episode_draws": 109.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 24.0,
+            "match_losses": 13.0,
+            "match_draws": 26.0,
+            "episode_wins": 142.0,
+            "episode_losses": 109.0,
+            "episode_draws": 1.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 23.0,
+            "match_losses": 33.0,
+            "match_draws": 25.0,
+            "episode_wins": 141.0,
+            "episode_losses": 180.0,
+            "episode_draws": 3.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 8.0,
+            "match_losses": 46.0,
+            "match_draws": 20.0,
+            "episode_wins": 90.0,
+            "episode_losses": 197.0,
+            "episode_draws": 9.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 11.0,
+            "match_losses": 31.0,
+            "match_draws": 22.0,
+            "episode_wins": 98.0,
+            "episode_losses": 157.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 22.0,
+            "match_losses": 15.0,
+            "match_draws": 28.0,
+            "episode_wins": 133.0,
+            "episode_losses": 116.0,
+            "episode_draws": 11.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 26.0,
+            "match_losses": 15.0,
+            "match_draws": 20.0,
+            "episode_wins": 129.0,
+            "episode_losses": 97.0,
+            "episode_draws": 18.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 6.0,
+            "match_losses": 39.0,
+            "match_draws": 13.0,
+            "episode_wins": 61.0,
+            "episode_losses": 164.0,
+            "episode_draws": 7.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 21.0,
+            "match_losses": 5.0,
+            "match_draws": 20.0,
+            "episode_wins": 110.0,
+            "episode_losses": 73.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 36.0,
+            "match_losses": 8.0,
+            "match_draws": 30.0,
+            "episode_wins": 179.0,
+            "episode_losses": 109.0,
+            "episode_draws": 8.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 73.0,
+            "match_losses": 0.0,
+            "match_draws": 3.0,
+            "episode_wins": 151.0,
+            "episode_losses": 3.0,
+            "episode_draws": 150.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 37.0,
+            "match_losses": 13.0,
+            "match_draws": 16.0,
+            "episode_wins": 151.0,
+            "episode_losses": 89.0,
+            "episode_draws": 24.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 19.0,
+            "match_losses": 15.0,
+            "match_draws": 30.0,
+            "episode_wins": 134.0,
+            "episode_losses": 120.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 49.0,
+            "match_losses": 3.0,
+            "match_draws": 15.0,
+            "episode_wins": 201.0,
+            "episode_losses": 63.0,
+            "episode_draws": 4.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 16.0,
+            "match_losses": 7.0,
+            "match_draws": 20.0,
+            "episode_wins": 100.0,
+            "episode_losses": 72.0,
+            "episode_draws": 0.0
+        },
+        "StrongBot": {
+            "match_wins": 52.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 201.0,
+            "episode_losses": 6.0,
+            "episode_draws": 1.0
+        },
+        "WeakBot": {
+            "match_wins": 58.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 212.0,
+            "episode_losses": 16.0,
+            "episode_draws": 4.0
+        },
+        "SAC_last_year": {
+            "match_wins": 13.0,
+            "match_losses": 31.0,
+            "match_draws": 20.0,
+            "episode_wins": 100.0,
+            "episode_losses": 149.0,
+            "episode_draws": 7.0
+        }
+    },
+    "tdmpc2_baseline_4_1M": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 32.0,
+            "match_losses": 14.0,
+            "match_draws": 11.0,
+            "episode_wins": 110.0,
+            "episode_losses": 70.0,
+            "episode_draws": 48.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 35.0,
+            "match_losses": 6.0,
+            "match_draws": 12.0,
+            "episode_wins": 145.0,
+            "episode_losses": 67.0,
+            "episode_draws": 0.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 44.0,
+            "match_losses": 7.0,
+            "match_draws": 25.0,
+            "episode_wins": 203.0,
+            "episode_losses": 99.0,
+            "episode_draws": 2.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 24.0,
+            "match_losses": 19.0,
+            "match_draws": 29.0,
+            "episode_wins": 149.0,
+            "episode_losses": 137.0,
+            "episode_draws": 2.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 13.0,
+            "match_losses": 18.0,
+            "match_draws": 23.0,
+            "episode_wins": 100.0,
+            "episode_losses": 112.0,
+            "episode_draws": 4.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 23.0,
+            "match_losses": 35.0,
+            "match_draws": 28.0,
+            "episode_wins": 150.0,
+            "episode_losses": 184.0,
+            "episode_draws": 10.0
+        },
+        "td3_defense": {
+            "match_wins": 50.0,
+            "match_losses": 3.0,
+            "match_draws": 6.0,
+            "episode_wins": 107.0,
+            "episode_losses": 21.0,
+            "episode_draws": 108.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 15.0,
+            "match_losses": 22.0,
+            "match_draws": 32.0,
+            "episode_wins": 126.0,
+            "episode_losses": 143.0,
+            "episode_draws": 7.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 14.0,
+            "match_losses": 33.0,
+            "match_draws": 22.0,
+            "episode_wins": 115.0,
+            "episode_losses": 157.0,
+            "episode_draws": 4.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 8.0,
+            "match_losses": 47.0,
+            "match_draws": 11.0,
+            "episode_wins": 70.0,
+            "episode_losses": 185.0,
+            "episode_draws": 9.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 31.0,
+            "match_losses": 11.0,
+            "match_draws": 22.0,
+            "episode_wins": 157.0,
+            "episode_losses": 98.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 16.0,
+            "match_losses": 28.0,
+            "match_draws": 27.0,
+            "episode_wins": 126.0,
+            "episode_losses": 157.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 25.0,
+            "match_losses": 13.0,
+            "match_draws": 22.0,
+            "episode_wins": 118.0,
+            "episode_losses": 91.0,
+            "episode_draws": 31.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 11.0,
+            "match_losses": 27.0,
+            "match_draws": 24.0,
+            "episode_wins": 99.0,
+            "episode_losses": 148.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 19.0,
+            "match_losses": 9.0,
+            "match_draws": 19.0,
+            "episode_wins": 105.0,
+            "episode_losses": 82.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 31.0,
+            "match_losses": 9.0,
+            "match_draws": 26.0,
+            "episode_wins": 148.0,
+            "episode_losses": 100.0,
+            "episode_draws": 16.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 53.0,
+            "match_losses": 1.0,
+            "match_draws": 2.0,
+            "episode_wins": 107.0,
+            "episode_losses": 4.0,
+            "episode_draws": 113.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 23.0,
+            "match_losses": 17.0,
+            "match_draws": 9.0,
+            "episode_wins": 94.0,
+            "episode_losses": 79.0,
+            "episode_draws": 23.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 17.0,
+            "match_losses": 17.0,
+            "match_draws": 27.0,
+            "episode_wins": 119.0,
+            "episode_losses": 124.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 31.0,
+            "match_losses": 6.0,
+            "match_draws": 17.0,
+            "episode_wins": 143.0,
+            "episode_losses": 67.0,
+            "episode_draws": 6.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 31.0,
+            "match_losses": 14.0,
+            "match_draws": 27.0,
+            "episode_wins": 163.0,
+            "episode_losses": 119.0,
+            "episode_draws": 6.0
+        },
+        "StrongBot": {
+            "match_wins": 60.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 237.0,
+            "episode_losses": 3.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 52.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 198.0,
+            "episode_losses": 9.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 30.0,
+            "match_losses": 21.0,
+            "match_draws": 24.0,
+            "episode_wins": 160.0,
+            "episode_losses": 138.0,
+            "episode_draws": 2.0
+        }
+    },
+    "tdmpc2_action_hints_reuse_elites_3M": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 24.0,
+            "match_losses": 21.0,
+            "match_draws": 15.0,
+            "episode_wins": 112.0,
+            "episode_losses": 98.0,
+            "episode_draws": 30.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 31.0,
+            "match_losses": 9.0,
+            "match_draws": 29.0,
+            "episode_wins": 164.0,
+            "episode_losses": 110.0,
+            "episode_draws": 2.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 26.0,
+            "match_losses": 7.0,
+            "match_draws": 22.0,
+            "episode_wins": 135.0,
+            "episode_losses": 85.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 26.0,
+            "match_losses": 21.0,
+            "match_draws": 25.0,
+            "episode_wins": 146.0,
+            "episode_losses": 136.0,
+            "episode_draws": 6.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 21.0,
+            "match_losses": 11.0,
+            "match_draws": 24.0,
+            "episode_wins": 122.0,
+            "episode_losses": 101.0,
+            "episode_draws": 1.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 18.0,
+            "match_losses": 21.0,
+            "match_draws": 24.0,
+            "episode_wins": 123.0,
+            "episode_losses": 127.0,
+            "episode_draws": 2.0
+        },
+        "td3_defense": {
+            "match_wins": 37.0,
+            "match_losses": 3.0,
+            "match_draws": 7.0,
+            "episode_wins": 84.0,
+            "episode_losses": 12.0,
+            "episode_draws": 92.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 21.0,
+            "match_losses": 16.0,
+            "match_draws": 19.0,
+            "episode_wins": 120.0,
+            "episode_losses": 101.0,
+            "episode_draws": 3.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 27.0,
+            "match_losses": 21.0,
+            "match_draws": 23.0,
+            "episode_wins": 146.0,
+            "episode_losses": 135.0,
+            "episode_draws": 3.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 11.0,
+            "match_losses": 35.0,
+            "match_draws": 35.0,
+            "episode_wins": 132.0,
+            "episode_losses": 187.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 15.0,
+            "match_losses": 22.0,
+            "match_draws": 28.0,
+            "episode_wins": 116.0,
+            "episode_losses": 133.0,
+            "episode_draws": 11.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 28.0,
+            "match_losses": 16.0,
+            "match_draws": 27.0,
+            "episode_wins": 157.0,
+            "episode_losses": 126.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 16.0,
+            "match_losses": 21.0,
+            "match_draws": 21.0,
+            "episode_wins": 115.0,
+            "episode_losses": 114.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 18.0,
+            "match_losses": 17.0,
+            "match_draws": 30.0,
+            "episode_wins": 134.0,
+            "episode_losses": 124.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 28.0,
+            "match_losses": 11.0,
+            "match_draws": 20.0,
+            "episode_wins": 138.0,
+            "episode_losses": 94.0,
+            "episode_draws": 4.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 31.0,
+            "match_losses": 9.0,
+            "match_draws": 23.0,
+            "episode_wins": 157.0,
+            "episode_losses": 94.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 53.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 105.0,
+            "episode_losses": 0.0,
+            "episode_draws": 107.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 50.0,
+            "match_losses": 4.0,
+            "match_draws": 13.0,
+            "episode_wins": 194.0,
+            "episode_losses": 69.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 44.0,
+            "match_losses": 5.0,
+            "match_draws": 13.0,
+            "episode_wins": 171.0,
+            "episode_losses": 70.0,
+            "episode_draws": 7.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 42.0,
+            "match_losses": 2.0,
+            "match_draws": 15.0,
+            "episode_wins": 172.0,
+            "episode_losses": 63.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 53.0,
+            "match_losses": 6.0,
+            "match_draws": 11.0,
+            "episode_wins": 194.0,
+            "episode_losses": 61.0,
+            "episode_draws": 25.0
+        },
+        "StrongBot": {
+            "match_wins": 66.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 260.0,
+            "episode_losses": 4.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 59.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 230.0,
+            "episode_losses": 5.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 32.0,
+            "match_losses": 21.0,
+            "match_draws": 9.0,
+            "episode_wins": 118.0,
+            "episode_losses": 93.0,
+            "episode_draws": 37.0
+        }
+    },
+    "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 32.0,
+            "match_losses": 22.0,
+            "match_draws": 21.0,
+            "episode_wins": 140.0,
+            "episode_losses": 123.0,
+            "episode_draws": 37.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 40.0,
+            "match_losses": 4.0,
+            "match_draws": 26.0,
+            "episode_wins": 191.0,
+            "episode_losses": 89.0,
+            "episode_draws": 0.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 28.0,
+            "match_losses": 24.0,
+            "match_draws": 16.0,
+            "episode_wins": 146.0,
+            "episode_losses": 123.0,
+            "episode_draws": 3.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 27.0,
+            "match_losses": 29.0,
+            "match_draws": 19.0,
+            "episode_wins": 138.0,
+            "episode_losses": 137.0,
+            "episode_draws": 25.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 25.0,
+            "match_losses": 17.0,
+            "match_draws": 23.0,
+            "episode_wins": 137.0,
+            "episode_losses": 111.0,
+            "episode_draws": 12.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 16.0,
+            "match_losses": 30.0,
+            "match_draws": 21.0,
+            "episode_wins": 119.0,
+            "episode_losses": 146.0,
+            "episode_draws": 3.0
+        },
+        "td3_defense": {
+            "match_wins": 58.0,
+            "match_losses": 0.0,
+            "match_draws": 3.0,
+            "episode_wins": 119.0,
+            "episode_losses": 8.0,
+            "episode_draws": 117.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 27.0,
+            "match_losses": 9.0,
+            "match_draws": 26.0,
+            "episode_wins": 144.0,
+            "episode_losses": 102.0,
+            "episode_draws": 2.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 18.0,
+            "match_losses": 20.0,
+            "match_draws": 22.0,
+            "episode_wins": 108.0,
+            "episode_losses": 121.0,
+            "episode_draws": 11.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 19.0,
+            "match_losses": 58.0,
+            "match_draws": 19.0,
+            "episode_wins": 106.0,
+            "episode_losses": 190.0,
+            "episode_draws": 88.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 15.0,
+            "match_losses": 26.0,
+            "match_draws": 20.0,
+            "episode_wins": 97.0,
+            "episode_losses": 129.0,
+            "episode_draws": 18.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 13.0,
+            "match_losses": 25.0,
+            "match_draws": 22.0,
+            "episode_wins": 91.0,
+            "episode_losses": 118.0,
+            "episode_draws": 31.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 21.0,
+            "match_losses": 16.0,
+            "match_draws": 21.0,
+            "episode_wins": 114.0,
+            "episode_losses": 115.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 17.0,
+            "match_losses": 15.0,
+            "match_draws": 19.0,
+            "episode_wins": 97.0,
+            "episode_losses": 102.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 4.0,
+            "match_losses": 24.0,
+            "match_draws": 25.0,
+            "episode_wins": 81.0,
+            "episode_losses": 130.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 28.0,
+            "match_losses": 13.0,
+            "match_draws": 22.0,
+            "episode_wins": 144.0,
+            "episode_losses": 103.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 56.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 108.0,
+            "episode_losses": 0.0,
+            "episode_draws": 116.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 37.0,
+            "match_losses": 17.0,
+            "match_draws": 17.0,
+            "episode_wins": 160.0,
+            "episode_losses": 103.0,
+            "episode_draws": 21.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 30.0,
+            "match_losses": 9.0,
+            "match_draws": 15.0,
+            "episode_wins": 135.0,
+            "episode_losses": 79.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 50.0,
+            "match_losses": 3.0,
+            "match_draws": 14.0,
+            "episode_wins": 195.0,
+            "episode_losses": 68.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 41.0,
+            "match_losses": 12.0,
+            "match_draws": 10.0,
+            "episode_wins": 131.0,
+            "episode_losses": 76.0,
+            "episode_draws": 45.0
+        },
+        "StrongBot": {
+            "match_wins": 48.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 190.0,
+            "episode_losses": 2.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 54.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 211.0,
+            "episode_losses": 5.0,
+            "episode_draws": 0.0
+        },
+        "SAC_last_year": {
+            "match_wins": 17.0,
+            "match_losses": 22.0,
+            "match_draws": 11.0,
+            "episode_wins": 85.0,
+            "episode_losses": 94.0,
+            "episode_draws": 21.0
+        }
+    },
+    "tdmpc2_action_hints_4_3M": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 25.0,
+            "match_losses": 18.0,
+            "match_draws": 17.0,
+            "episode_wins": 84.0,
+            "episode_losses": 76.0,
+            "episode_draws": 80.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 53.0,
+            "match_losses": 3.0,
+            "match_draws": 13.0,
+            "episode_wins": 210.0,
+            "episode_losses": 66.0,
+            "episode_draws": 0.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 34.0,
+            "match_losses": 11.0,
+            "match_draws": 24.0,
+            "episode_wins": 167.0,
+            "episode_losses": 109.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 21.0,
+            "match_losses": 14.0,
+            "match_draws": 29.0,
+            "episode_wins": 141.0,
+            "episode_losses": 115.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 37.0,
+            "match_losses": 15.0,
+            "match_draws": 15.0,
+            "episode_wins": 143.0,
+            "episode_losses": 92.0,
+            "episode_draws": 33.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 25.0,
+            "match_losses": 20.0,
+            "match_draws": 28.0,
+            "episode_wins": 148.0,
+            "episode_losses": 136.0,
+            "episode_draws": 8.0
+        },
+        "td3_defense": {
+            "match_wins": 42.0,
+            "match_losses": 2.0,
+            "match_draws": 7.0,
+            "episode_wins": 105.0,
+            "episode_losses": 14.0,
+            "episode_draws": 85.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 31.0,
+            "match_losses": 16.0,
+            "match_draws": 25.0,
+            "episode_wins": 155.0,
+            "episode_losses": 126.0,
+            "episode_draws": 7.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 32.0,
+            "match_losses": 23.0,
+            "match_draws": 16.0,
+            "episode_wins": 141.0,
+            "episode_losses": 124.0,
+            "episode_draws": 19.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 16.0,
+            "match_losses": 38.0,
+            "match_draws": 21.0,
+            "episode_wins": 120.0,
+            "episode_losses": 165.0,
+            "episode_draws": 15.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 39.0,
+            "match_losses": 6.0,
+            "match_draws": 13.0,
+            "episode_wins": 164.0,
+            "episode_losses": 61.0,
+            "episode_draws": 7.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 27.0,
+            "match_losses": 11.0,
+            "match_draws": 24.0,
+            "episode_wins": 148.0,
+            "episode_losses": 99.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 17.0,
+            "match_losses": 18.0,
+            "match_draws": 30.0,
+            "episode_wins": 124.0,
+            "episode_losses": 134.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 15.0,
+            "match_losses": 17.0,
+            "match_draws": 19.0,
+            "episode_wins": 102.0,
+            "episode_losses": 97.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 51.0,
+            "match_losses": 0.0,
+            "match_draws": 8.0,
+            "episode_wins": 194.0,
+            "episode_losses": 42.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 50.0,
+            "match_losses": 1.0,
+            "match_draws": 9.0,
+            "episode_wins": 184.0,
+            "episode_losses": 45.0,
+            "episode_draws": 11.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 58.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 120.0,
+            "episode_losses": 2.0,
+            "episode_draws": 118.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 46.0,
+            "match_losses": 10.0,
+            "match_draws": 17.0,
+            "episode_wins": 174.0,
+            "episode_losses": 88.0,
+            "episode_draws": 30.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 13.0,
+            "match_losses": 17.0,
+            "match_draws": 19.0,
+            "episode_wins": 91.0,
+            "episode_losses": 99.0,
+            "episode_draws": 6.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 48.0,
+            "match_losses": 6.0,
+            "match_draws": 20.0,
+            "episode_wins": 205.0,
+            "episode_losses": 88.0,
+            "episode_draws": 3.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 23.0,
+            "match_losses": 21.0,
+            "match_draws": 24.0,
+            "episode_wins": 132.0,
+            "episode_losses": 127.0,
+            "episode_draws": 13.0
+        },
+        "StrongBot": {
+            "match_wins": 52.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 203.0,
+            "episode_losses": 5.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 47.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 185.0,
+            "episode_losses": 3.0,
+            "episode_draws": 0.0
+        },
+        "SAC_last_year": {
+            "match_wins": 25.0,
+            "match_losses": 8.0,
+            "match_draws": 23.0,
+            "episode_wins": 139.0,
+            "episode_losses": 85.0,
+            "episode_draws": 0.0
+        }
+    },
+    "agent-sac-v4-pink-4-step-per": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 3.0,
+            "match_losses": 49.0,
+            "match_draws": 6.0,
+            "episode_wins": 49.0,
+            "episode_losses": 164.0,
+            "episode_draws": 19.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 3.0,
+            "match_losses": 59.0,
+            "match_draws": 7.0,
+            "episode_wins": 51.0,
+            "episode_losses": 213.0,
+            "episode_draws": 12.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 0.0,
+            "match_losses": 56.0,
+            "match_draws": 2.0,
+            "episode_wins": 25.0,
+            "episode_losses": 201.0,
+            "episode_draws": 6.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 27.0,
+            "match_losses": 11.0,
+            "match_draws": 20.0,
+            "episode_wins": 120.0,
+            "episode_losses": 83.0,
+            "episode_draws": 29.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 6.0,
+            "match_losses": 49.0,
+            "match_draws": 6.0,
+            "episode_wins": 45.0,
+            "episode_losses": 125.0,
+            "episode_draws": 74.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 2.0,
+            "match_losses": 41.0,
+            "match_draws": 3.0,
+            "episode_wins": 26.0,
+            "episode_losses": 139.0,
+            "episode_draws": 19.0
+        },
+        "td3_defense": {
+            "match_wins": 11.0,
+            "match_losses": 34.0,
+            "match_draws": 26.0,
+            "episode_wins": 27.0,
+            "episode_losses": 55.0,
+            "episode_draws": 202.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 4.0,
+            "match_losses": 61.0,
+            "match_draws": 3.0,
+            "episode_wins": 32.0,
+            "episode_losses": 202.0,
+            "episode_draws": 38.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 3.0,
+            "match_losses": 49.0,
+            "match_draws": 5.0,
+            "episode_wins": 45.0,
+            "episode_losses": 164.0,
+            "episode_draws": 19.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 1.0,
+            "match_losses": 50.0,
+            "match_draws": 3.0,
+            "episode_wins": 19.0,
+            "episode_losses": 150.0,
+            "episode_draws": 47.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 5.0,
+            "match_losses": 21.0,
+            "match_draws": 20.0,
+            "episode_wins": 73.0,
+            "episode_losses": 110.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 9.0,
+            "match_losses": 19.0,
+            "match_draws": 19.0,
+            "episode_wins": 82.0,
+            "episode_losses": 105.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 11.0,
+            "match_losses": 28.0,
+            "match_draws": 20.0,
+            "episode_wins": 94.0,
+            "episode_losses": 138.0,
+            "episode_draws": 4.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 24.0,
+            "match_losses": 4.0,
+            "match_draws": 25.0,
+            "episode_wins": 130.0,
+            "episode_losses": 81.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 0.0,
+            "match_losses": 51.0,
+            "match_draws": 8.0,
+            "episode_wins": 42.0,
+            "episode_losses": 194.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 0.0,
+            "match_losses": 67.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 267.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 67.0,
+            "match_losses": 0.0,
+            "match_draws": 5.0,
+            "episode_wins": 140.0,
+            "episode_losses": 5.0,
+            "episode_draws": 143.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 62.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 247.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 74.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 295.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 0.0,
+            "match_losses": 76.0,
+            "match_draws": 0.0,
+            "episode_wins": 6.0,
+            "episode_losses": 297.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 61.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 240.0,
+            "episode_draws": 2.0
+        },
+        "StrongBot": {
+            "match_wins": 80.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 320.0,
+            "episode_losses": 0.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 86.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 343.0,
+            "episode_losses": 0.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 45.0,
+            "match_losses": 3.0,
+            "match_draws": 7.0,
+            "episode_wins": 158.0,
+            "episode_losses": 35.0,
+            "episode_draws": 27.0
+        }
+    },
+    "agent-sac-v4-pink-4-step-per-league-env-reset": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 5.0,
+            "match_losses": 46.0,
+            "match_draws": 6.0,
+            "episode_wins": 45.0,
+            "episode_losses": 132.0,
+            "episode_draws": 51.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 23.0,
+            "match_losses": 11.0,
+            "match_draws": 27.0,
+            "episode_wins": 137.0,
+            "episode_losses": 106.0,
+            "episode_draws": 1.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 11.0,
+            "match_losses": 16.0,
+            "match_draws": 28.0,
+            "episode_wins": 103.0,
+            "episode_losses": 116.0,
+            "episode_draws": 1.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 20.0,
+            "match_losses": 30.0,
+            "match_draws": 28.0,
+            "episode_wins": 140.0,
+            "episode_losses": 162.0,
+            "episode_draws": 10.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 36.0,
+            "match_losses": 17.0,
+            "match_draws": 25.0,
+            "episode_wins": 170.0,
+            "episode_losses": 120.0,
+            "episode_draws": 22.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 5.0,
+            "match_losses": 58.0,
+            "match_draws": 6.0,
+            "episode_wins": 54.0,
+            "episode_losses": 187.0,
+            "episode_draws": 35.0
+        },
+        "td3_defense": {
+            "match_wins": 13.0,
+            "match_losses": 10.0,
+            "match_draws": 42.0,
+            "episode_wins": 23.0,
+            "episode_losses": 18.0,
+            "episode_draws": 219.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 10.0,
+            "match_losses": 36.0,
+            "match_draws": 15.0,
+            "episode_wins": 85.0,
+            "episode_losses": 143.0,
+            "episode_draws": 16.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 0.0,
+            "match_losses": 54.0,
+            "match_draws": 6.0,
+            "episode_wins": 41.0,
+            "episode_losses": 185.0,
+            "episode_draws": 14.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 2.0,
+            "match_losses": 52.0,
+            "match_draws": 3.0,
+            "episode_wins": 35.0,
+            "episode_losses": 175.0,
+            "episode_draws": 18.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 8.0,
+            "match_losses": 36.0,
+            "match_draws": 30.0,
+            "episode_wins": 109.0,
+            "episode_losses": 179.0,
+            "episode_draws": 8.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 9.0,
+            "match_losses": 31.0,
+            "match_draws": 26.0,
+            "episode_wins": 100.0,
+            "episode_losses": 148.0,
+            "episode_draws": 16.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 9.0,
+            "match_losses": 31.0,
+            "match_draws": 23.0,
+            "episode_wins": 94.0,
+            "episode_losses": 157.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 13.0,
+            "match_losses": 28.0,
+            "match_draws": 22.0,
+            "episode_wins": 103.0,
+            "episode_losses": 144.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 1.0,
+            "match_losses": 50.0,
+            "match_draws": 9.0,
+            "episode_wins": 45.0,
+            "episode_losses": 184.0,
+            "episode_draws": 11.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 67.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 267.0,
+            "episode_losses": 1.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 70.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 138.0,
+            "episode_losses": 0.0,
+            "episode_draws": 142.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 20.0,
+            "match_losses": 16.0,
+            "match_draws": 28.0,
+            "episode_wins": 56.0,
+            "episode_losses": 55.0,
+            "episode_draws": 145.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 3.0,
+            "match_losses": 33.0,
+            "match_draws": 9.0,
+            "episode_wins": 49.0,
+            "episode_losses": 126.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 24.0,
+            "match_losses": 15.0,
+            "match_draws": 14.0,
+            "episode_wins": 70.0,
+            "episode_losses": 43.0,
+            "episode_draws": 99.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 1.0,
+            "match_losses": 35.0,
+            "match_draws": 1.0,
+            "episode_wins": 12.0,
+            "episode_losses": 135.0,
+            "episode_draws": 1.0
+        },
+        "StrongBot": {
+            "match_wins": 64.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 253.0,
+            "episode_losses": 2.0,
+            "episode_draws": 1.0
+        },
+        "WeakBot": {
+            "match_wins": 64.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 255.0,
+            "episode_losses": 0.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 21.0,
+            "match_losses": 17.0,
+            "match_draws": 15.0,
+            "episode_wins": 114.0,
+            "episode_losses": 97.0,
+            "episode_draws": 1.0
+        }
+    },
+    "agent-sac-v4-pink-replay": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 0.0,
+            "match_losses": 49.0,
+            "match_draws": 2.0,
+            "episode_wins": 2.0,
+            "episode_losses": 93.0,
+            "episode_draws": 109.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 0.0,
+            "match_losses": 61.0,
+            "match_draws": 2.0,
+            "episode_wins": 3.0,
+            "episode_losses": 126.0,
+            "episode_draws": 123.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 0.0,
+            "match_losses": 49.0,
+            "match_draws": 4.0,
+            "episode_wins": 4.0,
+            "episode_losses": 103.0,
+            "episode_draws": 105.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 0.0,
+            "match_losses": 63.0,
+            "match_draws": 2.0,
+            "episode_wins": 2.0,
+            "episode_losses": 128.0,
+            "episode_draws": 130.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 0.0,
+            "match_losses": 70.0,
+            "match_draws": 3.0,
+            "episode_wins": 4.0,
+            "episode_losses": 144.0,
+            "episode_draws": 144.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 0.0,
+            "match_losses": 38.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 75.0,
+            "episode_draws": 77.0
+        },
+        "td3_defense": {
+            "match_wins": 7.0,
+            "match_losses": 14.0,
+            "match_draws": 53.0,
+            "episode_wins": 10.0,
+            "episode_losses": 19.0,
+            "episode_draws": 267.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 0.0,
+            "match_losses": 51.0,
+            "match_draws": 1.0,
+            "episode_wins": 1.0,
+            "episode_losses": 104.0,
+            "episode_draws": 103.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 0.0,
+            "match_losses": 52.0,
+            "match_draws": 3.0,
+            "episode_wins": 3.0,
+            "episode_losses": 108.0,
+            "episode_draws": 109.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 0.0,
+            "match_losses": 39.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 78.0,
+            "episode_draws": 78.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 0.0,
+            "match_losses": 73.0,
+            "match_draws": 3.0,
+            "episode_wins": 3.0,
+            "episode_losses": 151.0,
+            "episode_draws": 150.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 1.0,
+            "match_losses": 53.0,
+            "match_draws": 2.0,
+            "episode_wins": 4.0,
+            "episode_losses": 107.0,
+            "episode_draws": 113.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 0.0,
+            "match_losses": 53.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 105.0,
+            "episode_draws": 107.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 0.0,
+            "match_losses": 56.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 108.0,
+            "episode_draws": 116.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 0.0,
+            "match_losses": 58.0,
+            "match_draws": 2.0,
+            "episode_wins": 2.0,
+            "episode_losses": 120.0,
+            "episode_draws": 118.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 0.0,
+            "match_losses": 67.0,
+            "match_draws": 5.0,
+            "episode_wins": 5.0,
+            "episode_losses": 140.0,
+            "episode_draws": 143.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 0.0,
+            "match_losses": 70.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 138.0,
+            "episode_draws": 142.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 73.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 146.0,
+            "episode_draws": 146.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 64.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 125.0,
+            "episode_draws": 131.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 2.0,
+            "match_losses": 44.0,
+            "match_draws": 6.0,
+            "episode_wins": 6.0,
+            "episode_losses": 76.0,
+            "episode_draws": 126.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 50.0,
+            "match_draws": 2.0,
+            "episode_wins": 2.0,
+            "episode_losses": 99.0,
+            "episode_draws": 107.0
+        },
+        "StrongBot": {
+            "match_wins": 13.0,
+            "match_losses": 6.0,
+            "match_draws": 52.0,
+            "episode_wins": 14.0,
+            "episode_losses": 7.0,
+            "episode_draws": 263.0
+        },
+        "WeakBot": {
+            "match_wins": 6.0,
+            "match_losses": 3.0,
+            "match_draws": 61.0,
+            "episode_wins": 7.0,
+            "episode_losses": 3.0,
+            "episode_draws": 270.0
+        },
+        "SAC_last_year": {
+            "match_wins": 0.0,
+            "match_losses": 58.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 117.0,
+            "episode_draws": 115.0
+        }
+    },
+    "agent-sac-v4-pink-4-step-per-league-env-defence": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 2.0,
+            "match_losses": 58.0,
+            "match_draws": 5.0,
+            "episode_wins": 36.0,
+            "episode_losses": 179.0,
+            "episode_draws": 45.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 19.0,
+            "match_losses": 12.0,
+            "match_draws": 30.0,
+            "episode_wins": 130.0,
+            "episode_losses": 111.0,
+            "episode_draws": 3.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 6.0,
+            "match_losses": 34.0,
+            "match_draws": 11.0,
+            "episode_wins": 61.0,
+            "episode_losses": 136.0,
+            "episode_draws": 7.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 15.0,
+            "match_losses": 28.0,
+            "match_draws": 15.0,
+            "episode_wins": 97.0,
+            "episode_losses": 123.0,
+            "episode_draws": 12.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 25.0,
+            "match_losses": 17.0,
+            "match_draws": 25.0,
+            "episode_wins": 128.0,
+            "episode_losses": 110.0,
+            "episode_draws": 30.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 1.0,
+            "match_losses": 48.0,
+            "match_draws": 3.0,
+            "episode_wins": 23.0,
+            "episode_losses": 159.0,
+            "episode_draws": 26.0
+        },
+        "td3_defense": {
+            "match_wins": 54.0,
+            "match_losses": 1.0,
+            "match_draws": 14.0,
+            "episode_wins": 82.0,
+            "episode_losses": 1.0,
+            "episode_draws": 193.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 13.0,
+            "match_losses": 36.0,
+            "match_draws": 21.0,
+            "episode_wins": 99.0,
+            "episode_losses": 163.0,
+            "episode_draws": 18.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 0.0,
+            "match_losses": 38.0,
+            "match_draws": 5.0,
+            "episode_wins": 35.0,
+            "episode_losses": 130.0,
+            "episode_draws": 7.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 0.0,
+            "match_losses": 67.0,
+            "match_draws": 2.0,
+            "episode_wins": 25.0,
+            "episode_losses": 235.0,
+            "episode_draws": 16.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 13.0,
+            "match_losses": 37.0,
+            "match_draws": 16.0,
+            "episode_wins": 89.0,
+            "episode_losses": 151.0,
+            "episode_draws": 24.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 17.0,
+            "match_losses": 23.0,
+            "match_draws": 9.0,
+            "episode_wins": 79.0,
+            "episode_losses": 94.0,
+            "episode_draws": 23.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 4.0,
+            "match_losses": 50.0,
+            "match_draws": 13.0,
+            "episode_wins": 69.0,
+            "episode_losses": 194.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 17.0,
+            "match_losses": 37.0,
+            "match_draws": 17.0,
+            "episode_wins": 103.0,
+            "episode_losses": 160.0,
+            "episode_draws": 21.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 10.0,
+            "match_losses": 46.0,
+            "match_draws": 17.0,
+            "episode_wins": 88.0,
+            "episode_losses": 174.0,
+            "episode_draws": 30.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 62.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 247.0,
+            "episode_losses": 1.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 16.0,
+            "match_losses": 20.0,
+            "match_draws": 28.0,
+            "episode_wins": 55.0,
+            "episode_losses": 56.0,
+            "episode_draws": 145.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 73.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 146.0,
+            "episode_losses": 0.0,
+            "episode_draws": 146.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 3.0,
+            "match_losses": 34.0,
+            "match_draws": 4.0,
+            "episode_wins": 39.0,
+            "episode_losses": 117.0,
+            "episode_draws": 8.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 27.0,
+            "match_losses": 5.0,
+            "match_draws": 7.0,
+            "episode_wins": 70.0,
+            "episode_losses": 30.0,
+            "episode_draws": 56.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 49.0,
+            "match_draws": 0.0,
+            "episode_wins": 14.0,
+            "episode_losses": 176.0,
+            "episode_draws": 6.0
+        },
+        "StrongBot": {
+            "match_wins": 61.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 242.0,
+            "episode_losses": 1.0,
+            "episode_draws": 1.0
+        },
+        "WeakBot": {
+            "match_wins": 54.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 215.0,
+            "episode_losses": 0.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 13.0,
+            "match_losses": 12.0,
+            "match_draws": 13.0,
+            "episode_wins": 71.0,
+            "episode_losses": 69.0,
+            "episode_draws": 12.0
+        }
+    },
+    "agent-sac-v4-pink-6-step-per-env-defence": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 3.0,
+            "match_losses": 51.0,
+            "match_draws": 10.0,
+            "episode_wins": 61.0,
+            "episode_losses": 182.0,
+            "episode_draws": 13.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 23.0,
+            "match_losses": 11.0,
+            "match_draws": 39.0,
+            "episode_wins": 164.0,
+            "episode_losses": 125.0,
+            "episode_draws": 3.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 13.0,
+            "match_losses": 14.0,
+            "match_draws": 35.0,
+            "episode_wins": 121.0,
+            "episode_losses": 126.0,
+            "episode_draws": 1.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 17.0,
+            "match_losses": 26.0,
+            "match_draws": 20.0,
+            "episode_wins": 113.0,
+            "episode_losses": 131.0,
+            "episode_draws": 8.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 24.0,
+            "match_losses": 9.0,
+            "match_draws": 24.0,
+            "episode_wins": 134.0,
+            "episode_losses": 91.0,
+            "episode_draws": 3.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 3.0,
+            "match_losses": 41.0,
+            "match_draws": 15.0,
+            "episode_wins": 58.0,
+            "episode_losses": 173.0,
+            "episode_draws": 5.0
+        },
+        "td3_defense": {
+            "match_wins": 14.0,
+            "match_losses": 15.0,
+            "match_draws": 40.0,
+            "episode_wins": 22.0,
+            "episode_losses": 21.0,
+            "episode_draws": 233.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 1.0,
+            "match_losses": 41.0,
+            "match_draws": 12.0,
+            "episode_wins": 52.0,
+            "episode_losses": 155.0,
+            "episode_draws": 9.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 4.0,
+            "match_losses": 18.0,
+            "match_draws": 37.0,
+            "episode_wins": 102.0,
+            "episode_losses": 132.0,
+            "episode_draws": 2.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 1.0,
+            "match_losses": 45.0,
+            "match_draws": 7.0,
+            "episode_wins": 34.0,
+            "episode_losses": 174.0,
+            "episode_draws": 4.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 15.0,
+            "match_losses": 19.0,
+            "match_draws": 30.0,
+            "episode_wins": 120.0,
+            "episode_losses": 134.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 17.0,
+            "match_losses": 17.0,
+            "match_draws": 27.0,
+            "episode_wins": 124.0,
+            "episode_losses": 119.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 5.0,
+            "match_losses": 44.0,
+            "match_draws": 13.0,
+            "episode_wins": 70.0,
+            "episode_losses": 171.0,
+            "episode_draws": 7.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 9.0,
+            "match_losses": 30.0,
+            "match_draws": 15.0,
+            "episode_wins": 79.0,
+            "episode_losses": 135.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 17.0,
+            "match_losses": 13.0,
+            "match_draws": 19.0,
+            "episode_wins": 99.0,
+            "episode_losses": 91.0,
+            "episode_draws": 6.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 74.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 295.0,
+            "episode_losses": 1.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 33.0,
+            "match_losses": 3.0,
+            "match_draws": 9.0,
+            "episode_wins": 126.0,
+            "episode_losses": 49.0,
+            "episode_draws": 5.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 64.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 125.0,
+            "episode_losses": 0.0,
+            "episode_draws": 131.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 34.0,
+            "match_losses": 3.0,
+            "match_draws": 4.0,
+            "episode_wins": 117.0,
+            "episode_losses": 39.0,
+            "episode_draws": 8.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 3.0,
+            "match_losses": 34.0,
+            "match_draws": 4.0,
+            "episode_wins": 29.0,
+            "episode_losses": 121.0,
+            "episode_draws": 14.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 49.0,
+            "match_draws": 0.0,
+            "episode_wins": 4.0,
+            "episode_losses": 192.0,
+            "episode_draws": 0.0
+        },
+        "StrongBot": {
+            "match_wins": 48.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 191.0,
+            "episode_losses": 1.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 50.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 195.0,
+            "episode_losses": 2.0,
+            "episode_draws": 3.0
+        },
+        "SAC_last_year": {
+            "match_wins": 13.0,
+            "match_losses": 8.0,
+            "match_draws": 22.0,
+            "episode_wins": 91.0,
+            "episode_losses": 79.0,
+            "episode_draws": 2.0
+        }
+    },
+    "agent-sac-v4-pink-6-step-per-env-defence2": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 2.0,
+            "match_losses": 45.0,
+            "match_draws": 9.0,
+            "episode_wins": 44.0,
+            "episode_losses": 151.0,
+            "episode_draws": 29.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 17.0,
+            "match_losses": 26.0,
+            "match_draws": 31.0,
+            "episode_wins": 138.0,
+            "episode_losses": 157.0,
+            "episode_draws": 1.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 6.0,
+            "match_losses": 45.0,
+            "match_draws": 16.0,
+            "episode_wins": 75.0,
+            "episode_losses": 193.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 9.0,
+            "match_losses": 24.0,
+            "match_draws": 13.0,
+            "episode_wins": 67.0,
+            "episode_losses": 113.0,
+            "episode_draws": 4.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 27.0,
+            "match_losses": 21.0,
+            "match_draws": 27.0,
+            "episode_wins": 153.0,
+            "episode_losses": 139.0,
+            "episode_draws": 8.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 1.0,
+            "match_losses": 62.0,
+            "match_draws": 8.0,
+            "episode_wins": 45.0,
+            "episode_losses": 237.0,
+            "episode_draws": 2.0
+        },
+        "td3_defense": {
+            "match_wins": 15.0,
+            "match_losses": 11.0,
+            "match_draws": 29.0,
+            "episode_wins": 22.0,
+            "episode_losses": 17.0,
+            "episode_draws": 181.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 6.0,
+            "match_losses": 32.0,
+            "match_draws": 13.0,
+            "episode_wins": 60.0,
+            "episode_losses": 134.0,
+            "episode_draws": 10.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 1.0,
+            "match_losses": 51.0,
+            "match_draws": 5.0,
+            "episode_wins": 36.0,
+            "episode_losses": 186.0,
+            "episode_draws": 6.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 3.0,
+            "match_losses": 43.0,
+            "match_draws": 6.0,
+            "episode_wins": 40.0,
+            "episode_losses": 156.0,
+            "episode_draws": 12.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 3.0,
+            "match_losses": 49.0,
+            "match_draws": 15.0,
+            "episode_wins": 63.0,
+            "episode_losses": 201.0,
+            "episode_draws": 4.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 6.0,
+            "match_losses": 31.0,
+            "match_draws": 17.0,
+            "episode_wins": 67.0,
+            "episode_losses": 143.0,
+            "episode_draws": 6.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 2.0,
+            "match_losses": 42.0,
+            "match_draws": 15.0,
+            "episode_wins": 63.0,
+            "episode_losses": 172.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 3.0,
+            "match_losses": 50.0,
+            "match_draws": 14.0,
+            "episode_wins": 68.0,
+            "episode_losses": 195.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 6.0,
+            "match_losses": 48.0,
+            "match_draws": 20.0,
+            "episode_wins": 88.0,
+            "episode_losses": 205.0,
+            "episode_draws": 3.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 76.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 297.0,
+            "episode_losses": 6.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 15.0,
+            "match_losses": 24.0,
+            "match_draws": 14.0,
+            "episode_wins": 43.0,
+            "episode_losses": 70.0,
+            "episode_draws": 99.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 44.0,
+            "match_losses": 2.0,
+            "match_draws": 6.0,
+            "episode_wins": 76.0,
+            "episode_losses": 6.0,
+            "episode_draws": 126.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 5.0,
+            "match_losses": 27.0,
+            "match_draws": 7.0,
+            "episode_wins": 30.0,
+            "episode_losses": 70.0,
+            "episode_draws": 56.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 34.0,
+            "match_losses": 3.0,
+            "match_draws": 4.0,
+            "episode_wins": 121.0,
+            "episode_losses": 29.0,
+            "episode_draws": 14.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 35.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 138.0,
+            "episode_draws": 0.0
+        },
+        "StrongBot": {
+            "match_wins": 31.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 123.0,
+            "episode_losses": 0.0,
+            "episode_draws": 1.0
+        },
+        "WeakBot": {
+            "match_wins": 34.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 133.0,
+            "episode_losses": 1.0,
+            "episode_draws": 2.0
+        },
+        "SAC_last_year": {
+            "match_wins": 6.0,
+            "match_losses": 13.0,
+            "match_draws": 10.0,
+            "episode_wins": 50.0,
+            "episode_losses": 65.0,
+            "episode_draws": 1.0
+        }
+    },
+    "agent-sac-big-league": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 13.0,
+            "match_losses": 35.0,
+            "match_draws": 10.0,
+            "episode_wins": 64.0,
+            "episode_losses": 117.0,
+            "episode_draws": 51.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 4.0,
+            "match_losses": 45.0,
+            "match_draws": 14.0,
+            "episode_wins": 66.0,
+            "episode_losses": 171.0,
+            "episode_draws": 15.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 7.0,
+            "match_losses": 34.0,
+            "match_draws": 32.0,
+            "episode_wins": 114.0,
+            "episode_losses": 175.0,
+            "episode_draws": 3.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 2.0,
+            "match_losses": 51.0,
+            "match_draws": 16.0,
+            "episode_wins": 71.0,
+            "episode_losses": 197.0,
+            "episode_draws": 8.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 5.0,
+            "match_losses": 42.0,
+            "match_draws": 16.0,
+            "episode_wins": 68.0,
+            "episode_losses": 153.0,
+            "episode_draws": 31.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 1.0,
+            "match_losses": 50.0,
+            "match_draws": 1.0,
+            "episode_wins": 18.0,
+            "episode_losses": 173.0,
+            "episode_draws": 17.0
+        },
+        "td3_defense": {
+            "match_wins": 53.0,
+            "match_losses": 6.0,
+            "match_draws": 13.0,
+            "episode_wins": 115.0,
+            "episode_losses": 31.0,
+            "episode_draws": 142.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 2.0,
+            "match_losses": 37.0,
+            "match_draws": 8.0,
+            "episode_wins": 36.0,
+            "episode_losses": 145.0,
+            "episode_draws": 7.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 3.0,
+            "match_losses": 56.0,
+            "match_draws": 3.0,
+            "episode_wins": 40.0,
+            "episode_losses": 197.0,
+            "episode_draws": 11.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 0.0,
+            "match_losses": 65.0,
+            "match_draws": 2.0,
+            "episode_wins": 20.0,
+            "episode_losses": 228.0,
+            "episode_draws": 20.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 7.0,
+            "match_losses": 16.0,
+            "match_draws": 20.0,
+            "episode_wins": 72.0,
+            "episode_losses": 100.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 14.0,
+            "match_losses": 31.0,
+            "match_draws": 27.0,
+            "episode_wins": 119.0,
+            "episode_losses": 163.0,
+            "episode_draws": 6.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 6.0,
+            "match_losses": 53.0,
+            "match_draws": 11.0,
+            "episode_wins": 61.0,
+            "episode_losses": 194.0,
+            "episode_draws": 25.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 12.0,
+            "match_losses": 41.0,
+            "match_draws": 10.0,
+            "episode_wins": 76.0,
+            "episode_losses": 131.0,
+            "episode_draws": 45.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 21.0,
+            "match_losses": 23.0,
+            "match_draws": 24.0,
+            "episode_wins": 127.0,
+            "episode_losses": 132.0,
+            "episode_draws": 13.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 61.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 240.0,
+            "episode_losses": 2.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 35.0,
+            "match_losses": 1.0,
+            "match_draws": 1.0,
+            "episode_wins": 135.0,
+            "episode_losses": 12.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 50.0,
+            "match_losses": 0.0,
+            "match_draws": 2.0,
+            "episode_wins": 99.0,
+            "episode_losses": 2.0,
+            "episode_draws": 107.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 49.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 176.0,
+            "episode_losses": 14.0,
+            "episode_draws": 6.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 49.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 192.0,
+            "episode_losses": 4.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 35.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 138.0,
+            "episode_losses": 2.0,
+            "episode_draws": 0.0
+        },
+        "StrongBot": {
+            "match_wins": 27.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 103.0,
+            "episode_losses": 3.0,
+            "episode_draws": 2.0
+        },
+        "WeakBot": {
+            "match_wins": 31.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 122.0,
+            "episode_losses": 1.0,
+            "episode_draws": 1.0
+        },
+        "SAC_last_year": {
+            "match_wins": 2.0,
+            "match_losses": 18.0,
+            "match_draws": 2.0,
+            "episode_wins": 12.0,
+            "episode_losses": 55.0,
+            "episode_draws": 21.0
+        }
+    },
+    "StrongBot": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 0.0,
+            "match_losses": 44.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 166.0,
+            "episode_draws": 7.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 0.0,
+            "match_losses": 74.0,
+            "match_draws": 0.0,
+            "episode_wins": 10.0,
+            "episode_losses": 284.0,
+            "episode_draws": 2.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 0.0,
+            "match_losses": 45.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 173.0,
+            "episode_draws": 5.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 0.0,
+            "match_losses": 53.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 207.0,
+            "episode_draws": 3.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 0.0,
+            "match_losses": 57.0,
+            "match_draws": 0.0,
+            "episode_wins": 14.0,
+            "episode_losses": 214.0,
+            "episode_draws": 0.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 0.0,
+            "match_losses": 63.0,
+            "match_draws": 0.0,
+            "episode_wins": 4.0,
+            "episode_losses": 247.0,
+            "episode_draws": 1.0
+        },
+        "td3_defense": {
+            "match_wins": 4.0,
+            "match_losses": 39.0,
+            "match_draws": 39.0,
+            "episode_wins": 7.0,
+            "episode_losses": 55.0,
+            "episode_draws": 266.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 0.0,
+            "match_losses": 68.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 265.0,
+            "episode_draws": 4.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 0.0,
+            "match_losses": 50.0,
+            "match_draws": 1.0,
+            "episode_wins": 5.0,
+            "episode_losses": 196.0,
+            "episode_draws": 3.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 0.0,
+            "match_losses": 38.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 148.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 0.0,
+            "match_losses": 52.0,
+            "match_draws": 0.0,
+            "episode_wins": 6.0,
+            "episode_losses": 201.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 0.0,
+            "match_losses": 60.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 237.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 0.0,
+            "match_losses": 66.0,
+            "match_draws": 0.0,
+            "episode_wins": 4.0,
+            "episode_losses": 260.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 0.0,
+            "match_losses": 48.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 190.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 0.0,
+            "match_losses": 52.0,
+            "match_draws": 0.0,
+            "episode_wins": 5.0,
+            "episode_losses": 203.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 0.0,
+            "match_losses": 80.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 320.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 0.0,
+            "match_losses": 64.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 253.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 6.0,
+            "match_losses": 13.0,
+            "match_draws": 52.0,
+            "episode_wins": 7.0,
+            "episode_losses": 14.0,
+            "episode_draws": 263.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 61.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 242.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 48.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 191.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 0.0,
+            "match_losses": 31.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 123.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 27.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 103.0,
+            "episode_draws": 2.0
+        },
+        "WeakBot": {
+            "match_wins": 9.0,
+            "match_losses": 2.0,
+            "match_draws": 0.0,
+            "episode_wins": 23.0,
+            "episode_losses": 6.0,
+            "episode_draws": 15.0
+        },
+        "SAC_last_year": {
+            "match_wins": 0.0,
+            "match_losses": 12.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 47.0,
+            "episode_draws": 0.0
+        }
+    },
+    "WeakBot": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 0.0,
+            "match_losses": 50.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 194.0,
+            "episode_draws": 4.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 0.0,
+            "match_losses": 68.0,
+            "match_draws": 0.0,
+            "episode_wins": 6.0,
+            "episode_losses": 265.0,
+            "episode_draws": 1.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 0.0,
+            "match_losses": 51.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 202.0,
+            "episode_draws": 2.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 0.0,
+            "match_losses": 53.0,
+            "match_draws": 0.0,
+            "episode_wins": 5.0,
+            "episode_losses": 206.0,
+            "episode_draws": 1.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 0.0,
+            "match_losses": 60.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 228.0,
+            "episode_draws": 9.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 0.0,
+            "match_losses": 34.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 130.0,
+            "episode_draws": 5.0
+        },
+        "td3_defense": {
+            "match_wins": 4.0,
+            "match_losses": 39.0,
+            "match_draws": 53.0,
+            "episode_wins": 5.0,
+            "episode_losses": 47.0,
+            "episode_draws": 332.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 0.0,
+            "match_losses": 62.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 241.0,
+            "episode_draws": 5.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 0.0,
+            "match_losses": 49.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 193.0,
+            "episode_draws": 2.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 0.0,
+            "match_losses": 45.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 175.0,
+            "episode_draws": 3.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 0.0,
+            "match_losses": 58.0,
+            "match_draws": 0.0,
+            "episode_wins": 16.0,
+            "episode_losses": 212.0,
+            "episode_draws": 4.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 0.0,
+            "match_losses": 52.0,
+            "match_draws": 0.0,
+            "episode_wins": 9.0,
+            "episode_losses": 198.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 0.0,
+            "match_losses": 59.0,
+            "match_draws": 0.0,
+            "episode_wins": 5.0,
+            "episode_losses": 230.0,
+            "episode_draws": 1.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 0.0,
+            "match_losses": 54.0,
+            "match_draws": 0.0,
+            "episode_wins": 5.0,
+            "episode_losses": 211.0,
+            "episode_draws": 0.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 0.0,
+            "match_losses": 47.0,
+            "match_draws": 0.0,
+            "episode_wins": 3.0,
+            "episode_losses": 185.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 0.0,
+            "match_losses": 86.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 343.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 0.0,
+            "match_losses": 64.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 255.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 3.0,
+            "match_losses": 6.0,
+            "match_draws": 61.0,
+            "episode_wins": 3.0,
+            "episode_losses": 7.0,
+            "episode_draws": 270.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 54.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 215.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 0.0,
+            "match_losses": 50.0,
+            "match_draws": 0.0,
+            "episode_wins": 2.0,
+            "episode_losses": 195.0,
+            "episode_draws": 3.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 0.0,
+            "match_losses": 34.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 133.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 0.0,
+            "match_losses": 31.0,
+            "match_draws": 0.0,
+            "episode_wins": 1.0,
+            "episode_losses": 122.0,
+            "episode_draws": 1.0
+        },
+        "StrongBot": {
+            "match_wins": 2.0,
+            "match_losses": 9.0,
+            "match_draws": 0.0,
+            "episode_wins": 6.0,
+            "episode_losses": 23.0,
+            "episode_draws": 15.0
+        },
+        "SAC_last_year": {
+            "match_wins": 0.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 0.0,
+            "episode_draws": 0.0
+        }
+    },
+    "SAC_last_year": {
+        "td3_one_v_all_rollout_3_mirroring_15M_s699_219k": {
+            "match_wins": 11.0,
+            "match_losses": 52.0,
+            "match_draws": 12.0,
+            "episode_wins": 76.0,
+            "episode_losses": 199.0,
+            "episode_draws": 25.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_303k": {
+            "match_wins": 4.0,
+            "match_losses": 37.0,
+            "match_draws": 25.0,
+            "episode_wins": 85.0,
+            "episode_losses": 178.0,
+            "episode_draws": 1.0
+        },
+        "td3_one_v_all_rollout_3_mirroring_15M_s799_222k": {
+            "match_wins": 0.0,
+            "match_losses": 70.0,
+            "match_draws": 2.0,
+            "episode_wins": 20.0,
+            "episode_losses": 268.0,
+            "episode_draws": 0.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_277k": {
+            "match_wins": 23.0,
+            "match_losses": 30.0,
+            "match_draws": 21.0,
+            "episode_wins": 136.0,
+            "episode_losses": 154.0,
+            "episode_draws": 6.0
+        },
+        "td3_sparse_self_play_rollout_3_mirroring_20M_342k": {
+            "match_wins": 15.0,
+            "match_losses": 34.0,
+            "match_draws": 18.0,
+            "episode_wins": 94.0,
+            "episode_losses": 144.0,
+            "episode_draws": 30.0
+        },
+        "td3_self_play_rollout_5_mirroring_15M_157k": {
+            "match_wins": 14.0,
+            "match_losses": 28.0,
+            "match_draws": 23.0,
+            "episode_wins": 114.0,
+            "episode_losses": 145.0,
+            "episode_draws": 1.0
+        },
+        "td3_defense": {
+            "match_wins": 66.0,
+            "match_losses": 2.0,
+            "match_draws": 7.0,
+            "episode_wins": 161.0,
+            "episode_losses": 13.0,
+            "episode_draws": 126.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_136k": {
+            "match_wins": 0.0,
+            "match_losses": 54.0,
+            "match_draws": 8.0,
+            "episode_wins": 40.0,
+            "episode_losses": 203.0,
+            "episode_draws": 5.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_163k": {
+            "match_wins": 7.0,
+            "match_losses": 41.0,
+            "match_draws": 7.0,
+            "episode_wins": 59.0,
+            "episode_losses": 145.0,
+            "episode_draws": 16.0
+        },
+        "td3_bank_pref_rollout_3_mirroring_10M_177k": {
+            "match_wins": 1.0,
+            "match_losses": 49.0,
+            "match_draws": 7.0,
+            "episode_wins": 41.0,
+            "episode_losses": 182.0,
+            "episode_draws": 5.0
+        },
+        "tdmpc2_action_hints_droupout_0_01_3M": {
+            "match_wins": 31.0,
+            "match_losses": 13.0,
+            "match_draws": 20.0,
+            "episode_wins": 149.0,
+            "episode_losses": 100.0,
+            "episode_draws": 7.0
+        },
+        "tdmpc2_baseline_4_1M": {
+            "match_wins": 21.0,
+            "match_losses": 30.0,
+            "match_draws": 24.0,
+            "episode_wins": 138.0,
+            "episode_losses": 160.0,
+            "episode_draws": 2.0
+        },
+        "tdmpc2_action_hints_reuse_elites_3M": {
+            "match_wins": 21.0,
+            "match_losses": 32.0,
+            "match_draws": 9.0,
+            "episode_wins": 93.0,
+            "episode_losses": 118.0,
+            "episode_draws": 37.0
+        },
+        "tdmpc2_action_hints_10M_more_right_possesssion_8_5M": {
+            "match_wins": 22.0,
+            "match_losses": 17.0,
+            "match_draws": 11.0,
+            "episode_wins": 94.0,
+            "episode_losses": 85.0,
+            "episode_draws": 21.0
+        },
+        "tdmpc2_action_hints_4_3M": {
+            "match_wins": 8.0,
+            "match_losses": 25.0,
+            "match_draws": 23.0,
+            "episode_wins": 85.0,
+            "episode_losses": 139.0,
+            "episode_draws": 0.0
+        },
+        "agent-sac-v4-pink-4-step-per": {
+            "match_wins": 3.0,
+            "match_losses": 45.0,
+            "match_draws": 7.0,
+            "episode_wins": 35.0,
+            "episode_losses": 158.0,
+            "episode_draws": 27.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-reset": {
+            "match_wins": 17.0,
+            "match_losses": 21.0,
+            "match_draws": 15.0,
+            "episode_wins": 97.0,
+            "episode_losses": 114.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-v4-pink-replay": {
+            "match_wins": 58.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 117.0,
+            "episode_losses": 0.0,
+            "episode_draws": 115.0
+        },
+        "agent-sac-v4-pink-4-step-per-league-env-defence": {
+            "match_wins": 12.0,
+            "match_losses": 13.0,
+            "match_draws": 13.0,
+            "episode_wins": 69.0,
+            "episode_losses": 71.0,
+            "episode_draws": 12.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence": {
+            "match_wins": 8.0,
+            "match_losses": 13.0,
+            "match_draws": 22.0,
+            "episode_wins": 79.0,
+            "episode_losses": 91.0,
+            "episode_draws": 2.0
+        },
+        "agent-sac-v4-pink-6-step-per-env-defence2": {
+            "match_wins": 13.0,
+            "match_losses": 6.0,
+            "match_draws": 10.0,
+            "episode_wins": 65.0,
+            "episode_losses": 50.0,
+            "episode_draws": 1.0
+        },
+        "agent-sac-big-league": {
+            "match_wins": 18.0,
+            "match_losses": 2.0,
+            "match_draws": 2.0,
+            "episode_wins": 55.0,
+            "episode_losses": 12.0,
+            "episode_draws": 21.0
+        },
+        "StrongBot": {
+            "match_wins": 12.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 47.0,
+            "episode_losses": 1.0,
+            "episode_draws": 0.0
+        },
+        "WeakBot": {
+            "match_wins": 0.0,
+            "match_losses": 0.0,
+            "match_draws": 0.0,
+            "episode_wins": 0.0,
+            "episode_losses": 0.0,
+            "episode_draws": 0.0
+        }
+    }
+}

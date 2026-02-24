@@ -5,6 +5,7 @@ from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
 from src.TDMPC.agent import TDMPCAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
+from src.TD3.if_else_bot import IfElseBot
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,6 +43,8 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
             )
             tdmpc_agent.name = agent_name
             return tdmpc_agent
+        case "IfElseBot":
+            return IfElseBot()
         case "SACLastYear":
             return SACLastYearAgent(env=HockeyEnv())
         case "WeakBot":

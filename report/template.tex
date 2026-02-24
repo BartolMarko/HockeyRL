@@ -21,7 +21,7 @@
 \pagestyle{fancy}
 \usepackage{hyperref}% should be the last package you include
 
-\newcommand{\theteam}{WayneGradientzky}
+\newcommand{\theteam}{}
 \newcommand{\team}[1]{\def\theteam{#1}}
 
 
@@ -31,7 +31,7 @@
 
 \setlength{\parindent}{0pt}
 
-\team{Rajinish Aneel Bhatia, Bartol Markovinović, Mohd Khizir Siddiqui}
+\team{WayneGradientzky: Rajinish Aneel Bhatia, Bartol Markovinović, Mohd Khizir Siddiqui}
 \title{RL-Course 2025/26: Final Project Report}
 \author{\theteam}
 
@@ -40,26 +40,7 @@
 
 \section{Introduction}\label{sec:intro}
 
-The report presents the implementation of three reinforcement learning algorithms by the \emph{WayneGradientzky} team.
-The algorithms were finally evaluated on the Hockey competition hosted by the Martius Lab.
-\texttt{Hockey} is a 2D-multi-agent, fully observable environment where two agents compete to score goals by hitting a puck into the opponent's goal.
-
-The algorithms implemented are as follows:
-\begin{itemize}
-    \item \textbf{Task-Driven Model Predictive Control (TDMPC)} by Bartol Markovinović
-    \item \textbf{Twin Delayed Deep Deterministic Policy Gradient (TD3)} \cite{fujimoto2018:TD3} by Rajinish Aneel Bhatia
-    \item \textbf{Soft Actor-Critic (SAC)} \cite{HaarnojaAbbeelLevine2018:SAC} by Mohd Khizir Siddiqui
-\end{itemize}
-
-All the implementations are available on the GitHub repository \url{https://github.com/BartolMarko/HockeyRL}.
-Each team member implemented their code individually, with credit given where due.
-The report covers the fundamentals of each algorithm, team member contributions in Section \ref{sec:method}, and the evaluation in Section \ref{sec:eval} on the Hockey environment.
-Finally, we conclude with a discussion of the results and potential future work in Section \ref{sec:conclusion}.
-
-\section{Method}\label{sec:method}
-\subsection{SAC}
-
-\subsection{Twin Delayed Deep Deterministic Policy Gradient (TD3)}
+\section{Twin Delayed Deep Deterministic Policy Gradient (TD3)}
 
 Twin Delayed Deep Deterministic Policy Gradient (TD3)~\cite{fujimoto2018:TD3} is a 
 model-free, off-policy algorithm for continuous action spaces, improving over DDPG via 
@@ -76,6 +57,7 @@ $\mathcal{L}(\phi_i) = \mathbb{E}_{(s,a,r,s')\sim\mathcal{D}}(Q_{\phi_i}(s,a)-y)
 while the actor maximizes $J(\theta) = \mathbb{E}_{s\sim\mathcal{D}} 
 Q_{\phi_1}(s,\pi_\theta(s))$ and is updated every 2 critic steps.
 
+\subsection{Method}
 \subsubsection{N-Step Returns}
 
 Instead of the standard one-step TD target, we use $n$-step returns to propagate reward 
@@ -128,12 +110,8 @@ sensitivity to the scale of inputs and gradients, which can vary
 dramatically during training. We apply LayerNorm after each linear layer in both
 actor and critic networks.
 
-\subsection{TDMPC}
+\subsection{Experiments}
 
-\section{Evaluation}\label{sec:eval}
-\subsection{SAC}
-
-\subsection{TD3}
 \subsubsection{Training in Phases (Opponent Scheduling)}
 Training proceeded in three phases. Phase 1 used only the weak opponent. Phase 2 sampled 
 weak/strong opponents with probabilities $30\%$/$70\%$. Phase 3 used a mixed pool: $20\%$ 
@@ -234,8 +212,25 @@ was excluded from the final model.
     \end{minipage}
 \end{figure}
 
+\subsubsection{RND and Pink Noise Exploration}
 
-\subsection{TDMPC}
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{td3_images/rnd_pink.png}
+        \caption{Winrate with Gaussian Noise, RND, and Pink Noise}
+        \label{fig:rnd_pink}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \small
+        We experimented with Random Network Distillation (RND) for intrinsic 
+        motivation and pink noise\cite{eberhard2023pink} for exploration. While both techniques slightly increased exploration diversity, they did not provide significant improvement in win rate 
+        or long-term performance. Consequently, they were not included in 
+        the final training configuration.
+    \end{minipage}
+\end{figure}
 
 \section{Discussions and Conclusion}\label{sec:conclusion}
 

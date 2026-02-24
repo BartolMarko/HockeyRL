@@ -1,6 +1,7 @@
 import torch
 from hockey.hockey_env import HockeyEnv
 import os
+from omegaconf import OmegaConf
 
 from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
 from src.TD3.td3 import TD3
@@ -11,6 +12,19 @@ from src import wandb_utils
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 MODEL_SAVE_FOLDER = "models"
+
+
+def fix_sac_agent_cfg(agent_name: str, agent_cfg: dict) -> dict:
+    """Patches SAC agent configuration, removes value keys."""
+    new_config_path = os.path.join(MODEL_SAVE_FOLDER, f"{agent_name}_config_fixed.yaml")
+    cfg = OmegaConf.load(agent_cfg["config_path"])
+    cfg_fixed = OmegaConf.create()
+    for key in cfg.keys():
+        cfg_fixed[key] = cfg[key]["value"]
+    cfg_fixed.explorer = OmegaConf.create(cfg_fixed.explorer)
+    OmegaConf.save(cfg_fixed, new_config_path)
+    agent_cfg["config_path"] = new_config_path
+    return agent_cfg
 
 
 def download_agent_from_wandb(
@@ -41,6 +55,7 @@ def download_agent_from_wandb(
         )
 
         model_folder = os.path.join(save_folder, agent_name)
+        agent_cfg = fix_sac_agent_cfg(agent_name, agent_cfg)
         agent_cfg["weights_folder"] = model_folder
         print(
             f"Downloaded agent: {agent_name} from artifact:",
@@ -77,9 +92,7 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
             if torch.cuda.is_available():
                 from src.TDMPC.agent import TDMPCAgent
             else:
-                raise RuntimeError(
-                    "TDMPC agent requires CUDA."
-                )
+                raise RuntimeError("TDMPC agent requires CUDA.")
             tdmpc_agent = TDMPCAgent(
                 load_dir=agent_cfg["load_dir"],
                 tdmpc=None,

@@ -30,6 +30,11 @@ agents:
     type: TD3
     wandb_run_id: 84ojxfpl
     wandb_folder: checkpoint_step_157000
+  td3_defense:
+    type: TD3
+    wandb_run_id: 8ul0lbrg
+    wandb_folder: checkpoint_step_8000
+  
   # Best TD3
   td3_bank_pref_rollout_3_mirroring_10M_136k:
     type: TD3
@@ -71,42 +76,37 @@ agents:
     type: SAC
     wandb_artifact: agent-sac-v4-pink-4-step-per
     artifact_version: v84
-    config_path: ./models/sac_config.yaml
-  agent-sac-v0-gaussian-replay-self-play-mirror:
-    type: SAC
-    wandb_artifact: agent-sac-v0-gaussian-replay-self-play-mirror
-    artifact_version: v27380
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-v4-pink-4-step-per.yaml
   agent-sac-v4-pink-4-step-per-league-env-reset:
     type: SAC
     wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
     artifact_version: v72
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-v4-pink-4-step-per-league-env-reset.yaml
   agent-sac-v4-pink-replay:
     type: SAC
     wandb_artifact: agent-sac-v4-pink-replay
     artifact_version: v12
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-v4-pink-replay.yaml
   agent-sac-v4-pink-4-step-per-league-env-defence:
     type: SAC
     wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-defence
     artifact_version: v107
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-v4-pink-4-step-per-league-env-defence.yaml
   agent-sac-v4-pink-6-step-per-env-defence:
     type: SAC
     wandb_artifact: agent-sac-v4-pink-6-step-per-env-defence
     artifact_version: v45
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-v4-pink-6-step-per-env-defence.yaml
   agent-sac-v4-pink-6-step-per-env-defence2:
     type: SAC
     wandb_artifact: agent-sac-v4-pink-6-step-per-env-defence2
     artifact_version: v47
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-v4-pink-6-step-per-env-defence2.yaml
   agent-sac-big-league:
     type: SAC
     wandb_artifact: agent-sac-big-league
     artifact_version: v82
-    config_path: ./models/sac_config.yaml
+    config_path: ./models/sac_configs/agent-sac-big-league.yaml
   
   # external agents
   StrongBot:

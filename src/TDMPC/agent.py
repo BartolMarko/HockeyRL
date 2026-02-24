@@ -23,10 +23,10 @@ class TDMPCAgent(NamedAgent):
 
         self.t0 = False
         self.tdmpc = tdmpc
-        self.step = step
         self.eval_mode = eval_mode
         if tdmpc is None:
             self.tdmpc = TDMPC(cfg=None, load_dir=load_dir)
+        self.step = step if step is not None else self.tdmpc.cfg.train_steps
 
     def on_start_game(self, game_id):
         self.t0 = True

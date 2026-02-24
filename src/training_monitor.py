@@ -4,9 +4,7 @@ from queue import Queue
 
 from src.episode import Episode, Outcome
 from src.evaluation import Heatmap
-
-TEAM_NAME = "wayne-gradientzky"
-PROJECT_NAME = "hockey-rl"
+from src import wandb_utils
 
 
 class TrainingMonitor:
@@ -14,8 +12,8 @@ class TrainingMonitor:
         self,
         run_name: str,
         config: OmegaConf,
-        project_name=PROJECT_NAME,
-        team_name=TEAM_NAME,
+        project_name=wandb_utils.PROJECT_NAME,
+        team_name=wandb_utils.TEAM_NAME,
         per_opponent_metrics_window_size: int = 20,
     ):
         """Initialize a training monitor.

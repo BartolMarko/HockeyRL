@@ -21,8 +21,12 @@ class IfElseBot(NamedAgent):
         self.attack_agent = TD3(cfg)
         self.defend_agent = TD3(cfg)
 
-        self.attack_agent.restore_state(torch.load(ATTACK_AGENT_PATH))
-        self.defend_agent.restore_state(torch.load(DEFENSE_AGENT_PATH))
+        self.attack_agent.restore_state(
+            torch.load(ATTACK_AGENT_PATH, map_location=torch.device("cpu"))
+        )
+        self.defend_agent.restore_state(
+            torch.load(DEFENSE_AGENT_PATH, map_location=torch.device("cpu"))
+        )
 
         self.done = False
         self.init_step = True

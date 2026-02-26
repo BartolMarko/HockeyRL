@@ -9,6 +9,8 @@
 \usepackage{amsfonts}       % blackboard math symbols
 \usepackage{amsmath}       % blackboard math symbols
 \usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{array}
 
 \usepackage{lipsum}
 
@@ -330,7 +332,49 @@ was excluded from the final model.
     \end{minipage}
 \end{figure}
 
+% REMOVE AT THE END
+\newpage
+
 \section{Discussions and Conclusion}\label{sec:conclusion}
+
+\subsection{Comparison of algorithms - Tournament}\label{subsec:tournament}
+
+To compare our agents, we chose all promising checkpoints of each algorithm and evaluated them in a tournament together with WeakBot and StrongBot. The number of agents in the tournament was 25 and each agent played 1500 matches, with one match consisting of 4 episodes. The tournament used the Placket-Luce model to rank the agents and matchmaking algorithm based on the Gauss-Leaderboard score, same as in the official final tournament.
+
+\begin{table}[h]
+\centering
+\caption{Comparison of the best checkpoints of each algorithm in our tournament }
+\label{tab:agent_results}
+\begin{tabular}{cp{7.5cm}rrr}
+\toprule
+\textbf{Rank} & \textbf{Agent} & \textbf{$\mu$} & \textbf{$\sigma$} & \textbf{Score} \\
+\midrule
+1 & td3\_bank\_pref\_rollout\_3\_mirroring\_10M\_177k & 38.20 & 1.65 & 33.25 \\
+2 & tdmpc2\_action\_hints\_4\_3M & 33.60 & 1.57 & 28.90 \\
+14 & agent-sac-v4-pink-6-step-per-env-defence & 26.51 & 1.55 & 21.86 \\
+23 & StrongBot & 3.94 & 2.18 & -2.60 \\
+25 & WeakBot & 0.66 & 2.21 & -5.96 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Summary of the tournament results shown in Table~\ref{tab:agent_results} shows that the best TD3 checkpoint significantly outperforms all other agents. It is followed by TDMPC with action hints. The fact that StrongBot and WeakBot are ranked 23rd and 25th respectively confirms that all three algorithms are able to consistently defeat the baseline bots. 
+
+\section{Bonus - Additional Team Agent}
+
+We attempted to additionally improve the best TD3 agent by combining it with a defensively specialized TD3 agent. The defensive agent was trained without the +10 reward for winning, instead only with -10 reward for losing, combined with the puck closeness reward. It was trained against the best TD3 checkpoints only on the improved version of the defensive environment mode where the puck is initially directed towards the agent's goal, but with a higher probability of hitting the corners of the goal. The idea was to use the defensive agent when the puck is in the opponent's half and switch to the main TD3 agent when the puck is in the agent's half. This approach was submitted to the official tournament under our team name.   
+
+\section{Appendix A: External Code and AI Coding Assistance}
+
+\begin{itemize}
+    \item \textbf{Bartol Markovinović (TD-MPC):} Used the original TD-MPC codebase from \url{https://github.com/nicklashansen/tdmpc} as starting point for the implementation. To get the code initially working on the hockey environment, completely new training script was implemented and the implementation had to be adapted to variable episode lengths, which included adapting loss calculations and replay buffer sampling. For improving the architecture, some parts of the code were adapted from the TD-MPC2 codebase \url{https://github.com/nicklashansen/tdmpc2}. The rest of the code was implemented from scratch.
+    Regarding AI usage for coding, only Github Copilot smart autocompletion was used.
+    \item \textbf{Rajinish Aneel Bhatia (TD3):}
+    
+    
+    \item \textbf{Mohd Khizir Siddiqui (SAC):}
+\end{itemize}
+
 
 \bibliographystyle{abbrv}
 \bibliography{main}

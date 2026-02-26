@@ -127,6 +127,7 @@ class PuckClosenessDefenseReward(RewardShaper):
         if info['winner'] == -1:
             v = -10
         return float(v + info['reward_closeness_to_puck'])
+    
 
 class RewardFactory:
     @staticmethod

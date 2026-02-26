@@ -5,10 +5,10 @@ sys.path.append(
 import numpy as np
 from omegaconf import OmegaConf
 import time
-import helper
 from hockey import hockey_env as h_env
-import puffer_wrapper as pfw
 import imageio
+from . import helper
+from . import puffer_wrapper as pfw
 
 
 def evaluate(cfg, agent, opponent, vec_env, logger=None, episode_index=None, episodes_per_env=None):
@@ -201,13 +201,14 @@ def main(args):
         elif name.lower() == 'weakbot':
             return h_env.BasicOpponent(weak=True)
         elif name.lower() == 'puckfollowbot':
-            from adversarial import create_puck_follow_bot
+            from .adversarial import create_puck_follow_bot
             return create_puck_follow_bot()
         elif name.startswith('sac'):
             return helper.load_agent_from_config(name, env)
         elif name == "oldsac":
-            from KaranhanS.load_model import get_agent
-            return get_agent(env)
+            from src.agent_factory import agent_factory
+            cfg = {'type': 'SACLastYear'}
+            return agent_factory('SACLastYear', cfg)
         elif name.startswith('td3'):
             from src.agent_factory import agent_factory
             cfg_path = name
@@ -215,6 +216,10 @@ def main(args):
                 cfg_path = f"{name}.yaml"
             cfg = OmegaConf.load(cfg_path)
             return agent_factory(name, cfg)
+        elif name == 'ensemble':
+            from .ensemble import Ensemble
+            cfg = OmegaConf.load('src/SAC/ensemble.yaml')
+            return Ensemble.create_agent(cfg)
         else:
             raise ValueError(f"Unknown agent name: {name}")
 
@@ -267,6 +272,8 @@ def main(args):
         total_losses += lose
         total_draws += draw
         total_games += win + lose + draw
+        if hasattr(opponent, 'show_stats'):
+            opponent.show_stats()
 
     performance = (total_wins - total_losses) / total_games
     print(f"Overall: {agent.name} wins {total_wins}, loses {total_losses}"

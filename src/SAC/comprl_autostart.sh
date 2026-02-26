@@ -14,13 +14,15 @@
 THRESHOLD_TIME_WINDOW=600
 THRESHOLD=10
 
+FILE_DIR="$(dirname "$(realpath "$0")")"
+
 # load .env file
-if [ -f .env ]; then
+if [ -f $FILE_DIR/.env ]; then
     while read -r line_i || [ -n "$line_i" ]; do
         if [[ ! "$line_i" =~ ^#.*$ && "$line_i" =~ .*=.* ]]; then
             export "$line_i"
         fi
-    done < .env
+    done < $FILE_DIR/.env
 fi
 if [[ -z "${COMPRL_SERVER_URL}" || -z "${COMPRL_SERVER_PORT}" || -z "${COMPRL_ACCESS_TOKEN}" ]]; then
     echo "Error: COMPRL_SERVER_URL, COMPRL_SERVER_PORT and COMPRL_ACCESS_TOKEN must be set as environment variables or in a .env file."
@@ -68,7 +70,7 @@ termination_times=()
 
 while true; do
     # Run the command foobar
-    python3 ./comprl_client.py "$@"
+    python3 -m src.SAC.comprl_client "$@"
 
     # Get the current timestamp
     current_time=$(date +%s)

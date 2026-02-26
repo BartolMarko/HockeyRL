@@ -19,6 +19,9 @@ import re
 from pathlib import Path
 
 
+BASE_PATH = Path("src") / "SAC"
+
+
 def extract_episode_number(folder_name):
     match = re.search(r'episode_(\d+)', folder_name)
     if match:
@@ -54,7 +57,7 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
                 best_folder = folder
 
         if best_folder:
-            local_path = Path(f"results/{experiment}/models/{best_folder}")
+            local_path = BASE_PATH / Path(f"results/{experiment}/models/{best_folder}")
             copy = True
             if os.path.exists(local_path):
                 if any(local_path.iterdir()):
@@ -69,7 +72,8 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
                 os.system(cmd)
             new_agents.add(experiment)
             best_agents[experiment] = {
-                'folder_path': f"results/{experiment}/models/{best_folder}"
+                'type': 'CustomAgent',
+                'experiment_name': experiment,
             }
         else:
             print(f"Warning: No valid model folders found for experiment {experiment} in {sac_folder}.")
@@ -79,7 +83,6 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
         result['opponents'].append({
             'type': 'CustomAgent',
             'experiment_name': agent,
-            'folder_path': best_agents[agent]['folder_path']
         })
     return result
 
@@ -87,10 +90,8 @@ def find_best_agent_in_server_folder(server, sac_folder, exp_name=None):
 def find_best_agents(exp_name='all', server='tcml1'):
     cmd = f'ssh {server} "ls ~ | grep SAC"'
     sac_folders = os.popen(cmd).read().strip().split('\n')
+    sac_folders.extend(["src1/src/SAC", "src2/src/SAC"])
     all_agents = {'opponents': []}
-    # add WeakBot and StrongBot as default opponents
-    all_agents['opponents'].append({'type': 'WeakBot'})
-    all_agents['opponents'].append({'type': 'StrongBot'})
     if exp_name == 'all':
         for sac_folder in sac_folders:
             best_agents = find_best_agent_in_server_folder(server, sac_folder)
@@ -102,10 +103,10 @@ def find_best_agents(exp_name='all', server='tcml1'):
             all_agents['opponents'].append(best_agents['opponents'])
 
     # Write the results to a YAML file
-    # with open('best_agents.yaml', 'w') as yaml_file:
-    #     yaml.dump(dict(all_agents), yaml_file)
+    with open('best_agents2.yaml', 'a') as yaml_file:
+        yaml.dump(dict(all_agents), yaml_file)
 
-    # print("Best agents information saved to best_agents.yaml")
+    print("Best agents information saved to best_agents.yaml")
 
 
 if __name__ == "__main__":

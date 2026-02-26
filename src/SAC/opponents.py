@@ -1,8 +1,8 @@
 import numpy as np
-from sampler import get_sampler_using_config
 from comprl.client.agent import Agent
 from hockey import hockey_env as h_env
-import puffer_wrapper as pfw
+from . import puffer_wrapper as pfw
+from .sampler import get_sampler_using_config
 
 
 class NamedAgent(Agent):
@@ -387,15 +387,15 @@ def get_opponent_pool(cfg, env=None) -> OpponentPool:
             else:
                 opponent = StrongBot()
         elif opp_type == 'PuckFollowBot':
-            import adversarial as adv
+            from . import adversarial as adv
             opponent = adv.create_puck_follow_bot(cfg.num_envs)
         elif opp_type == 'CustomAgent':
             experiment_name = opp_cfg.get('experiment_name')
-            from helper import load_agent_from_config
+            from .helper import load_agent_from_config
             opponent = load_agent_from_config(experiment_name, env)
         elif opp_type == 'CustomPool':
             # this adds a pool of bots which get activated after set iters
-            from selfplaymgr import create_selfplay_manager
+            from .selfplaymgr import create_selfplay_manager
             opponent = create_selfplay_manager(cfg, opp_cfg)
         else:
             raise ValueError(f"Unknown opponent type: {opp_type}")
@@ -403,7 +403,7 @@ def get_opponent_pool(cfg, env=None) -> OpponentPool:
 
     # Add Self-Play Manager if configured
     if 'self_play' in cfg:
-        from selfplaymgr import create_selfplay_manager
+        from .selfplaymgr import create_selfplay_manager
         for sp_cfg in cfg.self_play:
             pool.add_opponent(create_selfplay_manager(cfg, sp_cfg))
     return pool

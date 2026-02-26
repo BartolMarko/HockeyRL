@@ -6,6 +6,7 @@ from copy import deepcopy
 from omegaconf import OmegaConf
 from pathlib import Path
 import colorednoise
+import os
 
 from src.TDMPC import init
 from src.TDMPC.action_hints import get_action_hints
@@ -115,17 +116,6 @@ class TOLD(nn.Module):
 class TDMPC:
     """Implementation of TD-MPC learning + inference."""
 
-    predefined_actions_borders = torch.tensor(
-        [
-            [x, y, torque, shoot]
-            for x in [-1, 0, 1]
-            for y in [-1, 0, 1]
-            for torque in [-1, 0, 1]
-            for shoot in [0, 1]
-        ],
-        dtype=torch.float32,
-    ).cuda()
-
     def __init__(self, cfg, load_dir: str | Path = None):
         self.cfg = cfg
         if load_dir is not None:
@@ -158,7 +148,7 @@ class TDMPC:
         self.static_batch = None
 
         self.select_plan_function()
-        if self.cfg.compile:
+        if self.cfg.compile and os.environ.get("LOCAL", "false").lower() == "false":
             self._plan = torch.compile(self._plan, mode="default")
             self._update = torch.compile(self._update, mode="reduce-overhead")
 

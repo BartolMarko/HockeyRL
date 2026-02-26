@@ -1,26 +1,31 @@
-import numpy as np
-import time
-from agent import Agent
-import hockey.hockey_env as h_env
-import puffer_wrapper as pfw
-import evaluate_puffer as epfw
-import helper as h
-import opponents as opp
 import os
-from pathlib import Path
+import time
+
 from omegaconf import OmegaConf
-from helper import Logger, set_env_params, get_resume_episode_number, \
+from pathlib import Path
+import hockey.hockey_env as h_env
+import numpy as np
+
+from . import evaluate_puffer as epfw
+from . import helper as h
+from . import opponents as opp
+from . import puffer_wrapper as pfw
+from .agent import Agent
+from .helper import Logger, set_env_params, get_resume_episode_number, \
         set_global_config_object
-from rewards import RewardShaper
+from .rewards import RewardShaper
+
 AVG_WINDOW_SIZE = 25
 
 
-def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, episodes_per_env=None):
+def run_episode(cfg, agent, opponent, vec_env, logger=None,
+                episode_index=None, episodes_per_env=None):
     start_time = time.time()
     agent.eval()
 
     reward_shaper = RewardShaper(cfg)
-    if episodes_per_env is None: episodes_per_env = 1
+    if episodes_per_env is None:
+        episodes_per_env = 1
     num_episodes = vec_env.num_envs * episodes_per_env
 
     win_counts = np.zeros(vec_env.num_envs, dtype=int)
@@ -37,17 +42,21 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     episode_lengths = 0
 
     while done_count < num_episodes:
-        if logger is not None: logger.add_state(obs_batch)
+        if logger is not None:
+            logger.add_state(obs_batch)
 
-        agent_actions = agent.plan_batch(obs_batch, eval_mode=False, step=episode_index)
+        agent_actions = agent.plan_batch(obs_batch, eval_mode=False,
+                                         step=episode_index)
         opponent_actions = opponent.plan_batch(obs_opponent_batch)
         combined_actions = np.hstack([agent_actions, opponent_actions])
 
         # IMP: Ensure float32 and clip to valid range
         combined_actions = np.clip(combined_actions, -1, 1).astype(np.float32)
 
-        next_obs_batch, reward_batch, done_batch, _, info_batch = vec_env.step(combined_actions)
-        rewards_batch = reward_shaper.transform_batch(reward_batch, info_batch, done_batch, obs_batch)
+        next_obs_batch, reward_batch, done_batch, _, info_batch = vec_env.step(
+                combined_actions)
+        rewards_batch = reward_shaper.transform_batch(reward_batch, info_batch,
+                                                      done_batch, obs_batch)
         obs_opponent_batch = vec_env.obs_agent_two()
 
         active_envs = (episodes_done < episodes_per_env)
@@ -55,7 +64,8 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
 
         if 'final_info' in info_batch:
             for idx, infos in enumerate(info_batch['final_info']):
-                if infos is None: continue
+                if infos is None:
+                    continue
                 winner = infos.get('winner')
                 if winner == 1:
                     win_counts[idx] += 1
@@ -75,14 +85,16 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
         episode_scores += rewards_batch.sum()
         episode_lengths += np.sum(active_envs)
 
-        agent.store(obs_batch, agent_actions, rewards_batch, next_obs_batch, done_batch)
+        agent.store(obs_batch, agent_actions, rewards_batch, next_obs_batch,
+                    done_batch)
         obs_batch = next_obs_batch
 
     agent.end_episode()
     opponent.record_play_scores(
             np.sum(lose_counts), np.sum(win_counts), np.sum(draw_counts)
     )
-    total_episodes = np.sum(win_counts) + np.sum(lose_counts) + np.sum(draw_counts)
+    total_episodes = np.sum(win_counts) + np.sum(lose_counts) + np.sum(
+            draw_counts)
     episode_metrics = {}
     episode_metrics['episode_score'] = episode_scores / total_episodes
     episode_metrics['episode_length'] = episode_lengths / total_episodes
@@ -93,7 +105,6 @@ def run_episode(cfg, agent, opponent, vec_env, logger=None, episode_index=None, 
     end_time = time.time()
     episode_metrics['episode_time'] = (end_time - start_time) / total_episodes
     return episode_metrics
-
 
 def train_agent(cfg, agent, logger, start_episode=0):
     n_games = cfg.n_games
@@ -110,11 +121,14 @@ def train_agent(cfg, agent, logger, start_episode=0):
     agent.show_info()
     opponent_pool.show_info()
 
-    # skip warmup_games if buffer already has data [ e.g. when resuming, recovering ]
+    # skip warmup_games if buffer already has data
+    # [ e.g. when resuming, recovering ]
     if len(agent.memory) >= cfg.batch_size:
         print(f"[WARM] Replay buffer has {len(agent.memory)} samples."
               "Skipping warmup games.")
         cfg.warmup_games = 0
+        # force eval for first episode
+        last_eval_step = cfg.eval_freq
 
     if hasattr(cfg, 'num_envs') and cfg.num_envs > 1:
         v_env = pfw.create_vec_env(backend='multiprocessing',
@@ -194,7 +208,7 @@ def train_agent(cfg, agent, logger, start_episode=0):
             last_save_step = env_step
             print(f"[SAVE] Saved models at Episode {i} to {models_dir}.")
 
-        if env_step - last_eval_step >= cfg.eval_freq:
+        if abs(env_step - last_eval_step) >= cfg.eval_freq:
             agent.eval()
             last_eval_step = env_step
             _ = epfw.evaluate(cfg, agent, opponent, eval_env,
@@ -203,7 +217,8 @@ def train_agent(cfg, agent, logger, start_episode=0):
             print(f"[EVAL] Ep {i} vs {opponent.name}: win-rate: {win_rate:.2f}")
             print("[EVAL] Evaluating against opponent pool...")
             final_eval = epfw.puffer_evaluate_against_pool(
-                    eval_env, agent, opponent_pool, num_episodes=cfg.eval_episodes)
+                    eval_env, agent, opponent_pool,
+                    num_episodes=cfg.eval_episodes)
             logger.add_opponent_pool_stats(opponent_pool)
             win_rate, lose_rate, draw_rate = 0.0, 0.0, 0.0
             total_episodes = 0
@@ -249,7 +264,8 @@ def train_agent(cfg, agent, logger, start_episode=0):
     win_rate /= total_episodes
     lose_rate /= total_episodes
     draw_rate /= total_episodes
-    print(f"Win Rate: {win_rate:.2f}, Lose Rate: {lose_rate:.2f}, Draw Rate: {draw_rate:.2f}")
+    print(f"Win Rate: {win_rate:.2f}, Lose Rate: {lose_rate:.2f}, "
+          f"Draw Rate: {draw_rate:.2f}")
     print(f"{win_rate:.2f}, {lose_rate:.2f}, {draw_rate:.2f}")
     logger.close()
 
@@ -276,7 +292,7 @@ def set_dry_run_params(cfg):
 if __name__ == '__main__':
     try:
         start_episode = 0
-        with open('config.yaml', 'r') as f:
+        with open('src/SAC/config.yaml', 'r') as f:
             cfg = OmegaConf.load(f)
         cfg = set_dry_run_params(cfg)
         env = h_env.HockeyEnv()

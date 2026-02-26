@@ -1,5 +1,5 @@
-import gymnasium as gym
 import numpy as np
+
 
 class RewardShaper:
     """
@@ -24,6 +24,8 @@ class RewardShaper:
     # 16 time left player has puck
     # 17 time left other player has puck
     """
+    _goal_pos = np.array([-4.0, 0.0])
+
     def __init__(self, cfg):
         self.cfg = cfg
         self.is_vec_env = cfg.get('num_envs', 1) > 1
@@ -33,14 +35,17 @@ class RewardShaper:
         reward_closeness_to_puck = info['reward_closeness_to_puck']
         reward_win = reward - reward_closeness_to_puck
         if (reward_win) ** 2 < 0.01:
-            reward_win = -5 # negative reward for draw as well
+            reward_win = -5  # negative reward for draw as well
         new_reward = reward_win * self.cfg['reward_scale']
 
-        new_reward += reward_closeness_to_puck * self.cfg['closeness_to_puck_reward_weight']
+        new_reward += reward_closeness_to_puck * \
+            self.cfg['closeness_to_puck_reward_weight']
 
-        new_reward += info['reward_puck_direction'] * self.cfg['puck_direction_reward_weight']
+        new_reward += info['reward_puck_direction'] * \
+            self.cfg['puck_direction_reward_weight']
 
-        new_reward += info['reward_touch_puck'] * self.cfg['touch_puck_reward_weight']
+        new_reward += info['reward_touch_puck'] * \
+            self.cfg['touch_puck_reward_weight']
 
         if not done_or_truncated:
             new_reward -= self.cfg['reward_step_penalty']
@@ -60,20 +65,51 @@ class RewardShaper:
         reward_closeness_to_puck = info['reward_closeness_to_puck']
         new_reward -= reward_closeness_to_puck
         if new_reward ** 2 < 0.01 and (done_or_truncated):
-           new_reward -= -self.cfg['draw_penalty'] # negative reward for draw as well
+            new_reward -= -self.cfg['draw_penalty']
         puck_x_vel = obs[14]
         puck_y_vel = obs[15]
         puck_speed = (puck_x_vel ** 2 + puck_y_vel ** 2) ** 0.5
         puck_x = obs[12]
         half_court_x = 5
         if puck_speed < 0.01 and puck_x < half_court_x:
-            new_reward -= self.cfg['still_puck_penalty']  # penalty for puck being still
+            new_reward -= self.cfg['still_puck_penalty']
         return new_reward
 
     def transform_v4(self, reward, info, done_or_truncated, obs):
         # dense rewards with draw penalty, still puck_penalty
         return info['reward_closeness_to_puck'] + \
                 self.transform_v3(reward, info, done_or_truncated, obs)
+
+    def transform_v5(self, reward, info, done_or_truncated, obs):
+        # dense rewards with draw penalty, still puck_penalty, and velocity alignment reward
+        # intercept reward, closeness to defence goal reward / penalty
+        agent_pos = obs[0:2]
+        agent_vel = obs[3:5]
+        puck_pos = obs[6:8]
+        distance_to_puck = np.linalg.norm(agent_pos - puck_pos)
+        max_distance = 3
+        closeness_reward = (max_distance - distance_to_puck) / max_distance
+        reward_velocity_alignment = 0
+        if distance_to_puck > 0:
+            dir_to_puck = (puck_pos - agent_pos) / distance_to_puck
+            vel_alignment = np.dot(agent_vel, dir_to_puck)
+            vel_alignment /= (np.linalg.norm(agent_vel) + 1e-8)
+            reward_velocity_alignment = max(vel_alignment, 0)
+        reward_touch = info.get('reward_touch_puck', 0) > 0 == 1
+        w_dist = 1.0
+        w_vel = 0.5
+        w_touch = 5.0
+        custom_reward = w_dist * closeness_reward + \
+            w_vel * reward_velocity_alignment + w_touch * reward_touch
+
+        d_agent_goal = np.linalg.norm(agent_pos - self._goal_pos)
+        d_puck_goal = np.linalg.norm(puck_pos - self._goal_pos)
+        if d_agent_goal - d_puck_goal < 0:
+            reward_defense = 0.5
+        else:
+            reward_defense = -0.1
+        v3_reward = self.transform_v3(reward, info, done_or_truncated, obs)
+        return v3_reward + custom_reward + reward_defense
 
     def transform(self, reward, info, done_or_truncated, obs=None):
         if self.cfg.reward_transform == 'v1':
@@ -84,11 +120,14 @@ class RewardShaper:
             return self.transform_v3(reward, info, done_or_truncated, obs)
         elif self.cfg.reward_transform == 'v4':
             return self.transform_v4(reward, info, done_or_truncated, obs)
+        elif self.cfg.reward_transform == 'v5':
+            return self.transform_v5(reward, info, done_or_truncated, obs)
         else:
             # using v0 as default
             return reward
 
-    def transform_batch(self, reward_batch, info_batch, done_or_truncated_batch, obs_batch=None):
+    def transform_batch(self, reward_batch, info_batch,
+                        done_or_truncated_batch, obs_batch=None):
         shaped_rewards = np.zeros_like(reward_batch, dtype=np.float32)
         for i in range(len(reward_batch)):
             obs = None

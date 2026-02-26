@@ -18,6 +18,7 @@ from: ubuntu:24.04
     
     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
     pip install gymnasium[mujoco] matplotlib numpy omegaconf opencv-python wandb[media] colorednoise
+    pip install stable-baselines3[extra] pink-noise-rl
 
     # cleanup
     apt-get clean

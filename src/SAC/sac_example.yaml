@@ -1,0 +1,3 @@
+type: SAC
+config_path: src/SAC/best-sac/config.yaml
+weights_folder: src/SAC/best-sac

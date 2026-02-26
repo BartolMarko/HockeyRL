@@ -1,9 +1,12 @@
 import numpy as np
-import helper
-import opponents
-from sampler import get_sampler_by_name
+from . import helper
+from . import opponents
+from .sampler import get_sampler_by_name
 import time
 from pathlib import Path
+
+
+BASE_PATH = Path(__file__).parent
 
 
 class PoolingStrategy:
@@ -176,7 +179,8 @@ class SelfPlayManager(opponents.OpponentInPool):
                 'total_games': 0
         }
         self.sampler.add_arm(weight=-1)
-        save_path = helper.get_Nth_checkpoint(Path('results') / self.cfg.exp_name / 'models', episode_number)
+        sp = BASE_PATH / Path('results') / self.cfg.exp_name / 'models'
+        save_path = helper.get_Nth_checkpoint(sp, episode_number)
         if agent != "test-agent":
             agent.save_models(save_path)
         return True
@@ -199,7 +203,7 @@ class SelfPlayManager(opponents.OpponentInPool):
         self.current_episode = sampled_episode
         if self.agent is not None:
             nth_checkpoint_dir = helper.get_Nth_checkpoint(
-                    Path('results') / self.cfg.exp_name / 'models',
+                    BASE_PATH / Path('results') / self.cfg.exp_name / 'models',
                     sampled_episode)
             self.agent.load_models(nth_checkpoint_dir)
         else:

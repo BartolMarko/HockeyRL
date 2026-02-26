@@ -4,12 +4,12 @@ import yaml
 import signal
 import uuid
 
-from helper import create_agent_Nth_episode, get_resume_episode_number
+from .helper import create_agent_Nth_episode, get_resume_episode_number
 
 from comprl.client import Agent, launch_client
 
 
-def load_config(config_path="comprl.yaml") -> dict:
+def load_config(config_path="src/SAC/comprl.yaml") -> dict:
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     return config
@@ -40,16 +40,16 @@ class HockeyAgent(Agent):
     def _create_agent(self):
         self.experiment_name = self.cfg['experiment_name']
         self.episode_number = self.cfg.get('episode_number', -1)
-        exp_path = f"results/{self.experiment_name}/models"
+        exp_path = f"src/SAC/results/{self.experiment_name}/models"
         if self.hockey_agent is not None:
             print("Agent already exists. Overwriting it.")
         if self.episode_number == -1 or self.hockey_agent is not None:
             episode_number = get_resume_episode_number(exp_path)
+            assert episode_number != 0, f"No episode found in {exp_path}"
         else:
             episode_number = self.episode_number
         print(f"Loading the latest episode: {episode_number} for "
               f"experiment: {self.experiment_name}")
-
         self.hockey_agent = create_agent_Nth_episode(
             experiment_name=self.experiment_name, n=episode_number,
             inference_only=True)

@@ -1,0 +1,117 @@
+run_name: "final_tournament"
+num_rounds: 5000
+logging_frequency_rounds: 5
+csv_ranking_path: "tournament_ranking.csv"
+json_head_to_head_path: "head_to_head.json"
+
+agents:
+  # TD3 agents
+  td3_one_v_all_rollout_3_mirroring_15M_s699_219k:
+    type: TD3
+    wandb_run_id: pbt2goem
+    wandb_folder: checkpoint_step_219000
+  td3_one_v_all_rollout_3_mirroring_15M_s799_303k:
+    type: TD3
+    wandb_run_id: 0885a5hm
+    wandb_folder: checkpoint_step_303000
+  td3_one_v_all_rollout_3_mirroring_15M_s799_222k:
+    type: TD3
+    wandb_run_id: 0885a5hm
+    wandb_folder: checkpoint_step_222000
+  td3_sparse_self_play_rollout_3_mirroring_20M_277k:
+    type: TD3
+    wandb_run_id: b615i8cl
+    wandb_folder: checkpoint_step_277000
+  td3_sparse_self_play_rollout_3_mirroring_20M_342k:
+    type: TD3
+    wandb_run_id: b615i8cl
+    wandb_folder: checkpoint_step_342000
+  td3_self_play_rollout_5_mirroring_15M_157k:
+    type: TD3
+    wandb_run_id: 84ojxfpl
+    wandb_folder: checkpoint_step_157000
+  td3_defense:
+    type: TD3
+    wandb_run_id: 8ul0lbrg
+    wandb_folder: checkpoint_step_8000
+  
+  # Best TD3
+  td3_bank_pref_rollout_3_mirroring_10M_136k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_136000
+  td3_bank_pref_rollout_3_mirroring_10M_163k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_163000
+  td3_bank_pref_rollout_3_mirroring_10M_177k:
+    type: TD3
+    wandb_run_id: paaghbta
+    wandb_folder: checkpoint_step_177000
+
+  # TDMPC agents
+  tdmpc2_action_hints_droupout_0_01_3M:
+    type: TDMPC
+    wandb_run_id: 01j7mt7d
+    wandb_folder: checkpoint_step_3007246
+  tdmpc2_baseline_4_1M:
+    type: TDMPC
+    wandb_run_id: zzs4bi8i
+    wandb_folder: checkpoint_step_4163966
+  tdmpc2_action_hints_reuse_elites_3M:
+    type: TDMPC
+    wandb_run_id: e84538m5
+    wandb_folder: checkpoint_step_3000224
+  tdmpc2_action_hints_10M_more_right_possesssion_8_5M:
+    type: TDMPC
+    wandb_run_id: nn8be148
+    wandb_folder: checkpoint_step_8540626
+  tdmpc2_action_hints_4_3M:
+    type: TDMPC
+    wandb_run_id: hyo9jii4
+    wandb_folder: checkpoint_step_4312956
+
+  # SAC agents
+  agent-sac-v4-pink-4-step-per:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per
+    artifact_version: v84
+    config_path: ./models/sac_configs/agent-sac-v4-pink-4-step-per.yaml
+  agent-sac-v4-pink-4-step-per-league-env-reset:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-reset
+    artifact_version: v72
+    config_path: ./models/sac_configs/agent-sac-v4-pink-4-step-per-league-env-reset.yaml
+  agent-sac-v4-pink-replay:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-replay
+    artifact_version: v12
+    config_path: ./models/sac_configs/agent-sac-v4-pink-replay.yaml
+  agent-sac-v4-pink-4-step-per-league-env-defence:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-4-step-per-league-env-defence
+    artifact_version: v107
+    config_path: ./models/sac_configs/agent-sac-v4-pink-4-step-per-league-env-defence.yaml
+  agent-sac-v4-pink-6-step-per-env-defence:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-6-step-per-env-defence
+    artifact_version: v45
+    config_path: ./models/sac_configs/agent-sac-v4-pink-6-step-per-env-defence.yaml
+  agent-sac-v4-pink-6-step-per-env-defence2:
+    type: SAC
+    wandb_artifact: agent-sac-v4-pink-6-step-per-env-defence2
+    artifact_version: v47
+    config_path: ./models/sac_configs/agent-sac-v4-pink-6-step-per-env-defence2.yaml
+  agent-sac-big-league:
+    type: SAC
+    wandb_artifact: agent-sac-big-league
+    artifact_version: v82
+    config_path: ./models/sac_configs/agent-sac-big-league.yaml
+  
+  # external agents
+  StrongBot:
+    type: StrongBot
+  WeakBot:
+    type: WeakBot
+  SAC_last_year:
+    type: SACLastYear

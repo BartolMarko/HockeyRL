@@ -134,25 +134,8 @@ class PuckClosenessDefenseReward(RewardShaper):
         v = 0
         if info["winner"] == -1:
             v = -10
-        return float(v + info["reward_closeness_to_puck"])
-
-    def get_reward(self, obs, action, original_reward, info):
-        if info["winner"] == -1:
-            return -10
-        else:
-            return 0
-
-
-class PuckClosenessDefenseReward(RewardShaper):
-    def __init__(self):
-        pass
-
-    def get_reward(self, obs, action, original_reward, info):
-        v = 0
-        if info["winner"] == -1:
-            v = -10
-        return float(v + info["reward_closeness_to_puck"])
-
+        return float(v + info['reward_closeness_to_puck'])
+    
 
 class RewardFactory:
     @staticmethod

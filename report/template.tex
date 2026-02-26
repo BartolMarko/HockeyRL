@@ -484,7 +484,7 @@ Summary of the tournament results shown in Table~\ref{tab:agent_results} shows t
 
 \section{Bonus - Additional Team Agent}
 
-We attempted to additionally improve the best TD3 agent by combining it with a defensively specialized TD3 agent. The defensive agent was trained without the +10 reward for winning, instead only with -10 reward for losing, combined with the puck closeness reward. It was trained against the best TD3 checkpoints only on the improved version of the defensive environment mode where the puck is initially directed towards the agent's goal, but with a higher probability of hitting the corners of the goal. The idea was to use the defensive agent when the puck is in the opponent's half and switch to the main TD3 agent when the puck is in the agent's half. This approach was submitted to the official tournament under our team name.
+We attempted to additionally improve the best TD3 agent by combining it with a defensively specialized TD3 agent. The defensive agent was trained without the +10 reward for winning, instead only with -10 reward for losing, combined with the puck closeness reward. It was trained against the best TD3 checkpoints only on the improved version of the defensive environment mode where the puck is initially directed towards the agent's goal, but with a higher probability of hitting the corners of the goal. The idea was to use the defensive agent when the puck starts is in the opponent's half and switch to the main TD3 agent when the puck was caught by the agent. This approach was submitted to the official tournament under our team name.
 
 \appendix
 \section{Appendix: External Code and AI Coding Assistance}
@@ -492,7 +492,7 @@ We attempted to additionally improve the best TD3 agent by combining it with a d
 \begin{itemize}
     \item \textbf{Bartol Markovinović (TD-MPC):} Used the original TD-MPC codebase from \url{https://github.com/nicklashansen/tdmpc} as starting point for the implementation. To get the code initially working on the hockey environment, completely new training script was implemented and the implementation had to be adapted to variable episode lengths, which included adapting loss calculations and replay buffer sampling. For improving the architecture, some parts of the code were adapted from the TD-MPC2 codebase \url{https://github.com/nicklashansen/tdmpc2}. The rest of the code was implemented from scratch.
     Regarding AI usage for coding, only Github Copilot smart autocompletion was used.
-    \item \textbf{Rajinish Aneel Bhatia (TD3):}
+    \item \textbf{Rajinish Aneel Bhatia (TD3):} Used the OpenAI TD3 implementation from \url{https://github.com/openai/spinningup} for the base algorithms and PER, OU noise was taken from RL assignments, Pink noise was taken from \url{https://github.com/martius-lab/pink-noise-rl}, the rest was coded from scratch.
 
 
     \item \textbf{Mohd Khizir Siddiqui (SAC):}

@@ -40,6 +40,91 @@
 
 \section{Introduction}\label{sec:intro}
 
+\section{Temporal Difference Learning for Model Predictive Control (TD-MPC)}
+
+Temporal Difference Learning for Model Predictive Control (TD-MPC)~\cite{TDMPCv1} is a continuous action space model-based RL algorithm that combines learning a Task-Oriented Latent Dynamics (TOLD) model with trajectory optimization using a variation of the Model Predictive Path Integral (MPPI) method. The TOLD model consists of the following learned components:
+
+\begin{itemize}
+    \item \textbf{Latent Encoder}: $z_t = h_\theta(s_t)$ -- Encodes the state into a latent representation which captures relevant features for predicting rewards, dynamics, and value.
+    \item \textbf{Latent Dynamics}: $z_{t+1} = d_\theta(z_t, a_t)$ -- Predicts the next latent state given the current latent state and agent's action. This allows the model to roll out trajectories during planning. For hockey environment, dynamics model also implicitly predicts opponent's behavior since the opponent's features are part of the state and opponent's actions affect the next state.
+    \item \textbf{Reward}: $\hat{r_t} = r_\theta(z_t, a_t)$ -- Predicts immediate reward for taking an action in a given latent state.
+    \item \textbf{Q-Value Function}: $\hat{Q_t} = Q_\theta(z_t, a_t)$ -- Predicts the value of taking an action in a given latent state. Two Q-networks are used to mitigate overestimation bias, similar to TD3.
+    \item \textbf{Policy}: $\hat{a_t} \sim \pi_\theta(z_t)$ -- Outputs a distribution over actions given the latent state. Policy is used for training the Q-value function and for generating additional trajectories during planning.
+\end{itemize}
+
+Models $h_\theta, d_\theta, r_\theta, Q_\theta$ are jointly trained by minimizing the loss
+$
+\mathcal{J}(\theta, \Gamma) = \sum_{i=t}^{t+H} \lambda^{i-t} \mathcal{L}(\theta, \Gamma_i)
+$
+where the objective $\mathcal{L}(\theta, \Gamma_i)$ for each step $i$ consists of reward prediction error, value loss with respect to the TD target, and L2 loss between the predicted next latent state and the encoded actual next state:
+$$
+\mathcal{L}(\theta, \Gamma_i) = 
+c_1 \| r_\theta(z_i, a_i) - r_i \|_2^2 + 
+c_2 \| Q_\theta(z_i, a_i) - (r_i + \gamma Q_{\theta'}(z_{i+1}, \pi_{\theta}(z_{i+1}))) \|^2 + 
+c_3 \| d_\theta(z_i, a_i) - h_{\theta'}(s_{i+1}) \|_2^2
+$$
+
+Symbol $\Gamma$ denotes a trajectory of states, rewards and agent's actions sampled from the replay buffer, $\lambda$ is a constant that decreases importance of losses for later steps, $\gamma$ is the discount factor, and $c_1$, $c_2$, $c_3$ are constants that balance the different loss components. For the Q-value loss and the latent dynamics loss, the target networks $\theta'$ are used. Target networks are updated every 2 mini-batch updates with slow-moving averages of the main network parameters to stabilize training. For sampling mini-batches of trajectories, a prioritized experience replay buffer is used, where states are sampled with probability proportional to their TD error. The policy network is trained separately, by minimizing the temporally weighed Q-value objective of the same sampled trajectories: 
+$\mathcal{J}_\pi(\theta) = - \sum_{i=t}^{t+H} \lambda^{i-t} Q_{\theta}(z_i, \pi_\theta(z_i))$.
+
+To select an action, several iterations of modified MPPI planning are performed. In the first iteration, $N$ random action sequences of length $H$ (horizon) are sampled from the normal distribution $\mathcal{N(\mu, \sigma)}$ and rolled out using the learned dynamics model to obtain future latent states and rewards $H$ steps into the future. Additionally, the policy network is used to generate extra trajectories by rolling out the policy model and adding truncated Gaussian noise.
+Each trajectory is scored by the discounted sum of predicted rewards and the final Q-value. The top $K$ trajectories are selected and weighed by their exponentiated scores to update $\mu$ and $\sigma$ for the next iteration. After last iteration, a trajectory is sampled from the score weighed multinomial distribution of the final elite set and the first action of that trajectory is executed.
+
+\subsection{Network Architecture Changes}
+
+Initially, each part of the TOLD model was implemented as an MLP with ELU function~\cite{ELU} as the non-linearity, as described in the original paper.
+However, this resulted in training instability caused by exploding loss values. To solve this issue, network architectures described in the TD-MPC2 paper~\cite{TDMPCv2} were implemented. Activation function was changed to Mish~\cite{Mish}, Layer Normalization was added, and latent space was normalized with SimNorm~\cite{TDMPCv2}. Furthermore, the Q-value and reward networks were changed to output logits of a softmax distribution over exponentially spaced bins, as described in DreamerV3~\cite{DreamerV3}.
+
+\subsection{Adding Ideas from iCEM to the Planning Algorithm}
+
+One attempt to improve the planning part of TD-MPC was to implement ideas from the Improved Cross-Entropy Method (iCEM)~\cite{iCEM}. These included sampling actions from temporally correlated colored noise instead of independent Gaussian noise, keeping a fraction of the elite set between iterations, including the shifted elite set from previous step into the initial trajectory set of the next iteration, and executing the best action from the final elite set instead of sampling from the score weighted distribution.
+
+\subsection{Action Hints -- Guiding Planning with Custom Action Sequences}
+
+Another idea to improve planning was to replace a part of the initial random action sequences with hand-crafted action sequences that either lead agent to a future position of the puck or to one of the equidistantly spaced positions in front of the goal. These action sequences were generated with PD control, and the idea was used in conjunction with keeping a fraction of the elite set between planning iterations to potentially preserve exact trajectories that lead to the puck or the goal.
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tdmpc_images/action_hints.png}
+        \caption{Illustration of action hints}
+        \label{fig:action_hints}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tdmpc_images/mirror.png}
+        \caption{State and action mirroring}
+        \label{fig:mirror}
+    \end{minipage}
+\end{figure}
+
+\subsection{Training Setup and Self-Play}
+
+For training, only the terminal (sparse) reward of $+10$ for winning and $-10$ for losing was used. When adding an episode to the replay buffer, the mirrored episode with respect to the horizontal axis (\ref{fig:mirror}) was also added. This doubles the amount of training data and encourages model to learn symmetric strategies. 
+
+\subsubsection{Training Curriculum}
+
+Training is started against only weak and strong bots, and a frozen checkpoint of the model is added to the opponent pool every 100 000 steps, or earlier if win rate against all opponents exceeds $80\%$. Additionally, 3 TD3 agents with different behaviors are added to the opponent pool after 2 million steps. Maximum opponent pool size is set to 10, and when the pool is full, the oldest frozen checkpoint is removed. This curriculum ensures that the model is exposed to a variety of opponents of appropriate difficulty throughout training.
+To monitor generalization performance against unseen strong opponents, model was \textbf{not trained, but only evaluated} against publicly available SAC agent from last year's competition.
+
+\subsubsection{Windowed Thompson Sampling Opponent Selection}
+
+Since all opponents in the training pool are beatable due to the curriculum, selecting the most challenging opponent seems like a reasonable strategy to maximize learning signal. To do this, the number of wins, draws, and losses against each opponent in the pool was tracked in a sliding window of the last 100 games (in total, not per opponent). Then, win, loss and draw rates of the TD-MPC agent against each opponent were estimated by sampling from a Dirichlet distribution with parameters $\alpha = [\text{wins}+1, \text{losses}+1, \text{draws}+1]$. The opponent where the $loss\_rate + 0.5 * draw\_rate$ is maximized is selected. The intuition behind this is that the problem of choosing the most challenging opponent can be seen as similar to a multi-armed bandit problem, where each opponent is an arm and the reward is 1 for a loss, 0.5 for a draw, and 0 for a win. Using only last 100 episodes accounts for constant change of policy, and Dirichlet distribution was chosen because it is a conjugate prior for the multinomial distribution, which models the outcomes of games against each opponent.
+
+\subsection{Experiment Results}
+
+All experiment configurations were first run for 3 million steps (or less if unsuccessful), and the best performing experiments were prolonged to 10 million steps. In Figure \ref{fig:performance} we see that during all experiments the model quickly learns to defeat the weak bot. However, with the initial bad model architecture, the win rate against the weak bot plummets after 500 thousand steps, showing the training instability. After fixing the architecture, the model maintains a high win rate against the weak bot. The variations that used iCEM ideas do not generalize well to the validation agent, regardless of the colored noise $\beta$ parameter. The checkpoint that generalized the best seemed to be the one with action hints trained for 4.3 million steps. This was confirmed with the final tournament results.
+Additionally, a number of different smaller modifications were tested, such as training with defensive mode, using closeness to goal as an additional reward signal, and using dropout in Q-value networks, but they did not lead to any improvements.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{tdmpc_images/performance.png}
+    \caption{Evaluation win rates against Weak Bot and the SAC validation agent for different experiments}
+    \label{fig:performance}
+\end{figure}
+
 \section{Twin Delayed Deep Deterministic Policy Gradient (TD3)}
 
 Twin Delayed Deep Deterministic Policy Gradient (TD3)~\cite{fujimoto2018:TD3} is a 

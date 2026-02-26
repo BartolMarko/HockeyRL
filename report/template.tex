@@ -60,7 +60,7 @@ Temporal Difference Learning for Model Predictive Control (TD-MPC)~\cite{TDMPCv1
 
 \begin{itemize}
     \item \textbf{Latent Encoder}: $z_t = h_\theta(s_t)$ -- Encodes the state into a latent representation which captures relevant features for predicting rewards, dynamics, and value.
-    \item \textbf{Latent Dynamics}: $z_{t+1} = d_\theta(z_t, a_t)$ -- Predicts the next latent state given the current latent state and agent's action. This allows the model to roll out trajectories during planning. For hockey environment, dynamics model also implicitly predicts opponent's behavior since the opponent's features are part of the state and opponent's actions affect the next state.
+    \item \textbf{Latent Dynamics}: $z_{t+1} = d_\theta(z_t, a_t)$ -- Predicts the next latent state given the current latent state and agent's action. This allows the model to roll out trajectories during planning. For the hockey environment, dynamics model also implicitly predicts opponent's behavior since the opponent's features are part of the state and opponent's actions affect the next state.
     \item \textbf{Reward}: $\hat{r_t} = r_\theta(z_t, a_t)$ -- Predicts immediate reward for taking an action in a given latent state.
     \item \textbf{Q-Value Function}: $\hat{Q_t} = Q_\theta(z_t, a_t)$ -- Predicts the value of taking an action in a given latent state. Two Q-networks are used to mitigate overestimation bias, similar to TD3.
     \item \textbf{Policy}: $\hat{a_t} \sim \pi_\theta(z_t)$ -- Outputs a distribution over actions given the latent state. Policy is used for training the Q-value function and for generating additional trajectories during planning.
@@ -78,16 +78,16 @@ c_2 \| Q_\theta(z_i, a_i) - (r_i + \gamma Q_{\theta'}(z_{i+1}, \pi_{\theta}(z_{i
 c_3 \| d_\theta(z_i, a_i) - h_{\theta'}(s_{i+1}) \|_2^2
 $$
 
-Symbol $\Gamma$ denotes a trajectory of states, rewards and agent's actions sampled from the replay buffer, $\lambda$ is a constant that decreases importance of losses for later steps, $\gamma$ is the discount factor, and $c_1$, $c_2$, $c_3$ are constants that balance the different loss components. For the Q-value loss and the latent dynamics loss, the target networks $\theta'$ are used. Target networks are updated every 2 mini-batch updates with slow-moving averages of the main network parameters to stabilize training. For sampling mini-batches of trajectories, a prioritized experience replay buffer is used, where states are sampled with probability proportional to their TD error. The policy network is trained separately, by minimizing the temporally weighed Q-value objective of the same sampled trajectories:
+Symbol $\Gamma$ denotes a trajectory of states, rewards and agent's actions sampled from the replay buffer, $\lambda$ is a constant that decreases the importance of losses for later steps, $\gamma$ is the discount factor, and $c_1$, $c_2$, $c_3$ are constants that balance the different loss components. For the Q-value loss and the latent dynamics loss, the target networks $\theta'$ are used. Target networks are updated every 2 mini-batch updates with slow-moving averages of the main network parameters to stabilize training. For sampling mini-batches of trajectories, a prioritized experience replay buffer is used, where states are sampled with probability proportional to their TD error. The policy network is trained separately, by minimizing the temporally weighted Q-value objective of the same sampled trajectories:
 $\mathcal{J}_\pi(\theta) = - \sum_{i=t}^{t+H} \lambda^{i-t} Q_{\theta}(z_i, \pi_\theta(z_i))$.
 
 To select an action, several iterations of modified MPPI planning are performed. In the first iteration, $N$ random action sequences of length $H$ (horizon) are sampled from the normal distribution $\mathcal{N(\mu, \sigma)}$ and rolled out using the learned dynamics model to obtain future latent states and rewards $H$ steps into the future. Additionally, the policy network is used to generate extra trajectories by rolling out the policy model and adding truncated Gaussian noise.
-Each trajectory is scored by the discounted sum of predicted rewards and the final Q-value. The top $K$ trajectories are selected and weighed by their exponentiated scores to update $\mu$ and $\sigma$ for the next iteration. After last iteration, a trajectory is sampled from the score weighed multinomial distribution of the final elite set and the first action of that trajectory is executed.
+Each trajectory is scored by the discounted sum of predicted rewards and the final Q-value. The top $K$ trajectories are selected and weighted by their exponentiated scores to update $\mu$ and $\sigma$ for the next iteration. After last iteration, a trajectory is sampled from the score weighted multinomial distribution of the final elite set and the first action of that trajectory is executed.
 
 \subsection{Network Architecture Changes}
 
 Initially, each part of the TOLD model was implemented as an MLP with ELU function~\cite{ELU} as the non-linearity, as described in the original paper.
-However, this resulted in training instability caused by exploding loss values. To solve this issue, network architectures described in the TD-MPC2 paper~\cite{TDMPCv2} were implemented. Activation function was changed to Mish~\cite{Mish}, Layer Normalization was added, and latent space was normalized with SimNorm~\cite{TDMPCv2}. Furthermore, the Q-value and reward networks were changed to output logits of a softmax distribution over exponentially spaced bins, as described in DreamerV3~\cite{DreamerV3}.
+However, this resulted in training instability caused by exploding loss values. To solve this issue, network architectures described in the TD-MPC2 paper~\cite{TDMPCv2} were implemented. The activation function was changed to Mish~\cite{Mish}, Layer Normalization was added, and latent space was normalized with SimNorm~\cite{TDMPCv2}. Furthermore, the Q-value and reward networks were changed to output logits of a softmax distribution over exponentially spaced bins, as described in DreamerV3~\cite{DreamerV3}.
 
 \subsection{Adding Ideas from iCEM to the Planning Algorithm}
 
@@ -95,7 +95,7 @@ One attempt to improve the planning part of TD-MPC was to implement ideas from t
 
 \subsection{Action Hints -- Guiding Planning with Custom Action Sequences}
 
-Another idea to improve planning was to replace a part of the initial random action sequences with hand-crafted action sequences that either lead agent to a future position of the puck or to one of the equidistantly spaced positions in front of the goal. These action sequences were generated with PD control, and the idea was used in conjunction with keeping a fraction of the elite set between planning iterations to potentially preserve exact trajectories that lead to the puck or the goal.
+Another idea to improve planning was to replace a part of the initial random action sequences with hand-crafted action sequences that either lead the agent to a future position of the puck or to one of the equidistantly spaced positions in front of the goal. These action sequences were generated with PD control, and the idea was used in conjunction with keeping a fraction of the elite set between planning iterations to potentially preserve exact trajectories that lead to the puck or the goal.
 
 \begin{figure}[h]
     \centering

@@ -377,7 +377,7 @@ Furthermore, similar to the other methods from the team, every experience stored
 The training process is divided into 4 steps:
 \begin{enumerate}
 \item
-We, first, train the agent against the environment WeakBot and StrongBot and a custom PuckFollowBot, which follows puck vertically and hits it on contact. When the agent reaches a $85\%$ win-rate against these opponents, we proceed to the next stage.
+We, first, train the agent against the environment WeakBot and StrongBot. When the agent reaches a $85\%$ win-rate against these opponents, we proceed to the next stage.
 \item
 In second step, we train the agent against its past checkpoints.
 The checkpoints are collected every $150$ parallel-environment steps.
@@ -493,11 +493,13 @@ We attempted to additionally improve the best TD3 agent by combining it with a d
     \item \textbf{Bartol Markovinović (TD-MPC):} Used the original TD-MPC codebase from \url{https://github.com/nicklashansen/tdmpc} as starting point for the implementation. To get the code initially working on the hockey environment, completely new training script was implemented and the implementation had to be adapted to variable episode lengths, which included adapting loss calculations and replay buffer sampling. For improving the architecture, some parts of the code were adapted from the TD-MPC2 codebase \url{https://github.com/nicklashansen/tdmpc2}. The rest of the code was implemented from scratch.
     Regarding AI usage for coding, only Github Copilot smart autocompletion was used.
     \item \textbf{Rajinish Aneel Bhatia (TD3):} Used the OpenAI TD3 implementation from \url{https://github.com/openai/spinningup} for the base algorithms and PER, OU noise was taken from RL assignments, Pink noise was taken from \url{https://github.com/martius-lab/pink-noise-rl}, the rest was coded from scratch.
-
-
-    \item \textbf{Mohd Khizir Siddiqui (SAC):}
+    \item \textbf{Mohd Khizir Siddiqui (SAC):} The implementation is based on clean-rl continuous action space SAC implementation \url{https://www.github.com/vwxyzjn/cleanrl}.
+    Pink noise usees the pink noise generator from \url{https://github.com/martius-lab/pink-noise-rl}.
+    Most of the code is done from scratch unless, otherwise attributed in the codebase with individual components.
+    Regarding AI usage for coding, Github Copilot was used for tag autocompletion and boilerplates, but not for logic and design of the code.
 \end{itemize}
 
+Note: TD3 and SAC both use the $N$-Step Returns but were implemented independently by the respective authors, without sharing code.
 
 \bibliographystyle{abbrv}
 \bibliography{main}

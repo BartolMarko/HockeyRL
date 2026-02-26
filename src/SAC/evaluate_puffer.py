@@ -188,7 +188,7 @@ def main(args):
         args = args[1:]
     elif args[0] == '-s':
         render = False
-        num_episodes = 1
+        num_episodes = 5
         save_path = 'gameplay__{}vs{}.gif'
         args = args[1:]
     left_agent = args[0]
@@ -197,9 +197,13 @@ def main(args):
     env = h_env.HockeyEnv()
     def get_agent_by_name(name):
         if name.lower() == 'strongbot':
-            return h_env.BasicOpponent(weak=False)
+            agent = h_env.BasicOpponent(weak=False)
+            agent.name = 'StrongBot'
+            return agent
         elif name.lower() == 'weakbot':
-            return h_env.BasicOpponent(weak=True)
+            agent = h_env.BasicOpponent(weak=True)
+            agent.name = 'WeakBot'
+            return agent
         elif name.lower() == 'puckfollowbot':
             from .adversarial import create_puck_follow_bot
             return create_puck_follow_bot()

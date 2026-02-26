@@ -12,6 +12,7 @@ Agents can be instantiated using the `agent_factory` utility located in `src/age
 
 Example:
 
+```python
 from src.agent_factory import agent_factory
 
 td3 = agent_factory(
@@ -22,6 +23,7 @@ td3 = agent_factory(
         "config_path": "path/to/config"
     }
 )
+```
 
 ## Team Bot
 

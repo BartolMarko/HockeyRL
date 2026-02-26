@@ -43,178 +43,110 @@
 \section{Method}\label{sec:Method}
 \subsection{SAC}
 
-% \subsection{Twin Delayed Deep Deterministic Policy Gradient (TD3)}
-% Twin Delayed Deep Deterministic Policy Gradient (TD3)\cite{fujimoto2018:TD3} is a model-free, off-policy deep reinforcement learning algorithm used for continuous action spaces. It was proposed as an improvement over Deep Deterministic Policy Gradient (DDPG) and addresses several failure modes of DDPG, by introducing clipped double Q-learning, delayed policy update, and target policy smoothing.
-
-% TD3 achieves this by maintaining two Q-networks ($Q_{\phi_1}$ and $Q_{\phi_2}$) and using their min as the TD target:
-% \label{td_target}\[
-% y = r + \gamma \min_{i=1,2}{Q_{\phi_{i}'}(s', \tilde{a})}
-% \quad (1)
-% \]
-% where $Q_{\phi_{i}'}$ is the corresponding target network, and $\tilde{a}$ is the action given by the policy $\pi_{\theta}$ pertubed by some noise:
-% \[
-% \tilde{a} = \pi_{\theta'}(s') + \epsilon,
-% \hspace{5mm}
-% \epsilon \sim \texttt{clip}(\mathcal{N}(0, \sigma), -c, c)
-% \]
-% The critic loss is defined as the expectation of mean squared Bellman error and each critic minimizes this:
-% \[
-% \mathcal{L}(\phi_i) = \mathbb{E}_{(s, a, r, s') \sim \mathcal{D}}(Q_{\phi_i}(s, a) - y)^2
-% \]
-% And the actor aims to maximize Q-values predicted by the first critic:
-% \[
-% J(\theta) = \mathbb{E}_{s \sim \mathcal{D}} Q_{\phi_1}(s, \pi_{\theta}(s))
-% \]
-
-% Unlike DDPG, TD3 updates the actor and target networks less frequently than the critics. In our project the actor updates every 2 steps a critic steps.
-
-% \subsubsection{Custom Opponent And Bank-shot reward}
-% We noticed early on that the model did not always manage to learn ricochet (bank) shots, so in order to help it better defend against opponents that hit bank shots we introdued a hard coded opponent that always hits such bank shots.
-
-% \begin{center}
-% \begin{tikzpicture}[scale=0.5]
-
-% % ---- Coordinates ----
-% \coordinate (P) at (-3,-2);   % puck
-% \coordinate (G) at (3,-1);    % goal
-% \coordinate (T) at (0,2);     % impact point
-% \coordinate (W1) at (-4,2);
-% \coordinate (W2) at (4,2);
-% \coordinate (N) at (0,-2);    % point to define normal direction
-
-% % ---- Wall ----
-% \draw[thick] (W1) -- (W2);
-% % \node[above] at (0,2) {Wall};
-
-% % ---- Rays ----
-% \draw[thick, blue] (P) -- (T);
-% \draw[thick, red] (T) -- (G);
-
-% % ---- Normal (middle line) ----
-% \draw[dashed] (T) -- (N);
-
-% % ---- Points ----
-% \fill (P) circle (2pt) node[below left] {$P$};
-% \fill (G) circle (2pt) node[below right] {$G$};
-% \fill (T) circle (2pt) node[above] {$T$};
-
-% % ---- Angle theta (blue to normal) ----
-% \pic [
-%     draw,
-%     ->,
-%     angle radius=0.8cm,
-%     "$\theta$"
-% ] {angle = P--T--N};
-
-% % ---- Angle phi (normal to red) ----
-% \pic [
-%     draw,
-%     ->,
-%     angle radius=0.8cm,
-%     "$\phi$"
-% ] {angle = N--T--G};
-
-% \end{tikzpicture}
-% \end{center}
-
-% If we take $P$ as the position of the puck, $G$ as the position of the goal, and $T$ as the target we must shoot at to reach $G$. Then $T_y$ is known because that is the boundary and we only need to find $T_x$. We can assume that $T_x \ge P_x$ and $G_x \ge T_x$. We can also deduce that: 
-% \[
-% \tan(\theta) = \frac{|T_y - P_y|}{T_x - P_x}
-% \hspace{5mm}
-% \tan(\phi) = \frac{|T_y - G_y|}{G_x - T_x}
-% \]
-
-% If we assume frictionless walls then $\theta = \phi$ and we get that:
-% \[
-% {T_x} = \frac{|T_y - P_y|G_x +  |T_y - G_y|P_x}{{|T_y - G_y| + |T_y - P_y|}}
-% \]
-
-% This agent has rougly $94\%$ win rate against the provided weak opponent and $80\%$ win rate against the strong opponent. We also used similar logic for rewarding the agent if it shoots in this direction to make it prefer these shots.
-
-% \subsubsection{N-step returns}
-% Instead of using the TD target defined in (1) which can propagate reward signal slowly, since each update step only looks one step ahead. We use the generalized n-step returns which can significantly speed up learning:
-% \[
-% y = r(s_0) + \gamma r(s_1) + \dots + \gamma^{n-1} r(s_{n-1}) + \gamma^n q(s_n, \tilde{a})
-% \]
-
-% \subsubsection{Layer Norm}
-% Layer normalization normalizes the inputs accross the feature dimension for each sample independently. For a given input, layer norm computes:
-% \[
-% \texttt{LayerNorm(x)} = \frac{\texttt{x} - \mu}{\sigma + \epsilon}\gamma + \beta
-% \]
-% In the context of reinforcement learning, layer normalization has been shown to stablize training by reducing sensitivity to the scale of inputs and gradients. We apply layer norm after each linear layer in both actor and critic networks.
-
-% \subsubsection{Pink Noise}
-% To induce exploration we add some noise to the action chosen by the policy: $a(s(t)) = \pi_{\theta}(s_t) + \epsilon_t$. Most commonly, Gaussian noise with an annealed standard deviation is used. Eberhard et al.~\cite{eberhard2023pink} showed that pink noise or $1/f$ noise can improve exploration because pink noise is temporally correlated and produces action sequences that are not too jittery compared to white noise. In our experiments we anneal the standard deviation of the noise over training, starting with higher exploration and gradually reducing it as the policy matures.
-
 \subsection{Twin Delayed Deep Deterministic Policy Gradient (TD3)}
+Twin Delayed Deep Deterministic Policy Gradient (TD3)\cite{fujimoto2018:TD3} is a model-free, off-policy deep reinforcement learning algorithm used for continuous action spaces. It was proposed as an improvement over Deep Deterministic Policy Gradient (DDPG) and addresses several failure modes of DDPG, by introducing clipped double Q-learning, delayed policy update, and target policy smoothing.
 
-Twin Delayed Deep Deterministic Policy Gradient (TD3)~\cite{fujimoto2018:TD3} is a 
-model-free, off-policy algorithm for continuous action spaces, improving over DDPG via 
-clipped double Q-learning, delayed policy updates, and target policy smoothing. TD3 
-maintains two Q-networks ($Q_{\phi_1}$ and $Q_{\phi_2}$) and uses their minimum as the 
-TD target:
-%
-\[ y = r + \gamma \min_{i=1,2} Q_{\phi_{i}'}(s', \tilde{a}), \quad
-   \tilde{a} = \pi_{\theta'}(s') + \epsilon, \quad 
-   \epsilon \sim \texttt{clip}(\mathcal{N}(0,\sigma), -c, c) \]
-%
-Each critic minimizes the squared Bellman error 
-$\mathcal{L}(\phi_i) = \mathbb{E}_{(s,a,r,s')\sim\mathcal{D}}(Q_{\phi_i}(s,a)-y)^2$, 
-while the actor maximizes $J(\theta) = \mathbb{E}_{s\sim\mathcal{D}} 
-Q_{\phi_1}(s,\pi_\theta(s))$ and is updated every 2 critic steps.
+TD3 achieves this by maintaining two Q-networks ($Q_{\phi_1}$ and $Q_{\phi_2}$) and using their min as the TD target:
+\label{td_target}\[
+y = r + \gamma \min_{i=1,2}{Q_{\phi_{i}'}(s', \tilde{a})}
+\quad (1)
+\]
+where $Q_{\phi_{i}'}$ is the corresponding target network, and $\tilde{a}$ is the action given by the policy $\pi_{\theta}$ pertubed by some noise:
+\[
+\tilde{a} = \pi_{\theta'}(s') + \epsilon,
+\hspace{5mm}
+\epsilon \sim \texttt{clip}(\mathcal{N}(0, \sigma), -c, c)
+\]
+The critic loss is defined as the expectation of mean squared Bellman error and each critic minimizes this:
+\[
+\mathcal{L}(\phi_i) = \mathbb{E}_{(s, a, r, s') \sim \mathcal{D}}(Q_{\phi_i}(s, a) - y)^2
+\]
+And the actor aims to maximize Q-values predicted by the first critic:
+\[
+J(\theta) = \mathbb{E}_{s \sim \mathcal{D}} Q_{\phi_1}(s, \pi_{\theta}(s))
+\]
 
-\subsubsection{N-Step Returns}
+Unlike DDPG, TD3 updates the actor and target networks less frequently than the critics. In our project the actor updates every 2 steps a critic steps.
 
-Instead of the standard one-step TD target, we use $n$-step returns to propagate reward 
-signal faster:
-%
-\[ y = r(s_0) + \gamma r(s_1) + \dots + \gamma^{n-1}r(s_{n-1}) + \gamma^n q(s_n, \tilde{a}) \]
-
-\subsubsection{Custom Opponent and Bank-Shot Reward}
-
-We noticed early on that the model did not always manage to learn ricochet (bank) shots, so to help it defend against opponents that hit those shots we introdued a hard-coded opponent that always plays them.
-Given puck position $P$, goal position $G$, and $T$ as the target we must shoot at to reach $G$. Then $T_y$ is known because that is the boundary and we only need to find $T_x$. We can assume that $T_x \ge P_x$ and $G_x \ge T_x$. If we assume frictionless walls than $\theta$ = $\phi$.
+\subsubsection{Custom Opponent And Bank-shot reward}
+We noticed early on that the model did not always manage to learn ricochet (bank) shots, so in order to help it better defend against opponents that hit bank shots we introdued a hard coded opponent that always hits such bank shots.
 
 \begin{center}
 \begin{tikzpicture}[scale=0.5]
-  \coordinate (P) at (-3,-2);
-  \coordinate (G) at (3,-1);
-  \coordinate (T) at (0,2);
-  \coordinate (W1) at (-4,2);
-  \coordinate (W2) at (4,2);
-  \coordinate (N) at (0,-2);
-  \draw[thick] (W1) -- (W2);
-  \draw[thick, blue] (P) -- (T);
-  \draw[thick, red]  (T) -- (G);
-  \draw[dashed] (T) -- (N);
-  \fill (P) circle (2pt) node[below left]  {$P$};
-  \fill (G) circle (2pt) node[below right] {$G$};
-  \fill (T) circle (2pt) node[above]       {$T$};
-  \pic[draw, ->, angle radius=0.8cm, "$\theta$"]{angle = P--T--N};
-  \pic[draw, ->, angle radius=0.8cm, "$\phi$"]  {angle = N--T--G};
+
+% ---- Coordinates ----
+\coordinate (P) at (-3,-2);   % puck
+\coordinate (G) at (3,-1);    % goal
+\coordinate (T) at (0,2);     % impact point
+\coordinate (W1) at (-4,2);
+\coordinate (W2) at (4,2);
+\coordinate (N) at (0,-2);    % point to define normal direction
+
+% ---- Wall ----
+\draw[thick] (W1) -- (W2);
+% \node[above] at (0,2) {Wall};
+
+% ---- Rays ----
+\draw[thick, blue] (P) -- (T);
+\draw[thick, red] (T) -- (G);
+
+% ---- Normal (middle line) ----
+\draw[dashed] (T) -- (N);
+
+% ---- Points ----
+\fill (P) circle (2pt) node[below left] {$P$};
+\fill (G) circle (2pt) node[below right] {$G$};
+\fill (T) circle (2pt) node[above] {$T$};
+
+% ---- Angle theta (blue to normal) ----
+\pic [
+    draw,
+    ->,
+    angle radius=0.8cm,
+    "$\theta$"
+] {angle = P--T--N};
+
+% ---- Angle phi (normal to red) ----
+\pic [
+    draw,
+    ->,
+    angle radius=0.8cm,
+    "$\phi$"
+] {angle = N--T--G};
+
 \end{tikzpicture}
 \end{center}
 
-From $\tan\theta = \tan\phi$ we obtain:
-%
-\[ T_x = \frac{|T_y - P_y|\,G_x + |T_y - G_y|\,P_x}{|T_y - G_y| + |T_y - P_y|} \]
-%
-This agent achieves ${\approx}94\%$ win rate against the weak opponent and ${\approx}80\%$ 
-against the strong opponent. We also shaped the reward by calculating how aligned the agent's direction was to this direction to encourage the learning agent to prefer shots in this direction.
-
-\subsubsection{Layer Normalization}
-
-\textbf{Layer Normalization.} Layer normalization normalizes activations across the feature dimension for each sample
-independently. For a given input vector $x$, it computes:
+If we take $P$ as the position of the puck, $G$ as the position of the goal, and $T$ as the target we must shoot at to reach $G$. Then $T_y$ is known because that is the boundary and we only need to find $T_x$. We can assume that $T_x \ge P_x$ and $G_x \ge T_x$. We can also deduce that: 
 \[
-    \texttt{LayerNorm}(x) = \frac{x - \mu}{\sigma + \varepsilon}\,\gamma + \beta
+\tan(\theta) = \frac{|T_y - P_y|}{T_x - P_x}
+\hspace{5mm}
+\tan(\phi) = \frac{|T_y - G_y|}{G_x - T_x}
 \]
-where $\mu$ and $\sigma$ are the mean and standard deviation of $x$, and $\gamma$,
-$\beta$ are learnable scale and shift parameters. In the RL setting this reduces
-sensitivity to the scale of inputs and gradients, which can vary
-dramatically during training. We apply LayerNorm after each linear layer in both
-actor and critic networks.
+
+If we assume frictionless walls then $\theta = \phi$ and we get that:
+\[
+{T_x} = \frac{|T_y - P_y|G_x +  |T_y - G_y|P_x}{{|T_y - G_y| + |T_y - P_y|}}
+\]
+
+This agent has rougly $94\%$ win rate against the provided weak opponent and $80\%$ win rate against the strong opponent. We also used similar logic for rewarding the agent if it shoots in this direction to make it prefer these shots.
+
+\subsubsection{N-step returns}
+Instead of using the TD target defined in (1) which can propagate reward signal slowly, since each update step only looks one step ahead. We use the generalized n-step returns which can significantly speed up learning:
+\[
+y = r(s_0) + \gamma r(s_1) + \dots + \gamma^{n-1} r(s_{n-1}) + \gamma^n q(s_n, \tilde{a})
+\]
+
+\subsubsection{Layer Norm}
+Layer normalization normalizes the inputs accross the feature dimension for each sample independently. For a given input, layer norm computes:
+\[
+\texttt{LayerNorm(x)} = \frac{\texttt{x} - \mu}{\sigma + \epsilon}\gamma + \beta
+\]
+In the context of reinforcement learning, layer normalization has been shown to stablize training by reducing sensitivity to the scale of inputs and gradients. We apply layer norm after each linear layer in both actor and critic networks.
+
+\subsubsection{Pink Noise}
+To induce exploration we add some noise to the action chosen by the policy: $a(s(t)) = \pi_{\theta}(s_t) + \epsilon_t$. Most commonly, Gaussian noise with an annealed standard deviation is used. Eberhard et al.~\cite{eberhard2023pink} showed that pink noise or $1/f$ noise can improve exploration because pink noise is temporally correlated and produces action sequences that are not too jittery compared to white noise. In our experiments we anneal the standard deviation of the noise over training, starting with higher exploration and gradually reducing it as the policy matures.
+
 
 \subsection{TDMPC}
 
@@ -222,13 +154,8 @@ actor and critic networks.
 \subsection{SAC}
 
 \subsection{TD3}
-\subsubsection{Training in Phases (Opponent Scheduling)}
-Training proceeded in three phases. Phase 1 used only the weak opponent. Phase 2 sampled 
-weak/strong opponents with probabilities $30\%$/$70\%$. Phase 3 used a mixed pool: $20\%$ 
-weak, $20\%$ strong, $10\%$ custom bank-shot opponent, and $50\%$ from a rolling queue of 
-past checkpoints (self-play). 
-An adaptive opponent selection strategy based on Thompson sampling was evaluated as an 
-alternative but underperformed the manual schedule, as shown in Figure~\ref{fig:thompson}.
+\subsubsection{Training in phases (Opponent Scheduling)}
+The model was trained in phases: the first phase involved just training against the Weak Opponent provided with the environment, in the second phase an opponent from Weak Opponent and Strong opponent was chosen probabilistically with the corresponding probabilities being $30\%$ and $70\%$. In the final phase the opponents were again chosen probabilistically: $20\%$ for weak opponent, $20\%$ for strong opponent, $10\%$ for custom opponent and $50\%$ from a pool of past checkpoints. An adaptive technique like Thompson sampling for automatically choosing the opponents did not seem to work well as shown in the figures below:
 
 \begin{figure}[h]
     \centering
@@ -250,75 +177,61 @@ alternative but underperformed the manual schedule, as shown in Figure~\ref{fig:
 \subsubsection{Self-Play}
 Self play was the part of the third phase of training and was implemented by keeping a queue of $50$ checkpoints and adding a new checkpoint every $50000$ timesteps. This ensured that the model had enough learning experience from each of its previous checkpoints to be able to defeat them.
 
-\subsubsection{N-Step Returns, Episode Mirroring and Environment Scheduling}
-
-$N$-step returns and episode mirroring improve the speed of learning as reflected in
-(Figure~\ref{fig:n_steps_result}), compared to
-one-step TD targets. We chose 3-step for the final training. Environment scheduling ($30\%$ SHOOTING\_MODE, $70\%$ DEFENSE\_MODE)
-was introduced in Phase 3. Figure~\ref{fig:right_possesion_winrate} shows the win rate
-when the opponent starts with possession and confirms a clear improvement.
-
-\begin{figure}[h]
-    \centering
-    \begin{minipage}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{td3_images/n_step_results.png}
-        \caption{Win rate vs.\ past checkpoints ($n$-step returns)}
-        \label{fig:n_steps_result}
-    \end{minipage}
-    \hfill
-    \begin{minipage}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{td3_images/right_possesion_win_rate.png}
-        \caption{Win rate when opponent starts with possession using environment scheduler}
-        \label{fig:right_possesion_winrate}
-    \end{minipage}
-\end{figure}
-
-\subsubsection{Bank-Shot Reward}
-
-The bank-shot preference reward visibly shifts puck density toward the walls
-(Figures~\ref{fig:normal_reward},~\ref{fig:bank_pref_reward}), confirming that the
-agent learned to incorporate ricochet shots into its strategy.
-
-\begin{figure}[h]
-    \centering
-    \begin{minipage}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{td3_images/heatmapnormal.png}
-        \caption{Puck density — standard reward}
-        \label{fig:normal_reward}
-    \end{minipage}
-    \hfill
-    \begin{minipage}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{td3_images/heatmapbank_pref.png}
-        \caption{Puck density — bank-shot preference reward}
-        \label{fig:bank_pref_reward}
-    \end{minipage}
-\end{figure}
-
-\subsubsection{Layer Normalization}
-
-LayerNorm converged faster against the fixed bots (Figure~\ref{fig:bs_v_ln}) but hurt
-generalization during self-play: the agent progressively drew against all previous
-checkpoints (Figure~\ref{fig:ln_draw_rate}) rather than maintaining dominance, so it
-was excluded from the final model.
+\subsubsection{LayerNorm}
+While LayerNorm seemed to converge much earlier for strong and weak bot, it seemed to have problems generalizing when it came to self play. We observed it making draws over time with all of its previous checkpoints.
 
 \begin{figure}[h]
     \centering
     \begin{minipage}{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{td3_images/baseline_vs_ln.png}
-        \caption{Win rate: baseline vs.\ LayerNorm}
+        \caption{Winrate of baseline and layer norm}
         \label{fig:bs_v_ln}
     \end{minipage}
     \hfill
     \begin{minipage}{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{td3_images/ln_draw_rate.png}
-        \caption{Draw rate of LayerNorm vs.\ past checkpoints}
+        \caption{Draw rate of layer norm against previous checkpoints}
         \label{fig:ln_draw_rate}
+    \end{minipage}
+\end{figure}
+
+\subsubsection{Environment Scheduling}
+Environment Scheduling was introduced in the 3rd phase of training with $30\%$ in attack mode and $70\%$ in defense mode to improve the defending skills of the agent.
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{td3_images/n_step_results.png}
+        \caption{Winrate against previous checkpoints}
+        \label{fig:n_steps_result}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{td3_images/right_possesion_win_rate.png}
+        \caption{Winrate (opponent started first)}
+        \label{fig:right_possesion_winrate}
+    \end{minipage}
+\end{figure}
+
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{td3_images/heatmapnormal.png}
+        \caption{Puck Density With Normal Reward}
+        \label{fig:normal_reward}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{td3_images/heatmapbank_pref.png}
+        \caption{Puck Density With Bank Shot Preference Reward}
+        \label{fig:bank_pref_reward}
     \end{minipage}
 \end{figure}
 

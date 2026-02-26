@@ -55,7 +55,6 @@ gymnasium==0.29.1
 h11==0.16.0
 heavyball==2.2.1
 hockey @ git+https://github.com/martius-lab/hockey-env.git@47fabe8a75d7e519193bc3c417cb16929f53df8a
--e git+ssh://git@github.com/BartolMarko/HockeyRL.git@89c9fa8c5f29f298c25a11c39af6d3a059bc2fb0#egg=HockeyRL
 httpcore==1.0.9
 httpx==0.28.1
 hyperlink==21.0.0

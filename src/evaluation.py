@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import json
+import os
 import torch
 import wandb
 import matplotlib.pyplot as plt
@@ -10,9 +11,11 @@ from pathlib import Path
 
 from src.named_agent import StrongBot, WeakBot
 from src.episode import Episode, Outcome, Possession
-from src.named_agent import NamedAgent, SACLastYearAgent
+from src.named_agent import NamedAgent
 from src.agent_factory import create_td3_agent
-from src.environments import DefenseModeImprovedEnv
+from src.environments import SparseRewardHockeyEnv
+from src.SAC.helper import get_my_sac
+from src.TD3.if_else_bot import IfElseBot
 
 from src.TDMPC.agent import TDMPCAgent
 
@@ -365,6 +368,7 @@ class Evaluator:
                 ]
             }
             outcome_video_builders = {outcome: VideoBuilder() for outcome in Outcome}
+            outcome_video_builders[self.OVERALL_NAME] = VideoBuilder()
             heatmap = Heatmap(device=self.device) if save_heatmaps else None
 
             for _ in range(num_episodes):
@@ -384,6 +388,10 @@ class Evaluator:
                     and results_opponent[self.OVERALL_NAME][episode.outcome]
                     <= save_episodes_per_outcome[episode.outcome]
                 ):
+                    outcome_video_builders[self.OVERALL_NAME].add_rgb_frames(
+                        episode_video,
+                        title=f"{agent.name} vs {opponent.name}",
+                    )
                     outcome_video_builders[episode.outcome].add_rgb_frames(
                         episode_video,
                         title=f"{agent.name} vs {opponent.name}",
@@ -472,8 +480,12 @@ class Evaluator:
             json.dump(results_opponent, f, indent=4)
 
         for outcome, builder in outcome_video_builders.items():
+            if hasattr(outcome, "value"):
+                outcome_value = outcome.value
+            else:
+                outcome_value = str(outcome)
             video_filename = (
-                opponent_save_path / f"{opponent_name}_{outcome.value}_episode.mp4"
+                opponent_save_path / f"{opponent_name}_{outcome_value}_episode.mp4"
             )
             builder.save(str(video_filename))
 
@@ -523,67 +535,41 @@ class Evaluator:
 
 
 if __name__ == "__main__":
+    os.environ["LOCAL"] = "True"  # to disable tdmpc compilation
     MODELS_PATH = Path(__file__).resolve().parent.parent / "models"
-    TD3_FAKER_PATH = MODELS_PATH / "td3_benchmarks" / "td3_faker"
-    TD3_BANK_SHOT_PATH = MODELS_PATH / "td3_benchmarks" / "td3_bank_shot"
-    TD3_IMPROVED_PATH = MODELS_PATH / "td3_benchmarks" / "td3_improved"
+    TDMPC_PATH = MODELS_PATH / "tdmpc2_action_hints_4_3M" / "checkpoint_step_4312956"
 
-    TRAINING_PATH_OLD = MODELS_PATH / "tdmpc2_mirror"
-    CHECKPOINT_FINAL_OLD = TRAINING_PATH_OLD / "final"
-    # CHECKPOINT_1_85M_PATH = TRAINING_PATH / "checkpoint_1_85m"
-    # CHECKPOINT_1_5M_PATH = TRAINING_PATH / "checkpoint_1_5m"
-    # CHECKPOINT_1_1M_PATH = TRAINING_PATH / "checkpoint_1_1m"
-    # CHECKPOINT_800K_PATH = TRAINING_PATH / "checkpoint_800k"
-    # CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
-    # CHECKPOINT_400K_PATH = TRAINING_PATH / "checkpoint_400k"
-    TRAINING_PATH = MODELS_PATH / "tdmpc2_action_repeat"
-    CHECKPOINT_600K_PATH = TRAINING_PATH / "checkpoint_600k"
-    CHECKPOINT_100K_PATH = TRAINING_PATH / "checkpoint_100k"
-    env = DefenseModeImprovedEnv()
-    tdmpc_agent = TDMPCAgent(
-        CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, eval_mode=True
+    TD3_MODEL_PATH = MODELS_PATH / "td3" / "177k" / "checkpoint_step_177000_model.pt"
+    TD3_CONFIG_PATH = (
+        MODELS_PATH / "td3" / "177k" / "checkpoint_step_177000_config.yaml"
     )
-    checkpoint_100k = TDMPCAgent(
-        CHECKPOINT_100K_PATH, tdmpc=None, step=100_000, name_suffix="_self_100k"
-    )
-    tdmpc_old = TDMPCAgent(
-        CHECKPOINT_FINAL_OLD, tdmpc=None, step=2_000_000, name_suffix="_old"
-    )
-    # checkpoint_400k = TDMPCAgent(
-    #     CHECKPOINT_400K_PATH, tdmpc=None, step=400_000, name_suffix="_self_400k"
-    # )
-    # checkpoint_600k = TDMPCAgent(
-    #     CHECKPOINT_600K_PATH, tdmpc=None, step=600_000, name_suffix="_self_600k"
-    # )
+
+    SAC_PATH = MODELS_PATH / "sac-v4-pink-6-step-per-env-defence"
+    SAC_CONFIG_PATH = SAC_PATH / "config.yaml"
+    SAC_WEIGHTS_PATH = SAC_PATH / "models" / "episode_7499"
+
+    env = SparseRewardHockeyEnv()
+
+    tdmpc_agent = TDMPCAgent(TDMPC_PATH, tdmpc=None, step=None, eval_mode=True)
+
+    td3 = create_td3_agent("TD3", TD3_MODEL_PATH, TD3_CONFIG_PATH)
+
+    sac = get_my_sac(SAC_CONFIG_PATH, SAC_WEIGHTS_PATH)
+    sac.name = "SAC"
+
     strong_bot = StrongBot()
     weak_bot = WeakBot()
-    evaluator = Evaluator(device="cuda")
 
-    td3_faker = create_td3_agent(
-        name="TD3_Faker",
-        weights_path=TD3_FAKER_PATH / "model.pt",
-        config_path=TD3_FAKER_PATH / "config.yaml",
-    )
-    td3_improved = create_td3_agent(
-        name="TD3_Improved",
-        weights_path=TD3_IMPROVED_PATH / "model.pt",
-        config_path=TD3_IMPROVED_PATH / "config.yaml",
-    )
-
-    sac_last_year_agent = SACLastYearAgent(
-        env=env,
-    )
+    evaluator = Evaluator(device="cpu")
     results = evaluator.evaluate_agent_and_save_metrics(
         env=env,
         agent=tdmpc_agent,
-        opponents=[strong_bot],
-        num_episodes=30,
+        opponents=[td3],
+        num_episodes=20,
         render_mode="human",
         save_path=None,
         wandb_run=None,
-        save_heatmaps=True,
-        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 50, Outcome.DRAW: 20},
+        save_heatmaps=False,
+        save_episodes_per_outcome={Outcome.WIN: 20, Outcome.LOSS: 20, Outcome.DRAW: 20},
         train_step=100_000,
     )
-    print(results)
-    # wandb_run.finish()

@@ -73,13 +73,13 @@ $
 $
 where the objective $\mathcal{L}(\theta, \Gamma_i)$ for each step $i$ consists of reward prediction error, value loss with respect to the TD target, and L2 loss between the predicted next latent state and the encoded actual next state:
 $$
-\mathcal{L}(\theta, \Gamma_i) = 
-c_1 \| r_\theta(z_i, a_i) - r_i \|_2^2 + 
-c_2 \| Q_\theta(z_i, a_i) - (r_i + \gamma Q_{\theta'}(z_{i+1}, \pi_{\theta}(z_{i+1}))) \|^2 + 
+\mathcal{L}(\theta, \Gamma_i) =
+c_1 \| r_\theta(z_i, a_i) - r_i \|_2^2 +
+c_2 \| Q_\theta(z_i, a_i) - (r_i + \gamma Q_{\theta'}(z_{i+1}, \pi_{\theta}(z_{i+1}))) \|^2 +
 c_3 \| d_\theta(z_i, a_i) - h_{\theta'}(s_{i+1}) \|_2^2
 $$
 
-Symbol $\Gamma$ denotes a trajectory of states, rewards and agent's actions sampled from the replay buffer, $\lambda$ is a constant that decreases importance of losses for later steps, $\gamma$ is the discount factor, and $c_1$, $c_2$, $c_3$ are constants that balance the different loss components. For the Q-value loss and the latent dynamics loss, the target networks $\theta'$ are used. Target networks are updated every 2 mini-batch updates with slow-moving averages of the main network parameters to stabilize training. For sampling mini-batches of trajectories, a prioritized experience replay buffer is used, where states are sampled with probability proportional to their TD error. The policy network is trained separately, by minimizing the temporally weighed Q-value objective of the same sampled trajectories: 
+Symbol $\Gamma$ denotes a trajectory of states, rewards and agent's actions sampled from the replay buffer, $\lambda$ is a constant that decreases importance of losses for later steps, $\gamma$ is the discount factor, and $c_1$, $c_2$, $c_3$ are constants that balance the different loss components. For the Q-value loss and the latent dynamics loss, the target networks $\theta'$ are used. Target networks are updated every 2 mini-batch updates with slow-moving averages of the main network parameters to stabilize training. For sampling mini-batches of trajectories, a prioritized experience replay buffer is used, where states are sampled with probability proportional to their TD error. The policy network is trained separately, by minimizing the temporally weighed Q-value objective of the same sampled trajectories:
 $\mathcal{J}_\pi(\theta) = - \sum_{i=t}^{t+H} \lambda^{i-t} Q_{\theta}(z_i, \pi_\theta(z_i))$.
 
 To select an action, several iterations of modified MPPI planning are performed. In the first iteration, $N$ random action sequences of length $H$ (horizon) are sampled from the normal distribution $\mathcal{N(\mu, \sigma)}$ and rolled out using the learned dynamics model to obtain future latent states and rewards $H$ steps into the future. Additionally, the policy network is used to generate extra trajectories by rolling out the policy model and adding truncated Gaussian noise.
@@ -117,7 +117,7 @@ Another idea to improve planning was to replace a part of the initial random act
 
 \subsection{Training Setup and Self-Play}
 
-For training, only the terminal (sparse) reward of $+10$ for winning and $-10$ for losing was used. When adding an episode to the replay buffer, the mirrored episode with respect to the horizontal axis (\ref{fig:mirror}) was also added. This doubles the amount of training data and encourages model to learn symmetric strategies. 
+For training, only the terminal (sparse) reward of $+10$ for winning and $-10$ for losing was used. When adding an episode to the replay buffer, the mirrored episode with respect to the horizontal axis (\ref{fig:mirror}) was also added. This doubles the amount of training data and encourages model to learn symmetric strategies.
 
 \subsubsection{Training Curriculum}
 
@@ -142,32 +142,35 @@ Additionally, a number of different smaller modifications were tested, such as t
 
 \section{Twin Delayed Deep Deterministic Policy Gradient (TD3)}
 
-Twin Delayed Deep Deterministic Policy Gradient (TD3)~\cite{fujimoto2018:TD3} is a 
-model-free, off-policy algorithm for continuous action spaces, improving over DDPG via 
-clipped double Q-learning, delayed policy updates, and target policy smoothing. TD3 
-maintains two Q-networks ($Q_{\phi_1}$ and $Q_{\phi_2}$) and uses their minimum as the 
+Twin Delayed Deep Deterministic Policy Gradient (TD3)~\cite{fujimoto2018:TD3} is a
+model-free, off-policy algorithm for continuous action spaces, improving over DDPG via
+clipped double Q-learning, delayed policy updates, and target policy smoothing. TD3
+maintains two Q-networks ($Q_{\phi_1}$ and $Q_{\phi_2}$) and uses their minimum as the
 TD target:
 %
 \[ y = r + \gamma \min_{i=1,2} Q_{\phi_{i}'}(s', \tilde{a}), \quad
-   \tilde{a} = \pi_{\theta'}(s') + \epsilon, \quad 
+   \tilde{a} = \pi_{\theta'}(s') + \epsilon, \quad
    \epsilon \sim \texttt{clip}(\mathcal{N}(0,\sigma), -c, c) \]
 %
-Each critic minimizes the squared Bellman error 
-$\mathcal{L}(\phi_i) = \mathbb{E}_{(s,a,r,s')\sim\mathcal{D}}(Q_{\phi_i}(s,a)-y)^2$, 
-while the actor maximizes $J(\theta) = \mathbb{E}_{s\sim\mathcal{D}} 
+Each critic minimizes the squared Bellman error
+$\mathcal{L}(\phi_i) = \mathbb{E}_{(s,a,r,s')\sim\mathcal{D}}(Q_{\phi_i}(s,a)-y)^2$,
+while the actor maximizes $J(\theta) = \mathbb{E}_{s\sim\mathcal{D}}
 Q_{\phi_1}(s,\pi_\theta(s))$ and is updated every 2 critic steps.
 
 \subsection{Method}
 \subsubsection{N-Step Returns}
 
-Instead of the standard one-step TD target, we use $n$-step returns to propagate reward 
+Instead of the standard one-step TD target, we use $n$-step returns to propagate reward
 signal faster:
 %
-\[ y = r(s_0) + \gamma r(s_1) + \dots + \gamma^{n-1}r(s_{n-1}) + \gamma^n q(s_n, \tilde{a}) \]
+\begin{equation}
+y = r(s_0) + \gamma r(s_1) + \dots + \gamma^{n-1}r(s_{n-1}) + \gamma^n q(s_n, \tilde{a})
+\label{eq:n_step}
+\end{equation}
 
 \subsubsection{Custom Opponent and Bank-Shot Reward}
 
-We noticed early on that the model did not always manage to learn ricochet (bank) shots, so to help it defend against opponents that hit those shots we introdued a hard-coded opponent that always plays them.
+We noticed early on that the model did not always manage to learn ricochet (bank) shots, so to help it defend against opponents that hit those shots we introduced a hard-coded opponent that always plays them.
 Given puck position $P$, goal position $G$, and $T$ as the target we must shoot at to reach $G$. Then $T_y$ is known because that is the boundary and we only need to find $T_x$. We can assume that $T_x \ge P_x$ and $G_x \ge T_x$. If we assume frictionless walls than $\theta$ = $\phi$.
 
 \begin{center}
@@ -194,7 +197,7 @@ From $\tan\theta = \tan\phi$ we obtain:
 %
 \[ T_x = \frac{|T_y - P_y|\,G_x + |T_y - G_y|\,P_x}{|T_y - G_y| + |T_y - P_y|} \]
 %
-This agent achieves ${\approx}94\%$ win rate against the weak opponent and ${\approx}80\%$ 
+This agent achieves ${\approx}94\%$ win rate against the weak opponent and ${\approx}80\%$
 against the strong opponent. We also shaped the reward by calculating how aligned the agent's direction was to this direction to encourage the learning agent to prefer shots in this direction.
 
 \subsubsection{Layer Normalization}
@@ -213,11 +216,11 @@ actor and critic networks.
 \subsection{Experiments}
 
 \subsubsection{Training in Phases (Opponent Scheduling)}
-Training proceeded in three phases. Phase 1 used only the weak opponent. Phase 2 sampled 
-weak/strong opponents with probabilities $30\%$/$70\%$. Phase 3 used a mixed pool: $20\%$ 
-weak, $20\%$ strong, $10\%$ custom bank-shot opponent, and $50\%$ from a rolling queue of 
-past checkpoints (self-play). 
-An adaptive opponent selection strategy based on Thompson sampling was evaluated as an 
+Training proceeded in three phases. Phase 1 used only the weak opponent. Phase 2 sampled
+weak/strong opponents with probabilities $30\%$/$70\%$. Phase 3 used a mixed pool: $20\%$
+weak, $20\%$ strong, $10\%$ custom bank-shot opponent, and $50\%$ from a rolling queue of
+past checkpoints (self-play).
+An adaptive opponent selection strategy based on Thompson sampling was evaluated as an
 alternative but underperformed the manual schedule, as shown in Figure~\ref{fig:thompson}.
 
 \begin{figure}[h]
@@ -312,25 +315,148 @@ was excluded from the final model.
     \end{minipage}
 \end{figure}
 
-\subsubsection{RND and Pink Noise Exploration}
+% \subsubsection{RND and Pink Noise Exploration}
+% \begin{figure}[h]
+%     \centering
+%     \begin{minipage}{0.48\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{td3_images/rnd_pink.png}
+%         \caption{Winrate with Gaussian Noise, RND, and Pink Noise}
+%         \label{fig:rnd_pink}
+%     \end{minipage}
+%     \hfill
+%     \begin{minipage}{0.48\textwidth}
+%         \small
+%         We experimented with Random Network Distillation (RND) for intrinsic
+%         motivation and pink noise for exploration. While both techniques slightly increased exploration diversity, they did not provide significant improvement in win rate
+%         or long-term performance. Consequently, they were not included in
+%         the final training configuration.
+%     \end{minipage}
+% \end{figure}
+\section{Soft-Actor Critic (SAC)}
+
+Soft-Actor Critic (SAC) \cite{HaarnojaAbbeelLevine2018:SAC} is an off-policy, model-free algorithm and forms a bridge between stochastic policy optimization and DDPG-style approaches.
+It incorporates an entropy term in the objective to encourage exploration as a trade-off against reward maximization.
+The two Q-functions are trained with the following target value:
+\begin{equation}
+    y = r + \gamma \left( \min_{i=1,2} Q_{\phi_i'}(s', a') - \alpha \log \pi_{\theta'}(a'|s') \right), \quad
+    a' \sim \pi_\theta(\cdot|s')
+\end{equation}
+Similar to TD3, the critic is updated by following squared Bellman error:
+\begin{equation}
+\mathcal{L}(\phi_i) = \mathbb{E}_{(s,a,r,s')\sim\mathcal{D}}(Q_{\phi_i}(s,a)-y)^2
+\end{equation}
+The actor is updated to maximize the expected Q-value plus the entropy term:
+\begin{equation}
+    J(\theta) = \mathbb{E}_{s\sim\mathcal{D}, a\sim\pi_\theta(\cdot|s)} \left[ \alpha \log \pi_\theta(a|s) - \min_{i=1,2}
+    Q_{\phi_i}(s,a) \right]
+\end{equation}
+Later, the authors of \cite{haarnoja2018sacapps} propose an automatic entropy coefficient tuning method.
+The temperature $\alpha$ is optimized to match a target entropy $\mathcal{H}_t$ by minimizing the following loss:
+\begin{equation}
+    \mathcal{L}(\alpha) = \mathbb{E}_{a\sim\pi_\theta(\cdot|s)} \left[ -\alpha \log \pi_\theta(a|s) - \alpha \mathcal{H}_t \right]
+\end{equation}
+We use $\mathcal{H}_t = -\text{dim}(\mathcal{A}) = -4$ as the target entropy, where $\text{dim}(\mathcal{A})$ is the dimensionality of the action space.
+
+\subsection{Method}
+
+\subsubsection{Parallelized Environment Simulation}
+
+To speed up data collection, we used 16 environments in parallel when collecting experience in replay buffer.
+Each environment is reset with different seed and starting side to ensure diversity of experience.
+This improves sample efficiency and allows the agent to learn from wider range of states and actions.
+
+\subsection{N-Step Prioritized Experience Replay with Episode Mirroring}
+
+    To introduce far-sightedness into the learning process, we implemented $n$-step returns in the TD target, which allows the agent to propagate reward signals more quickly through the state space.
+We also use a prioritized experience replay \cite{SchaulPER2016} buffer which samples transitions based on their TD-error magnitude, giving more importance to new and informative experiences.
+The combination of $n$-step returns and prioritized replay helps the agent learn more efficiently by focusing on transitions that have a greater impact on learning.
+Furthermore, similar to the other methods from the team, every experience stored in the replay also creates a mirrored experience by flipping the required state and action components.
+
+\subsection{Self-Play and League Training}
+
+The training process is divided into 4 steps:
+\begin{enumerate}
+\item
+We, first, train the agent against the environment WeakBot and StrongBot and a custom PuckFollowBot, which follows puck vertically and hits it on contact. When the agent reaches a $85\%$ win-rate against these opponents, we proceed to the next stage.
+\item
+In second step, we train the agent against its past checkpoints.
+The checkpoints are collected every $150$ parallel-environment steps.
+The self-play pool is used to sample opponent with a probability $p=0.7$ and the remaining $p=0.3$ is assigned to uniformly sample from the fixed opponents.
+When sampling from the self-play pool, we use a Prioritized Self-Play Sampler \cite{vinyals2019grandmaster} which samples opponent based on modified win-rate, giving more importance to competitive opponents.
+\item
+    Next, we train the agent against the fixed opponents of first step along with best checkpoints from different previous experiments. One can find more details in the repository \cite{bartolGithubRepo}.
+\item
+The last step of training is to play in self-play mode again.
+\end{enumerate}
+
+\subsection{Experiments}
+
+\subsubsection{Replay Buffer}
+
+We use $1.5M$-sized replay buffer and PER buffer to evaluate the effect of sampling probability.
+In Figure \ref{fig:sac-per-replay}, we can see that the agent sampling with PER buffer (orange) learns slower but has a more stable curve and achieves higher win-rate against fixed opponents compared to the agent trained with uniform sampling (green).
 
 \begin{figure}[h]
     \centering
     \begin{minipage}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{td3_images/rnd_pink.png}
-        \caption{Winrate with Gaussian Noise, RND, and Pink Noise}
-        \label{fig:rnd_pink}
+        \begin{center}
+            \includegraphics[width=\textwidth]{sac_images/pfsp-self-play.png}
+        \end{center}
+        \caption{Prioritized Self-Play Sampler motivates learning from competitive opponents, and their win-rates reduce in effect. Note: the win-rate of opponent is lower when the agent win-rate is high.}
+        \label{fig:sac-pfsp}
     \end{minipage}
     \hfill
     \begin{minipage}{0.48\textwidth}
-        \small
-        We experimented with Random Network Distillation (RND) for intrinsic 
-        motivation and pink noise\cite{eberhard2023pink} for exploration. While both techniques slightly increased exploration diversity, they did not provide significant improvement in win rate 
-        or long-term performance. Consequently, they were not included in 
-        the final training configuration.
+        \centering
+        \includegraphics[width=\textwidth]{sac_images/buffer.png}
+        \caption{Win rates after of fixed opponents when training agents with different buffer types. Note: A lower opponent win-rate is higher win-rate for the agent.}
+        \label{fig:sac-per-replay}
     \end{minipage}
 \end{figure}
+
+
+
+\subsubsection{Self-Play and League Training}
+
+We can see the effect of self-play with Prioritized Self-Play Sampler in Figure \ref{fig:sac-pfsp}, where the win-rate of the sampled opponents quickly reduces, indicating that the agent is learning strategies and not outright defeated.
+Both, self-play and league training changes where the agent receives the puck and in what direction is it hit.
+After defeating the fixed opponents, the agent is able to hit the puck with hotspots in both the walls and (unfortunately) dead areas such as the center line (Figure \ref{fig:sac-pre-self-play}).
+After training the agent with self-play and league training, the puck heatmap shows the agent has perfected the bank-shot and also taken a preference of bottom wall (Figure \ref{fig:sac-post-self-play}).
+This mirrors the TD3's bank-shots \ref{fig:bank_pref_reward} without using such hand-crafted reward.
+Such behavior emphasizes the importance of entropy-regularized exploration for diverse and goal-focused tactics in the environment.
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \begin{center}
+            \includegraphics[width=\textwidth]{sac_images/puck-before-self-play.png}
+        \end{center}
+        \caption{Heatmap of puck positions after training against fixed opponents.}
+        \label{fig:sac-pre-self-play}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{sac_images/puck-after-all.png}
+        \caption{Heatmap of puck positions after 4 types of training.}
+        \label{fig:sac-post-self-play}
+    \end{minipage}
+\end{figure}
+
+
+\subsubsection{Failed Experiments}
+
+The above experiments yielded the best results, but we also tried a few more ideas which didn't work out, such as:
+\begin{enumerate}
+    \item \textbf{Munchausen RL} \cite{vieillard2020munchausenreinforcementlearning} - This method adds a scaled log-policy to the immediate reward to favor decisive policies with larger gaps.
+    However, in our experiments, it constantly failed to generalize and led to worse performance.
+    \item \textbf{Exploration} - We experimented with different exploration strategies, namely Ornstein-Uhlenbeck noise, Random-Network Distillation \cite{burda2018explorationrandomnetworkdistillation}, Gaussian Noise, Uniform Noise, and Pink Noise \cite{eberhard2023pink}.
+    Most of the strategies conflicted with the entropy term in the SAC objective, and did not lead to improvements.
+    We settled on using Pink Noise, which is temporally correlated and encourages exploration of action sequences.
+    It enables $\sim70\%$ more states for us compared to the Gaussian noise.
+\end{enumerate}
+These experiment results are omitted for brevity, but can be found on the wandb project and GitHub repository \cite{bartolGithubRepo}.
 
 \section{Discussions and Conclusion}\label{sec:conclusion}
 

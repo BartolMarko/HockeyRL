@@ -10,6 +10,9 @@ from src.named_agent import NamedAgent
 ATTACK_AGENT_PATH = "./models/td3/177k/checkpoint_step_177000_model.pt"
 DEFENSE_AGENT_PATH = "./models/td3/defender/checkpoint_step_8000_model.pt"
 CONFIG_PATH = "./models/td3/defender/checkpoint_step_8000_config.yaml"
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+## THIS WAS USED AS THE TEAM BOT
 class IfElseBot(NamedAgent):
     def __init__(self):
         super().__init__("IfElseBot")
@@ -20,13 +23,15 @@ class IfElseBot(NamedAgent):
         self.attack_agent = TD3(cfg)
         self.defend_agent = TD3(cfg)
         
-        self.attack_agent.restore_state(torch.load(ATTACK_AGENT_PATH))
-        self.defend_agent.restore_state(torch.load(DEFENSE_AGENT_PATH))
+        self.attack_agent.restore_state(torch.load(ATTACK_AGENT_PATH, map_location=device))
+        self.defend_agent.restore_state(torch.load(DEFENSE_AGENT_PATH, map_location=device))
 
         self.done = False
         self.init_step = True
 
     def get_step(self, obs):
+        # if puck starts in opp half, use defense agent until we have the puck
+        # otherwise switch to attack agent
         if self._is_round_start(obs):
             self.done = False
             self.init_step = True

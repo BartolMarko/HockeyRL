@@ -33,12 +33,15 @@ jobs:
                 texlive-fonts-recommended \
                 texlive-latex-base \
                 texlive-latex-extra \
+                texlive-bibtex-extra \
+                biber \
                 texlive-latex-recommended
 
     - name: Generate pdfs
       run: |
             cd ${{ github.workspace }}/report
-            pdflatex template.tex
+            latexmk -pdf template.tex
+            latexmk -c
 
     - name: Commit and push PDFs
       run: |

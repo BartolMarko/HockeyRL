@@ -32,51 +32,32 @@ class RandomAgent(Agent):
         )
 
 
-class HockeyAgent(Agent):
-    """A hockey agent that can be weak or strong."""
+AGENT_PATH_1  = "./models/td3/136k/checkpoint_step_136000_model.pt"
+CONFIG_PATH_1 = "./models/td3/136k/checkpoint_step_136000_config.yaml"
 
-    def __init__(self, weak: bool) -> None:
-        super().__init__()
-
-        self.hockey_agent = h_env.BasicOpponent(weak=weak)
-
-    def get_step(self, observation: list[float]) -> list[float]:
-        # NOTE: If your agent is using discrete actions (0-7), you can use
-        # HockeyEnv.discrete_to_continous_action to convert the action:
-        #
-        # from hockey.hockey_env import HockeyEnv
-        # env = HockeyEnv()
-        # continuous_action = env.discrete_to_continous_action(discrete_action)
-
-        action = self.hockey_agent.act(observation).tolist()
-        return action
-
-    def on_start_game(self, game_id) -> None:
-        game_id = uuid.UUID(int=int.from_bytes(game_id))
-        print(f"Game started (id: {game_id})")
-
-    def on_end_game(self, result: bool, stats: list[float]) -> None:
-        text_result = "won" if result else "lost"
-        print(
-            f"Game ended: {text_result} with my score: "
-            f"{stats[0]} against the opponent with score: {stats[1]}"
-        )
-
-
-AGENT_PATH  = "../results5/td3_HockeyEnv_72000-s699.pth"
-CONFIG_PATH = "./config.yaml"
+AGENT_PATH_2 = "./models/td3/177k/checkpoint_step_177000_model.pt"
+CONFIG_PATH_2 = "./models/td3/177k/checkpoint_step_177000_config.yaml"
 class TD3Agent(Agent):
     def __init__(self):
         super().__init__()
         env = h_env.HockeyEnv()
-        obs_space = env.observation_space
-        action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
-        cfg = Config(CONFIG_PATH)
-        self.model = TD3(obs_space, action_space, cfg['td3'])
-        self.model.restore_state(torch.load(AGENT_PATH))
+        cfg1 = Config(CONFIG_PATH_1)
+        cfg2 = Config(CONFIG_PATH_2)
+
+        TD3.enhance_cfg(cfg1, env)
+        TD3.enhance_cfg(cfg2, env)
+
+        model1 = TD3(cfg1)
+        model1.restore_state(torch.load(AGENT_PATH_1))
+
+        model2 = TD3(cfg2)
+        model2.restore_state(torch.load(AGENT_PATH_2))
+
+        self.models = [model1, model2]
+        self.current_agent = 0
     
     def get_step(self, observation: list[float]) -> list[float]:
-        action = self.model.act(observation).tolist()
+        action = self.models[self.current_agent].act(observation).tolist()
         return action
 
     def on_start_game(self, game_id) -> None:
@@ -90,41 +71,13 @@ class TD3Agent(Agent):
             f"{stats[0]} against the opponent with score: {stats[1]}"
         )
 
+        lost = not result
+        if (lost and stats[0] != stats[1]):
+            self.current_agent = (self.current_agent + 1) % 2
+            print("Switched to", self.current_agent)
 
-# Function to initialize the agent.  This function is used with `launch_client` below,
-# to lauch the client and connect to the server.
+
 def initialize_agent(agent_args: list[str]) -> Agent:
-    # Use argparse to parse the arguments given in `agent_args`.
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #     '--path'
-    # )
-    # parser.add_argument(
-    #     '--config'
-    # )
-    # parser.add_argument(
-    #     "--agent",
-    #     type=str,
-    #     choices=["weak", "strong", "random"],
-    #     default="weak",
-    #     help="Which agent to use.",
-    # )
-    # args = parser.parse_args(agent_args)
-
-
-    # # Initialize the agent based on the arguments.
-    # agent: Agent
-    # if args.agent == "weak":
-    #     agent = HockeyAgent(weak=True)
-    # elif args.agent == "strong":
-    #     agent = HockeyAgent(weak=False)
-    # elif args.agent == "random":
-    #     agent = RandomAgent()
-    # else:
-    #     raise ValueError(f"Unknown agent: {args.agent}")
-
-
-    # And finally return the agent.
     agent = TD3Agent()
     return agent
 

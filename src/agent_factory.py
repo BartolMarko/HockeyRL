@@ -6,6 +6,7 @@ from omegaconf import OmegaConf
 from src.named_agent import NamedAgent, WeakBot, StrongBot, SACLastYearAgent
 from src.TD3.td3 import TD3
 from src.TD3.config_reader import Config
+from src.TD3.if_else_bot import IfElseBot
 from src.SAC.helper import get_my_sac
 from src import wandb_utils
 
@@ -102,6 +103,8 @@ def agent_factory(agent_name: str, agent_cfg: dict) -> NamedAgent:
             )
             tdmpc_agent.name = agent_name
             return tdmpc_agent
+        case "IfElseBot":
+            return IfElseBot()
         case "SAC":
             return get_my_sac(
                 cfg_path=agent_cfg["config_path"], w_folder=agent_cfg["weights_folder"]

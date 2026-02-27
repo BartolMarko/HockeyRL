@@ -1,0 +1,74 @@
+dry_run: false
+n_actions: 4
+opponent_pool:
+  type: weighted
+opponents:
+- type: StrongBot
+  priority: 0.05
+- type: WeakBot
+  priority: 0.05
+- type: PuckFollowBot
+  priority: 0.1
+- type: CustomAgent
+  experiment_name: sac-v4-pink-4-step-per
+  priority: 0.1
+- type: CustomAgent
+  experiment_name: sac-v0-gaussian-replay-self-play-mirror
+  priority: 0.2
+- type: CustomAgent
+  experiment_name: sac-v4-pink-replay
+  priority: 0.1
+- type: CustomAgent
+  experiment_name: sac-v4-pink-4-step-per-league-env-reset
+  priority: 0.2
+self_play:
+- name: SelfPlayMgr
+  priority: 0.3
+  max_pool_size: 20
+  activation_type: botwin
+  activation_epsilon: 0.5
+  pooling:
+  - type: episode
+    freq: 300
+  sampler:
+    name: modified_delta_uniform
+    delta: 0.5
+num_envs: 16
+reward_transform: v4
+still_puck_penalty: 0.005
+draw_penalty: 6
+buffer_type: n-step-per
+buffer_max_size: 1000000
+upside_down: true
+n_step_buffer_n: 4
+n_games: 7500
+warmup_games: 300
+learn_steps_per_episode: 1
+batch_size: 1024
+lr_actor: 0.0004
+lr_critic: 0.0003
+gamma: 0.99
+tau: 0.005
+automatic_entropy_tuning: true
+lr_alpha: 0.00025
+target_update_freq: 1
+explorer:
+  type: pink
+use_munchausen: false
+load_checkpoint: sac-v4-pink-4-step-per-shaky
+load_checkpoint_episode: -1
+load_checkpoint_memory: false
+algorithm: sac
+hidden_size: 512
+eval_freq: 250
+eval_episodes: 32
+save_model: true
+save_model_freq: 300
+use_wandb: true
+wandb_project: hockey-rl
+exp_name: sac-v4-pink-4-step-per-shaky-league2
+resume: false
+save_video: true
+log_gradients: true
+input_dims:
+- 18

@@ -1,0 +1,61 @@
+dry_run: false
+n_actions: 4
+opponent_pool:
+  type: weighted
+opponents:
+- type: StrongBot
+  priority: 0.65
+- type: WeakBot
+  priority: 0.35
+self_play:
+- name: SelfPlayMgr
+  priority: 0.7
+  max_pool_size: 100
+  activation_type: botwin
+  activation_epsilon: 1.0
+  pooling:
+  - type: episode
+    freq: 10
+  sampler:
+    name: pfsp
+    pfsp_p: 0.5
+num_envs: 16
+reward_transform: v0
+reward_scale: 2.1
+closeness_to_puck_reward_weight: 1.2
+puck_direction_reward_weight: 1.2
+touch_puck_reward_weight: 1.2
+reward_step_penalty: 0.02
+draw_penalty: 5
+still_puck_penalty: 0.25
+buffer_type: replay
+buffer_max_size: 1000000
+n_games: 75000
+warmup_games: 200
+learn_steps_per_episode: 1
+batch_size: 1024
+lr_actor: 0.0004
+lr_critic: 0.0003
+gamma: 0.99
+tau: 0.005
+automatic_entropy_tuning: true
+lr_alpha: 0.0005
+target_update_freq: 1
+explorer:
+  type: gaussian
+  mu: 0.5
+  std_dev: 0.85
+algorithm: sac
+hidden_size: 512
+eval_freq: 200
+eval_episodes: 32
+save_model: true
+save_model_freq: 400
+use_wandb: true
+wandb_project: hockey-rl
+exp_name: sac-v0-gaussian-replay-self-play
+resume: false
+save_video: true
+log_gradients: true
+input_dims:
+- 18

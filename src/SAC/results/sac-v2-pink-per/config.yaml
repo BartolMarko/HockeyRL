@@ -1,0 +1,55 @@
+dry_run: false
+n_actions: 4
+opponent_pool:
+  type: weighted
+opponents:
+- type: StrongBot
+  priority: 0.65
+- type: WeakBot
+  priority: 0.35
+self_play:
+- name: SelfPlayMgr
+  priority: 0.7
+  max_pool_size: 20
+  activation_type: botwin
+  activation_epsilon: 0.9
+  pooling:
+  - type: episode
+    freq: 80
+  sampler:
+    name: pfsp
+    pfsp_p: 0.5
+num_envs: 16
+reward_transform: v2
+still_puck_penalty: 0.1
+draw_penalty: 3
+buffer_type: per
+buffer_max_size: 1500000
+upside_down: true
+n_games: 7500
+warmup_games: 300
+learn_steps_per_episode: 1
+batch_size: 1024
+lr_actor: 0.0004
+lr_critic: 0.0003
+gamma: 0.99
+tau: 0.005
+automatic_entropy_tuning: true
+lr_alpha: 0.00025
+target_update_freq: 1
+explorer:
+  type: pink
+algorithm: sac
+hidden_size: 512
+eval_freq: 239
+eval_episodes: 32
+save_model: true
+save_model_freq: 400
+use_wandb: true
+wandb_project: hockey-rl
+exp_name: sac-v2-pink-per
+resume: false
+save_video: true
+log_gradients: true
+input_dims:
+- 18

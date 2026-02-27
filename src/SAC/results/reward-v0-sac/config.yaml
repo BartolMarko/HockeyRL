@@ -1,0 +1,51 @@
+dry_run: False
+
+# Environment
+n_actions: 4
+weak_opponent: True
+# rewards
+reward_transform: "v0"
+# rewards: v1
+reward_scale: 2.1
+closeness_to_puck_reward_weight: 1.2
+puck_direction_reward_weight: 1.2
+touch_puck_reward_weight: 1.2
+reward_step_penalty: 0.02
+
+# Buffers
+buffer_max_size: 1000000
+
+# Training
+n_games: 50000
+warmup_games: 50
+learn_steps_per_episode: 1
+batch_size: 1024
+lr_actor: 0.0003
+lr_critic: 0.0003
+gamma: 0.99
+tau: 0.005
+# alpha
+automatic_entropy_tuning: True
+lr_alpha: 0.001
+# critic target network
+target_update_freq: 1
+
+# Network
+algorithm: "sac"
+hidden_size: 256
+
+# Evaluation
+eval_freq: 100
+eval_episodes: 20
+
+# Model saving
+save_model: True
+save_model_freq: 300
+
+# Logging
+use_wandb: True
+wandb_project: "hockey-rl"
+exp_name: "reward-v0-sac"
+resume: True
+save_video: True
+log_gradients: False

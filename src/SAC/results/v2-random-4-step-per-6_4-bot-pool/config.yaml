@@ -1,0 +1,45 @@
+dry_run: false
+n_actions: 4
+opponents:
+- type: StrongBot
+  priority: 0.6
+- type: WeakBot
+  priority: 0.4
+reward_transform: v2
+reward_scale: 2.1
+closeness_to_puck_reward_weight: 1.2
+puck_direction_reward_weight: 1.2
+touch_puck_reward_weight: 1.2
+reward_step_penalty: 0.02
+draw_penalty: 5
+still_puck_penalty: 0.25
+buffer_type: n-step-per
+buffer_max_size: 1000000
+n_step_buffer_n: 4
+n_games: 50000
+warmup_games: 200
+learn_steps_per_episode: 1
+batch_size: 2048
+lr_actor: 0.0004
+lr_critic: 0.0003
+gamma: 0.99
+tau: 0.005
+automatic_entropy_tuning: true
+lr_alpha: 0.0005
+target_update_freq: 1
+explorer:
+  type: random
+algorithm: sac
+hidden_size: 1024
+eval_freq: 400
+eval_episodes: 20
+save_model: true
+save_model_freq: 400
+use_wandb: true
+wandb_project: hockey-rl
+exp_name: v2-random-4-step-per-6_4-bot-pool
+resume: false
+save_video: true
+log_gradients: false
+input_dims:
+- 18

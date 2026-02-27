@@ -1,0 +1,38 @@
+dry_run: false
+n_actions: 4
+opponents:
+- type: StrongBot
+reward_transform: v0
+reward_scale: 2.1
+closeness_to_puck_reward_weight: 1.2
+puck_direction_reward_weight: 1.2
+touch_puck_reward_weight: 1.2
+reward_step_penalty: 0.02
+buffer_type: per
+buffer_max_size: 1000000
+n_games: 50000
+warmup_games: 100
+learn_steps_per_episode: 1
+batch_size: 1024
+lr_actor: 0.0004
+lr_critic: 0.0003
+gamma: 0.99
+tau: 0.005
+automatic_entropy_tuning: true
+alpha: 0.026848018169403076
+lr_alpha: 0.001
+target_update_freq: 1
+algorithm: sac
+hidden_size: 256
+eval_freq: 150
+eval_episodes: 20
+save_model: true
+save_model_freq: 400
+use_wandb: true
+wandb_project: hockey-rl
+exp_name: reward-v0-per-strong-bot
+resume: false
+save_video: true
+log_gradients: false
+input_dims:
+- 18

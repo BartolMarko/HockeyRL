@@ -37,8 +37,7 @@ tdmpc = agent_factory(
     "tdmpc",
     {
         "type": "TDMPC",
-        "load_dir": "path/to/model",
-        "step": 4_000_000
+        "load_dir": "path/to/model"
     }
 )
 ```

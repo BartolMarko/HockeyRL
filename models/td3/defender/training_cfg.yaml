@@ -1,0 +1,79 @@
+td3:
+  actor:
+    hidden_sizes:
+    - 256
+    - 256
+    learning_rate: 0.0001
+  batch_size: 128
+  buffer_size: 1000000
+  critic:
+    hidden_sizes:
+    - 256
+    - 256
+    learning_rate: 0.001
+  gamma: 0.99
+  noise_clip: 0.5
+  policy_delay: 2
+  polyak: 0.995
+  pr_alpha: 0.6
+  pr_beta: 0.4
+  pr_epsilon: 1.0e-06
+  prioritized_replay: false
+  rollout: 3
+  target_noise: 0.5
+training:
+  action_noise: gaussian
+  env_scheduler:
+    env_types:
+    - - defense_improved
+    phase_shifts:
+    - 0
+    type: linear
+  episode_mirroring: true
+  eval_episodes_per_opp: 20
+  eval_freq: 20000
+  max_ep_length: 251
+  max_opp_pool: 50
+  noise_scheduler: linear
+  opp_update_freq: 10000000
+  opponent_scheduler:
+    eval_games: 20
+    max_pool_size: 50
+    min_winrate: 0.65
+    # these previous td3 checkpoint are on wandb
+    opponent_types:
+    - - multi_uniform
+      - - - ./models/72_k/model.pt
+          - ./models/72_k/config.yaml
+          - 72_k
+        - - ./models/bank_pref/model.pt
+          - ./models/bank_pref/config.yaml
+          - bank_pref
+        - - ./models/bank_shot/model.pt
+          - ./models/bank_shot/config.yaml
+          - bank_shot
+        - - ./models/best_model/model.pt
+          - ./models/best_model/config.yaml
+          - best_model
+        - - ./models/best_model2/model.pt
+          - ./models/best_model2/config.yaml
+          - 163k
+        - - ./models/faker/model.pt
+          - ./models/faker/config.yaml
+          - faker
+        - - basic
+        - - strong
+        - - custom
+    phase_shifts:
+    - 0
+    type: linear
+  result_directory: results_rollout_3
+  reward_shaper: puck_closeness_defense
+  run_name: td3_puck_closeness_defense_rollout_3_mirroring_10M
+  save_ckpt_locally: false
+  seed: 699
+  start_after: 20000
+  total_timesteps: 10000000
+  update_every: 50
+  use_opp_scheduler: true
+  video_episodes_per_outcome: 20

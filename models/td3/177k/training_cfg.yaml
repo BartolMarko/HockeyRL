@@ -1,0 +1,82 @@
+td3:
+  actor:
+    hidden_sizes:
+    - 256
+    - 256
+    learning_rate: 0.0001
+  batch_size: 128
+  buffer_size: 1000000
+  critic:
+    hidden_sizes:
+    - 256
+    - 256
+    learning_rate: 0.001
+  gamma: 0.99
+  noise_clip: 0.5
+  policy_delay: 2
+  polyak: 0.995
+  pr_alpha: 0.6
+  pr_beta: 0.4
+  pr_epsilon: 1.0e-06
+  prioritized_replay: false
+  rollout: 3
+  target_noise: 0.5
+training:
+  action_noise: gaussian
+  env_scheduler:
+    env_types:
+    - - normal
+    - - normal
+    - - multi
+      - - - 0.3
+          - - attack
+        - - 0.7
+          - - defense_improved
+    phase_shifts:
+    - 0
+    - 3000000
+    - 6000000
+    type: linear
+  episode_mirroring: true
+  eval_episodes_per_opp: 20
+  eval_freq: 20000
+  max_ep_length: 251
+  max_opp_pool: 50
+  max_reward: 4
+  noise_scheduler: linear
+  opp_update_freq: 50000
+  opponent_scheduler:
+    eval_games: 20
+    max_pool_size: 50
+    min_winrate: 0.65
+    opponent_types:
+    - - basic
+    - - multi
+      - - - 0.3
+          - - basic
+        - - 0.7
+          - - strong
+    - - multi
+      - - - 0.2
+          - - basic
+        - - 0.2
+          - - strong
+        - - 0.5
+          - - self
+        - - 0.1
+          - - custom
+    phase_shifts:
+    - 0
+    - 3000000
+    - 6000000
+    type: linear
+  result_directory: results_base
+  reward_shaper: shot_pref
+  run_name: td3_bank_pref_rollout_3_mirroring_10M
+  save_ckpt_locally: false
+  seed: 699
+  start_after: 20000
+  total_timesteps: 10000000
+  update_every: 50
+  use_opp_scheduler: true
+  video_episodes_per_outcome: 20

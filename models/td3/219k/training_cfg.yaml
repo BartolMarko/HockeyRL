@@ -1,0 +1,101 @@
+td3:
+  actor:
+    hidden_sizes:
+    - 256
+    - 256
+    learning_rate: 0.0001
+  batch_size: 128
+  buffer_size: 1000000
+  critic:
+    hidden_sizes:
+    - 256
+    - 256
+    learning_rate: 0.001
+  gamma: 0.99
+  noise_clip: 0.5
+  policy_delay: 2
+  polyak: 0.995
+  pr_alpha: 0.6
+  pr_beta: 0.4
+  pr_epsilon: 1.0e-06
+  prioritized_replay: false
+  rollout: 3
+  target_noise: 0.5
+training:
+  action_noise: gaussian
+  env_scheduler:
+    env_types:
+    - - normal
+    - - normal
+    - - multi
+      - - - 0.3
+          - - attack
+        - - 0.7
+          - - defense_improved
+    phase_shifts:
+    - 0
+    - 3000000
+    - 6000000
+    type: linear
+  episode_mirroring: true
+  eval_episodes_per_opp: 20
+  eval_freq: 20000
+  max_ep_length: 251
+  max_opp_pool: 50
+  noise_scheduler: linear
+  opp_update_freq: 50000
+  opponent_scheduler:
+    eval_games: 20
+    max_pool_size: 50
+    min_winrate: 0.65
+    # these previous td3 checkpoints are on wandb
+    opponent_types:
+    - - basic
+    - - multi
+      - - - 0.3
+          - - basic
+        - - 0.7
+          - - strong
+    - - multi
+      - - - 0.1
+          - - basic
+        - - 0.1
+          - - strong
+        - - 0.5
+          - - self
+        - - 0.1
+          - - custom
+        - - 0.2
+          - - multi_uniform
+            - - - ./models/72_k/model.pt
+                - ./models/72_k/config.yaml
+                - 72_k
+              - - ./models/bank_pref/model.pt
+                - ./models/bank_pref/config.yaml
+                - bank_pref
+              - - ./models/bank_shot/model.pt
+                - ./models/bank_shot/config.yaml
+                - bank_shot
+              - - ./models/best_model/model.pt
+                - ./models/best_model/config.yaml
+                - best_model
+              - - ./models/best_model2/model.pt
+                - ./models/best_model2/config.yaml
+                - 163k
+              - - ./models/faker/model.pt
+                - ./models/faker/config.yaml
+                - faker
+    phase_shifts:
+    - 0
+    - 3000000
+    - 6000000
+    type: linear
+  result_directory: results_base
+  run_name: td3_one_v_all_rollout_3_mirroring_15M_s799
+  save_ckpt_locally: false
+  seed: 699
+  start_after: 20000
+  total_timesteps: 15000000
+  update_every: 50
+  use_opp_scheduler: true
+  video_episodes_per_outcome: 20

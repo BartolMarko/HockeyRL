@@ -10,7 +10,7 @@ Pretrained model checkpoints are available in the `models/` directory.
 
 Agents can be instantiated using the `agent_factory` utility located in `src/agent_factory`.
 
-Example:
+Examples:
 
 ```python
 from src.agent_factory import agent_factory
@@ -21,6 +21,24 @@ td3 = agent_factory(
         "type": "TD3",
         "weights_path": "path/to/weights",
         "config_path": "path/to/config"
+    }
+)
+
+sac = agent_factory(
+    'sac',
+    {
+        "type": "SAC",
+        "config_path": "path/to/config",
+        "weights_folder": "path/to/weights"
+    }
+)
+
+tdmpc = agent_factory(
+    "tdmpc",
+    {
+        "type": "TDMPC",
+        "load_dir": "path/to/model",
+        "step": 4_000_000
     }
 )
 ```

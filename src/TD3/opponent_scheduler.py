@@ -198,7 +198,7 @@ class LinearOpponentScheduler(OpponentScheduler):
         '''
         simple grammar:
         Op ::= 
-        ["basic"] | ["strong"] | ["custom"] | ["self"] | [("path/to/model", "path/to/cfg", "model_name")]
+        ["basic"] | ["strong"] | ["custom"] | ["self"] | ["path/to/model", "path/to/cfg", "model_name"]
         ["multi", [(p, Op)+]] | ["mulit_uniform", [(Op)+]]
         where p \in [0, 1] and sum(p_i) = 1
         '''
